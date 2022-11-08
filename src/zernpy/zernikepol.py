@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Main script with the classes definitions.
+Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.
 
 @author: Sergei Klykov
 @licence: MIT
@@ -8,8 +8,13 @@ Main script with the classes definitions.
 """
 # %% Global imports
 import numpy as np
+from pathlib import Path
 
 # %% Local (package-scoped) imports
+if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
+    from calculations.calc_zernike_pol import normalization_factor
+else:
+    from .calculations.calc_zernike_pol import normalization_factor
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -72,8 +77,7 @@ class ZernPol:
         References
         ----------
         [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
-        [2]
-        [3]
+        [2] Shakibaei B.H., Paramesran R. (2013)
 
         Returns
         -------
@@ -191,6 +195,18 @@ class ZernPol:
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
 
+    def get_polynomial_orders(self) -> tuple:
+        """
+        Return tuple with the (azimuthal, radial) orders, i.e. return (m, n).
+
+        Returns
+        -------
+        tuple
+            with the (azimuthal, radial) orders for the initialized Zernike polynomial.
+
+        """
+        return (self.__m, self.__n)
+
     def get_polynomial_name(self, short: bool = False) -> str:
         """
         Return string with the name of polynomial up to 7th order.
@@ -220,6 +236,10 @@ class ZernPol:
             if (self.__m, self.__n) in self.polynomial_names.keys():
                 name = self.polynomial_names[(self.__m, self.__n)]
         return name
+
+    # %% Calculations
+    def get_polynomial_value(self, r, theta):
+        pass
 
     # %% Static methods
     @staticmethod
@@ -356,6 +376,7 @@ if __name__ == "__main__":
     zp = ZernPol(m=0, n=2)
     print(zp.get_indices())
     print(zp.get_polynomial_name())
+    print(normalization_factor(zp))
     zp = ZernPol(m=-3, n=5)
     print(zp.get_indices())
     zp = ZernPol(osa_index=8)
@@ -364,3 +385,4 @@ if __name__ == "__main__":
     zp = ZernPol(noll_index=6)
     print(zp.get_indices())
     print(zp.get_polynomial_name())
+
