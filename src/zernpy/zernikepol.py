@@ -77,7 +77,8 @@ class ZernPol:
         References
         ----------
         [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
-        [2] Shakibaei B.H., Paramesran R. (2013)
+        [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+        [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
 
         Returns
         -------
