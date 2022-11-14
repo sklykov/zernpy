@@ -10,6 +10,9 @@ Collection of Zernike polynomial calculation methods.
 import numpy as np
 import math
 
+# %% Module parameters
+__docformat__ = "numpydoc"
+
 
 # %% Function definitions
 def define_orders(zernike_pol) -> tuple:
@@ -71,7 +74,7 @@ def radial_polynomial(zernike_pol, r):
     zernike_pol : ZernPol or tuple with orders (m, n)
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
     r : float or np.ndarray
-        Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated..
+        Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
 
     Reference
     ---------
@@ -148,7 +151,24 @@ def radial_polynomial(zernike_pol, r):
         return (r*(radial_polynomial((abs(m-1), n-1), r) + radial_polynomial((m+1, n-1), r))
                 - radial_polynomial((m, n-2), r))
 
+
 def radial_polynomial_eq(zernike_pol, r):
+    """
+    Calculate the radial polynomial R(m, n) using exact equation from the Reference below.
+
+    Parameters
+    ----------
+    zernike_pol : ZernPol or tuple with orders (m, n)
+        ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
+    r : float or np.ndarray
+        Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
+
+    Returns
+    -------
+    float or np.ndarray
+        Depending of the type of theta, return float or np.ndarray with calculated values of radial polynomial.
+
+    """
     value = 0.0
     (m, n) = define_orders(zernike_pol)  # get orders
     for k in range(0, ((n - abs(m))//2) + 1):
@@ -170,6 +190,7 @@ def triangular_function(zernike_pol, theta):
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
     theta : float or np.ndarray
         Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+        Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
     Reference
     ---------
@@ -190,6 +211,21 @@ def triangular_function(zernike_pol, theta):
         return -np.sin(m*theta)
 
 
+def test_radial_calculations():
+    # check pytest package usage, for making simple test script
+
+    # Generating Zernike orders in OSA/ANSI indexing scheme
+    orders_list = [(0, 0)]
+    for order in range(1, 21):
+        m = -order; n = order
+        orders_list.append((m, n))
+        for n_azimuthals in range(0, order):
+            m += 2
+            orders_list.append((m, n))
+
+    # Testing that exact calculation and implementation of tabular / recursive are the same
+
+
 # %% Tests
 if __name__ == '__main__':
     R = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]; R = np.asarray(R)
@@ -207,3 +243,4 @@ if __name__ == '__main__':
     orders = (-1, 9); r = 0.25
     ZR4 = radial_polynomial(orders, r)
     print(ZR4 - radial_polynomial_eq(orders, r))
+    test_radial_calculations()
