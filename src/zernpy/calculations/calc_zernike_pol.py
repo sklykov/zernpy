@@ -211,19 +211,53 @@ def triangular_function(zernike_pol, theta):
         return -np.sin(m*theta)
 
 
-def test_radial_calculations():
-    # check pytest package usage, for making simple test script
+def compare_radial_calculations(max_order: int) -> np.ndarray:
+    """
+    Test difference between tabular/recursive and exact equation implementations of radial Zernike polynomials.
+
+    Parameters
+    ----------
+    max_order : int, optional
+        Maximum order of tested Zernike polynomials (not less than 2).
+
+    Returns
+    -------
+    diff : np.ndarray
+        Size (N_Zernikes, 20) corresponds to number of tested Zernike orders (m, n) calculated for the input
+        maximum order and 21 radiuses between [0, 1].
+        Note that the precision difference are 1E-9 and the returned matrix also rounded to 9 numbers after
+        floating point.
+
+    """
+    # check maximum order
+    if not isinstance(max_order, int) and max_order < 2:
+        print("NOTE that max_order by default set to 2")
+        max_order = 2
 
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = [(0, 0)]
-    for order in range(1, 21):
+    for order in range(1, max_order):
         m = -order; n = order
         orders_list.append((m, n))
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
 
+    # Generation numpy array with radiuses
+    n_points = 21
+    test_r = np.zeros(shape=(n_points, ))
+    for i in range(n_points):
+        test_r[i] = i/(n_points-1)
+    test_r = np.round(test_r, 4)
+
     # Testing that exact calculation and implementation of tabular / recursive are the same
+    diff = np.ones(shape=(len(orders_list), n_points))
+    for i, order in enumerate(orders_list):
+        diff[i, :] = radial_polynomial(order, test_r) - radial_polynomial_eq(order, test_r)
+        assert abs(np.min(diff)) < 1E-9, (f"Order {order} has incosistency between tabular/recursion"
+                                          + " and exact implementations")
+    diff = np.round(diff, 9)
+    return diff
 
 
 # %% Tests
@@ -232,15 +266,11 @@ if __name__ == '__main__':
     Theta = [i*np.pi/3 for i in range(6)]; Theta = np.asarray(Theta)
     orders = (-2, 2); r = 0.5
     ZR = radial_polynomial(orders, R); ZR1 = radial_polynomial(orders, r)
-    print(ZR - radial_polynomial_eq(orders, R))
-    print(ZR1 - radial_polynomial_eq(orders, r))
     TR = triangular_function(orders, Theta); TR1 = triangular_function(orders, r)
     orders = (-9, 9)
     ZR2 = radial_polynomial(orders, r)
-    print(ZR2 - radial_polynomial_eq(orders, r))
     orders = (0, 8)
     ZR3 = radial_polynomial(orders, r)
     orders = (-1, 9); r = 0.25
     ZR4 = radial_polynomial(orders, r)
-    print(ZR4 - radial_polynomial_eq(orders, r))
-    test_radial_calculations()
+    diff = compare_radial_calculations(max_order=11)

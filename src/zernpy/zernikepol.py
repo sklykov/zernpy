@@ -369,6 +369,35 @@ class ZernPol:
                 break
         return m, n
 
+    @staticmethod
+    def osa2noll(osa_index: int) -> int:
+        """
+        Convert the OSA / ANSI index of a Zernike polynomial to the Noll index.
+
+        Parameters
+        ----------
+        osa_index : int
+            OSA / ANSI index with int type, it must be not less than 0.
+
+        Raises
+        ------
+        ValueError
+            If the index provided with not int type or index < 0.
+
+        Returns
+        -------
+        int
+            Converted Noll index.
+
+        """
+        if isinstance(osa_index, int) and osa_index >= 0:
+            m, n = ZernPol.get_orders(osa_index=osa_index)
+            return ZernPol.get_noll_index(m, n)
+        else:
+            raise ValueError(f"Provided {osa_index} isn't integer or less than 0")
+
+# %% Test functions for the external call
+
 
 # %% Tests
 if __name__ == "__main__":
@@ -386,4 +415,4 @@ if __name__ == "__main__":
     zp = ZernPol(noll_index=6)
     print(zp.get_indices())
     print(zp.get_polynomial_name())
-
+    print(zp.osa2noll(3))
