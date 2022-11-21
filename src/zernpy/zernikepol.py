@@ -396,19 +396,112 @@ class ZernPol:
         else:
             raise ValueError(f"Provided {osa_index} isn't integer or less than 0")
 
+    @staticmethod
+    def noll2osa(noll_index: int) -> int:
+        """
+        Convert the Noll index of a Zernike polynomial to the OSA / ANSI index.
+
+        Parameters
+        ----------
+        noll_index : int
+            The Noll index with int type, it must be not less than 1.
+
+        Raises
+        ------
+        ValueError
+            If the index provided with not int type or index < 1.
+
+        Returns
+        -------
+        int
+            Converted OSA / ANSI index.
+
+        """
+        if isinstance(noll_index, int) and noll_index >= 1:
+            m, n = ZernPol.get_orders(noll_index=noll_index)
+            return ZernPol.get_osa_index(m, n)
+        else:
+            raise ValueError(f"Provided {noll_index} isn't integer or less than 1")
+
+    @staticmethod
+    def osa2fringe(osa_index: int) -> int:
+        """
+        Convert the OSA / ANSI index of a Zernike polynomial to the Fringe index.
+
+        Parameters
+        ----------
+        osa_index : int
+            OSA / ANSI index with int type, it must be not less than 0.
+
+        Raises
+        ------
+        ValueError
+            If the index provided with not int type or index < 0.
+
+        Returns
+        -------
+        int
+            Converted Fringe index.
+
+        """
+        if isinstance(osa_index, int) and osa_index >= 0:
+            m, n = ZernPol.get_orders(osa_index=osa_index)
+            return ZernPol.get_fringe_index(m, n)
+        else:
+            raise ValueError(f"Provided {osa_index} isn't integer or less than 0")
+
+    @staticmethod
+    def fringe2osa(fringe_index: int) -> int:
+        """
+        Convert the Fringe / Univ. of Arizona index of a Zernike polynomial to the OSA / ANSI index.
+
+        Parameters
+        ----------
+        fringe_index : int
+            The noll index with int type, it must be not less than 1.
+
+        Raises
+        ------
+        ValueError
+            If the index provided with not int type or index < 1.
+
+        Returns
+        -------
+        int
+            Converted OSA / ANSI index.
+
+        """
+        if isinstance(fringe_index, int) and fringe_index >= 1:
+            m, n = ZernPol.get_orders(fringe_index=fringe_index)
+            return ZernPol.get_osa_index(m, n)
+        else:
+            raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
+
+
 # %% Test functions for the external call
+def check_conformity():
+    """
+    Test initialization parameters and transform between indicies consistency.
+
+    Returns
+    -------
+    None.
+
+    """
+    zp = ZernPol(m=-2, n=2)
+    (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
+    assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indicies: "
+                                                            + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
+    zp = ZernPol(m=-3, n=5)
+    (m2, n2), osa_i, noll_i, fringe_i = zp.get_indices()
+    assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indicies: "
+                                                               + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
+    print(f"Initialization of polynomials Z{(m1, n1)} and Z{(m2, n2)} tested")
 
 
 # %% Tests
 if __name__ == "__main__":
-    zp = ZernPol(m=-1, n=1)
-    print(zp.get_indices())
-    zp = ZernPol(m=0, n=2)
-    print(zp.get_indices())
-    print(zp.get_polynomial_name())
-    print(normalization_factor(zp))
-    zp = ZernPol(m=-3, n=5)
-    print(zp.get_indices())
+    check_conformity()
     zp = ZernPol(osa_index=8)
     print(zp.get_indices())
     print(zp.get_polynomial_name())
@@ -416,3 +509,4 @@ if __name__ == "__main__":
     print(zp.get_indices())
     print(zp.get_polynomial_name())
     print(zp.osa2noll(3))
+    print(zp.noll2osa(1))
