@@ -267,10 +267,4 @@ if __name__ == '__main__':
     orders = (-2, 2); r = 0.5
     ZR = radial_polynomial(orders, R); ZR1 = radial_polynomial(orders, r)
     TR = triangular_function(orders, Theta); TR1 = triangular_function(orders, r)
-    orders = (-9, 9)
-    ZR2 = radial_polynomial(orders, r)
-    orders = (0, 8)
-    ZR3 = radial_polynomial(orders, r)
-    orders = (-1, 9); r = 0.25
-    ZR4 = radial_polynomial(orders, r)
     diff = compare_radial_calculations(max_order=11)

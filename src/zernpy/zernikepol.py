@@ -12,9 +12,9 @@ from pathlib import Path
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from calculations.calc_zernike_pol import normalization_factor
+    from calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
 else:
-    from .calculations.calc_zernike_pol import normalization_factor
+    from .calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -110,7 +110,11 @@ class ZernPol:
                         self.__m = kwargs.get(key)  # azimuthal order acknowledged
                         # Checking that the provided orders are reasonable
                         if not((self.__n - abs(self.__m)) % 2 == 0):  # see [1]
-                            raise ValueError("Failed sanity check of orders n and m (n - |m| = even)")
+                            raise ValueError("Failed sanity check: n - |m| == even number")
+                        elif self.__n < 0:
+                            raise ValueError("Failed sanity check: order n less than 0")
+                        elif self.__n == 0 and self.__m != 0:
+                            raise ValueError("Failed sanity check: when n == 0, m should be also == 0")
                         # m and n specified correctly, calculate other properties - various indices
                         else:
                             __orders_specified = True  # set the flag to True
@@ -119,12 +123,12 @@ class ZernPol:
                             self.__noll_index = ZernPol.get_noll_index(self.__m, self.__n)
                             self.__fringe_index = ZernPol.get_fringe_index(self.__m, self.__n)
                     else:
-                        raise ValueError("Azimuthal order (m) provided not as an integer")
+                        raise ValueError("Azimuthal order m provided not as an integer")
                 else:
                     # the n order defined, but m hasn't been found
                     self.__n = 0
             else:
-                raise ValueError("Radial order (n) provided not as an integer")
+                raise ValueError("Radial order n provided not as an integer")
         # OSA / ANSI index used for Zernike polynomial initialization
         elif ("osa_index" in kwargs.keys() or "osa" in kwargs.keys() or "ansi_index" in kwargs.keys()
               or "ansi" in kwargs.keys()):
@@ -240,7 +244,31 @@ class ZernPol:
 
     # %% Calculations
     def get_polynomial_value(self, r, theta):
-        pass
+        """
+        Calculate Zernike polynomial value(-s) within the unit circle.
+
+        Calculation up to 7th Zernike polynomials performed by equations, after - iteratively, using
+        the equations derived in the Reference below.
+
+        Reference
+        ---------
+        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+
+        Parameters
+        ----------
+        r : float or np.ndarray
+            Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
+        theta : float or np.ndarray
+            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+            Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
+
+        Returns
+        -------
+        float or np.ndarray
+            Calculated polynomial values on provided float values / arrays.
+
+        """
+        return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
 
     # %% Static methods
     @staticmethod
@@ -488,7 +516,7 @@ def check_conformity():
     None.
 
     """
-    zp = ZernPol(m=-2, n=2)
+    zp = ZernPol(m=-2, n=2)  # Initialization with orders
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
     assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indicies: "
                                                             + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
@@ -497,16 +525,28 @@ def check_conformity():
     assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indicies: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
     print(f"Initialization of polynomials Z{(m1, n1)} and Z{(m2, n2)} tested")
+    osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
+    m, n = zp.get_polynomial_orders()
+    assert (m == 0 and n == 4), f"Check consistency of Z[OSA index = {osa_i}] orders {m, n}"
+    assert zp.get_fringe_index(m, n) == 9, f"Check consistency of Z[OSA index = {osa_i}] Fringe index"
+    assert zp.get_noll_index(m, n) == 11, f"Check consistency of Z[OSA index = {osa_i}] Noll index"
+    print(f"Initialization of polynomial Z[OSA index = {osa_i}] tested")
+    noll_i = 10  # Testing static methods
+    assert ZernPol.noll2osa(noll_i) == 9, f"Check consistency of Noll index {noll_i} conversion to OSA index"
+    assert ZernPol.osa2fringe(ZernPol.noll2osa(noll_i)) == 10, ("Check consistency of Noll "
+                                                                + f"index {noll_i} conversion to OSA index")
+    print(f"Conversion of Noll index {noll_i} to OSA and Fringe indices tested")
+    # Test for not proper initialization
+    try:
+        m_f = 2; n_f = -2
+        zp = ZernPol(m=m_f, n=n_f)
+        asserting_value = False
+    except ValueError:
+        print(f"Polynomial Z{(m_f, n_f)} haven't been initialized, test passed")
+        asserting_value = True
+    assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assingment"
 
 
 # %% Tests
 if __name__ == "__main__":
     check_conformity()
-    zp = ZernPol(osa_index=8)
-    print(zp.get_indices())
-    print(zp.get_polynomial_name())
-    zp = ZernPol(noll_index=6)
-    print(zp.get_indices())
-    print(zp.get_polynomial_name())
-    print(zp.osa2noll(3))
-    print(zp.noll2osa(1))
