@@ -262,12 +262,23 @@ class ZernPol:
             Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
+        Raises
+        ------
+        ValueError
+            Check the Error signature for reasons, most probably some data inconsistency detected.
+
         Returns
         -------
         float or np.ndarray
             Calculated polynomial values on provided float values / arrays.
 
         """
+        # Checking input parameters for avoiding errors and unexpectable values
+        if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
+            if r.shape != theta.shape:
+                raise ValueError("Shape of input arrays r and theta is not equal")
+            if np.min(r) < 0.0 or np.max(r) > 1.0:
+                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
         return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
 
     # %% Static methods
