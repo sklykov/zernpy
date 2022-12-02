@@ -73,7 +73,7 @@ def radial_polynomial(zernike_pol, r):
     ----------
     zernike_pol : ZernPol or tuple with orders (m, n)
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
-    r : float or np.ndarray
+    r : float or numpy.ndarray
         Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
 
     Reference
@@ -160,7 +160,7 @@ def radial_polynomial_eq(zernike_pol, r):
     ----------
     zernike_pol : ZernPol or tuple with orders (m, n)
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
-    r : float or np.ndarray
+    r : float or numpy.ndarray
         Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
 
     Returns
@@ -188,7 +188,7 @@ def triangular_function(zernike_pol, theta):
     ----------
     zernike_pol : ZernPol or tuple with orders (m, n)
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
-    theta : float or np.ndarray
+    theta : float or numpy.ndarray
         Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
         Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 

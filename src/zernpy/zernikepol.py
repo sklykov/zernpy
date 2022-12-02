@@ -9,6 +9,8 @@ Main script with the class definition for accessing Zernike polynomial initializ
 # %% Global imports
 import numpy as np
 from pathlib import Path
+import warnings
+import math
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -256,7 +258,7 @@ class ZernPol:
 
         Parameters
         ----------
-        r : float or np.ndarray
+        r : float or numpy.ndarray
             Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
         theta : float or np.ndarray
             Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
@@ -266,6 +268,8 @@ class ZernPol:
         ------
         ValueError
             Check the Error signature for reasons, most probably some data inconsistency detected.
+        Warning
+            If the theta angles cover the range more than 2*pi (period).
 
         Returns
         -------
@@ -274,11 +278,31 @@ class ZernPol:
 
         """
         # Checking input parameters for avoiding errors and unexpectable values
-        if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
+        # Trying to convert known data types into numpy arrays
+        if not isinstance(r, np.ndarray) and not isinstance(r, float):
+            if isinstance(r, list) or isinstance(r, tuple):
+                r = np.asarray(r)  # convert list and tuple to np.array
+            else:
+                r = float(r)  # attempt to convert r to float number, will raise ValueError if it's impossible
+        if not isinstance(theta, np.ndarray) and not isinstance(theta, float):
+            if isinstance(theta, list) or isinstance(theta, tuple):
+                theta = np.asarray(theta)  # convert list and tuple to np.array
+            else:
+                theta = float(theta)  # attempt to convert to float number, will raise ValueError if it's impossible
+        # Checking the basic demands on acceptable data types - np.ndarray and float
+        elif isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
+        elif isinstance(r, np.ndarray):
             if np.min(r) < 0.0 or np.max(r) > 1.0:
                 raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
+        elif isinstance(r, float):
+            if r < 0.0 and r > 1.0:
+                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
+        elif isinstance(theta, np.ndarray):
+            if np.max(theta) + abs(np.min(theta)) > 2*np.pi:
+                warnings.warn("Theta angles defined in range more than 2*pi, check them")
+        # Calculation using imported function
         return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
 
     # %% Static methods
@@ -516,6 +540,48 @@ class ZernPol:
         else:
             raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
 
+    @staticmethod
+    def sum_zernikes(coefficients: list, polynomials: list, r, theta):
+        """
+        Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over unit circle).
+
+        Parameters
+        ----------
+        coefficients : list
+            Coefficients of Zernike polynomials for summing.
+        polynomials : list
+            Initialized polynomials as class instance or tuples with (m, n) orders.
+        r : float or numpy.ndarray
+            Radiuse(-s) from an unit circle.
+        theta : float or numpy.ndarray
+            Polar angle(-s) from an unit circle.
+
+        Raises
+        ------
+        TypeError
+            If the input parameters aren't iterable (doesn't support len() function), this error will be raised.
+        ValueError
+            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials.
+            Or if the list (tuple, numpy.ndarray vector, ...) with Zernike polynomials instances (ZernPol()).
+
+        Returns
+        -------
+        None.
+
+        """
+        S = 0.0  # default value - sum
+        if len(coefficients) != len(polynomials):
+            raise ValueError("Lengths of coefficients and polynomials aren't equal")
+        else:
+            for i, coefficient in enumerate(coefficients):
+                if not isinstance(polynomials[i], ZernPol):
+                    raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
+                if i == 0:
+                    S = coefficient*polynomials[i].get_polynomial_value(r, theta)
+                else:
+                    S += coefficient*polynomials[i].get_polynomial_value(r, theta)
+        return S
+
 
 # %% Test functions for the external call
 def check_conformity():
@@ -556,6 +622,28 @@ def check_conformity():
         print(f"Polynomial Z{(m_f, n_f)} haven't been initialized, test passed")
         asserting_value = True
     assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assingment"
+    # Testing input parameters for calculation
+    zp = ZernPol(m=0, n=2); r = 0.0; theta = math.pi
+    assert abs(zp.get_polynomial_value(r, theta) + math.sqrt(3)) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
+    zp = ZernPol(m=-1, n=1); r = 0.5; theta = math.pi/2
+    assert abs(zp.get_polynomial_value(r, theta) - 1.0) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
+    print("Simple values of Zernike polynomials tested successfully")
+    try:
+        r = 'd'; theta = [1, 2]
+        zp.get_polynomial_value(r, theta)
+        asserting_value = False
+    except ValueError:
+        print("Input as string is not allowed for calculation of polynomial value, tested successfully")
+        asserting_value = True
+    assert asserting_value, "Wrong parameter passed (string) for calculation of polynomial value"
+    try:
+        r = [0.1, 0.2, 1.0+1E-9]; theta = math.pi
+        zp.get_polynomial_value(r, theta)
+        asserting_value = False
+    except ValueError:
+        print("Radius more than 1.0 is not allowed, tested successfully")
+        asserting_value = True
+    assert asserting_value, "Wrong parameter passed (r > 1.0) for calculation of polynomial value"
 
 
 # %% Tests
