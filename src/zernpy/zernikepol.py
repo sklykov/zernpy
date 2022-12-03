@@ -11,15 +11,19 @@ import numpy as np
 from pathlib import Path
 import warnings
 import math
+from collections import namedtuple
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
+    from plotting.plot_zerns import plot_sum_fig
 else:
     from .calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
+    from .plotting.plot_zerns import plot_sum_fig
 
 # %% Module parameters
 __docformat__ = "numpydoc"
+polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the return type
 
 
 # %% Class def.
@@ -541,7 +545,7 @@ class ZernPol:
             raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
 
     @staticmethod
-    def sum_zernikes(coefficients: list, polynomials: list, r, theta):
+    def sum_zernikes(coefficients: list, polynomials: list, r, theta, get_surface: bool = False):
         """
         Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over unit circle).
 
@@ -555,6 +559,8 @@ class ZernPol:
             Radiuse(-s) from an unit circle.
         theta : float or numpy.ndarray
             Polar angle(-s) from an unit circle.
+        get_surface : bool, optional
+            If True, it force to calculate 2D sum of polynomials based on r and theta (as a mesh). The default is False.
 
         Raises
         ------
@@ -566,21 +572,92 @@ class ZernPol:
 
         Returns
         -------
-        None.
+        Sum of Zernike polynomials
+            Depending on the input values and parameter get_surface - can be float, 1D or 2D numpy.ndarrays.
 
         """
         S = 0.0  # default value - sum
         if len(coefficients) != len(polynomials):
             raise ValueError("Lengths of coefficients and polynomials aren't equal")
         else:
-            for i, coefficient in enumerate(coefficients):
-                if not isinstance(polynomials[i], ZernPol):
-                    raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
-                if i == 0:
-                    S = coefficient*polynomials[i].get_polynomial_value(r, theta)
+            if not get_surface or not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
+                for i, coefficient in enumerate(coefficients):
+                    if not isinstance(polynomials[i], ZernPol):
+                        raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
+                    if i == 0:
+                        S = coefficient*polynomials[i].get_polynomial_value(r, theta)
+                    else:
+                        S += coefficient*polynomials[i].get_polynomial_value(r, theta)
+            elif get_surface:
+                if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
+                    warnings.warn("Requested calculation of surface (mesh) values with"
+                                  + " provided r or theta as not numpy.ndarray.\n"
+                                  + "The surface will be generated automatically.")
                 else:
-                    S += coefficient*polynomials[i].get_polynomial_value(r, theta)
+                    r_size = np.size(r, 0); theta_size = np.size(theta, 0)
+                    S = np.zeros(shape=(r_size, theta_size))
+                    for i, coefficient in enumerate(coefficients):
+                        if not isinstance(polynomials[i], ZernPol):
+                            raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
+                        if theta_size > r_size:
+                            for j in range(r_size):
+                                S[j, :] += coefficient*polynomials[i].get_polynomial_value(r[j], theta)[:]
+                        else:
+                            for j in range(theta_size):
+                                S[:, j] += coefficient*polynomials[i].get_polynomial_value(r, theta[j])[:]
         return S
+
+    @staticmethod
+    def get_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = (np.pi/180)) -> polar_vectors:
+        """
+        Generate named tuple with R and Theta - vectors with polar coordinates for an entire unit circle.
+
+        Parameters
+        ----------
+        r_step : float, optional
+            Step for generation the vector with radiuses for an entire unit circle. The default is 0.01.
+        theta_rad_step : float, optional
+            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90).
+
+        Raises
+        ------
+        ValueError
+            If the r_step or theta_rad_step provided in the way, that vectors R and Theta cannot be generated.
+
+        Returns
+        -------
+        polar_vectors
+            namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+            Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
+
+        """
+        if r_step <= 0.0 and r_step > 0.5:
+            raise ValueError("Provided step on radiuses less than 0.0 or more than 0.5")
+        if theta_rad_step <= 0.0 and theta_rad_step > np.pi:
+            raise ValueError("Provided step on theta angles less than 0.0 or more than pi")
+        R = np.arange(0.0, 1.0+r_step, r_step); Theta = np.arange(0.0, 2*np.pi+theta_rad_step, theta_rad_step)
+        return polar_vectors(R, Theta)
+
+    @staticmethod
+    def plot_zernike_polynomial(polynomial):
+        """
+        Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure (interactive mode).
+
+        Parameters
+        ----------
+        polynomial : ZernPol
+            Instance of ZernPol class.
+
+        Returns
+        -------
+        None.
+
+        """
+        if isinstance(polynomial, ZernPol):
+            r, theta = ZernPol.get_polar_coordinates()
+            amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
+            zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
+            plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name())
 
 
 # %% Test functions for the external call
@@ -597,11 +674,15 @@ def check_conformity():
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
     assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indicies: "
                                                             + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
-    zp = ZernPol(m=-3, n=5)
+    zp = ZernPol(l=-3, n=5)
     (m2, n2), osa_i, noll_i, fringe_i = zp.get_indices()
     assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indicies: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
-    print(f"Initialization of polynomials Z{(m1, n1)} and Z{(m2, n2)} tested")
+    zp = ZernPol(azimuthal_order=-1, radial_order=5)
+    (m3, n3), osa_i, noll_i, fringe_i = zp.get_indices()
+    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m2, n2)} indicies: "
+                                                               + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
+    print(f"Initialization of polynomials Z{(m1, n1)}, Z{(m2, n2)}, Z{(m3, n3)} tested")
     osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
     m, n = zp.get_polynomial_orders()
     assert (m == 0 and n == 4), f"Check consistency of Z[OSA index = {osa_i}] orders {m, n}"
@@ -649,3 +730,5 @@ def check_conformity():
 # %% Tests
 if __name__ == "__main__":
     check_conformity()
+    # Check plotting
+    zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)

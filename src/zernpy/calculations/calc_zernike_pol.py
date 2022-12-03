@@ -85,7 +85,7 @@ def radial_polynomial(zernike_pol, r):
 
     Returns
     -------
-    float or np.ndarray
+    float or numpy.ndarray
         Depending of the type of theta, return float or np.ndarray with calculated values of radial polynomial.
 
     """
@@ -165,7 +165,7 @@ def radial_polynomial_eq(zernike_pol, r):
 
     Returns
     -------
-    float or np.ndarray
+    float or numpy.ndarray
         Depending of the type of theta, return float or np.ndarray with calculated values of radial polynomial.
 
     """
@@ -199,8 +199,8 @@ def triangular_function(zernike_pol, theta):
 
     Returns
     -------
-    float or np.ndarray
-        Depending of the type of theta, return float or np.ndarray with calculated values of triangular function.
+    float or numpy.ndarray
+        Depending of the type of theta, return float or numpy.ndarray with calculated values of triangular function.
 
     """
     (m, n) = define_orders(zernike_pol)  # get orders
@@ -222,7 +222,7 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
 
     Returns
     -------
-    diff : np.ndarray
+    diff : numpy.ndarray
         Size (N_Zernikes, 20) corresponds to number of tested Zernike orders (m, n) calculated for the input
         maximum order and 21 radiuses between [0, 1].
         Note that the precision difference are 1E-9 and the returned matrix also rounded to 9 numbers after
