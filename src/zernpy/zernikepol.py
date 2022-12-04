@@ -12,18 +12,20 @@ from pathlib import Path
 import warnings
 import math
 from collections import namedtuple
+import matplotlib.pyplot as plt
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
-    from plotting.plot_zerns import plot_sum_fig
+    from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
 else:
     from .calculations.calc_zernike_pol import normalization_factor, radial_polynomial, triangular_function
-    from .plotting.plot_zerns import plot_sum_fig
+    from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
 
 # %% Module parameters
 __docformat__ = "numpydoc"
 polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the return type
+zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as input type
 
 
 # %% Class def.
@@ -72,8 +74,12 @@ class ZernPol:
 
         Parameters
         ----------
-        **kwargs : comma separated parameters
-            DESCRIPTION.
+        **kwargs : orders or index for Zernike polynomial initialization.
+            Acceptable variants for key word arguments:
+            1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m;
+            2) osa_index=int with alternatives: "osa", "ansi_index", "ansi";
+            3) noll_index=int with alternative "noll"
+            4) fringe_index=int with alternative "fringe"
 
         Raises
         ------
@@ -88,7 +94,7 @@ class ZernPol:
 
         Returns
         -------
-        ZernPol() class.
+        ZernPol class' instance.
 
         """
         __orders_specified = False; __index_specified = False; key = ""
@@ -554,13 +560,13 @@ class ZernPol:
         coefficients : list
             Coefficients of Zernike polynomials for summing.
         polynomials : list
-            Initialized polynomials as class instance or tuples with (m, n) orders.
+            Initialized polynomials as class instances of ZernPol class specified in this module.
         r : float or numpy.ndarray
-            Radiuse(-s) from an unit circle.
+            Radius(-s) from a unit circle.
         theta : float or numpy.ndarray
-            Polar angle(-s) from an unit circle.
+            Polar angle(-s) from a unit circle.
         get_surface : bool, optional
-            If True, it force to calculate 2D sum of polynomials based on r and theta (as a mesh). The default is False.
+            If True, it forces to calculate 2D sum of polynomials based on r and theta (as a mesh). The default is False.
 
         Raises
         ------
@@ -631,9 +637,9 @@ class ZernPol:
             Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
 
         """
-        if r_step <= 0.0 and r_step > 0.5:
+        if 0.0 >= r_step > 0.5:
             raise ValueError("Provided step on radiuses less than 0.0 or more than 0.5")
-        if theta_rad_step <= 0.0 and theta_rad_step > np.pi:
+        if 0.0 >= theta_rad_step > np.pi:
             raise ValueError("Provided step on theta angles less than 0.0 or more than pi")
         R = np.arange(0.0, 1.0+r_step, r_step); Theta = np.arange(0.0, 2*np.pi+theta_rad_step, theta_rad_step)
         return polar_vectors(R, Theta)
@@ -659,11 +665,60 @@ class ZernPol:
             zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
             plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name())
 
+    @staticmethod
+    def plot_sum_zernikes_on_fig(coefficients: list, polynomials: list, figure: plt.Figure,
+                                 use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
+                                 show_range: bool = True) -> plt.Figure:
+        """
+        Plot the provided Zernike polynomials sum on the provided figure.
+
+        Parameters
+        ----------
+        coefficients : list
+            Coefficients of Zernike polynomials for summing.
+        polynomials : list
+            Initialized polynomials as class instances of ZernPol class specified in this module.
+        figure : plt.Figure
+            Figure() class there the plotting will be done, previous plot will be cleared.
+        use_defaults : bool, optional
+            Use for plotting default values for generation of a mesh of polar coordinates and calculation
+            of Zernike polynomials sum. The default is True.
+        zernikes_sum_surface : namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional
+            This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta. The default is ().
+        show_range : bool, optional
+            Flag for showing range of provided values as the colorbar on the figure. The default is True.
+
+        Raises
+        ------
+        ValueError
+            Check the signature for details. In general, it will be raised if some input parameters are inconsistent.
+
+        Returns
+        -------
+        figure : plt.Figure
+            Figure() class there the Zernike polynomials sum plotted.
+
+        """
+        if len(coefficients) == 0:
+            raise ValueError("Input list with coefficients is empty")
+        if not use_defaults and len(zernikes_sum_surface) != 3:
+            raise ValueError("Zernike surface isn't specified as tuple with values Sum surface, R, Theta")
+        if use_defaults:
+            polar_vectors = ZernPol.get_polar_coordinates()
+            zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta,
+                                                get_surface=True)
+            figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
+                                        show_range_colorbar=show_range)
+        else:
+            figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
+                                        zernikes_sum_surface.Theta, show_range_colorbar=show_range)
+        return figure
+
 
 # %% Test functions for the external call
 def check_conformity():
     """
-    Test initialization parameters and transform between indicies consistency.
+    Test initialization parameters and transform between indices consistency.
 
     Returns
     -------
@@ -672,15 +727,15 @@ def check_conformity():
     """
     zp = ZernPol(m=-2, n=2)  # Initialization with orders
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indicies: "
+    assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indices: "
                                                             + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
     zp = ZernPol(l=-3, n=5)
     (m2, n2), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indicies: "
+    assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indices: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
     zp = ZernPol(azimuthal_order=-1, radial_order=5)
     (m3, n3), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m2, n2)} indicies: "
+    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m2, n2)} indices: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
     print(f"Initialization of polynomials Z{(m1, n1)}, Z{(m2, n2)}, Z{(m3, n3)} tested")
     osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
@@ -702,7 +757,7 @@ def check_conformity():
     except ValueError:
         print(f"Polynomial Z{(m_f, n_f)} haven't been initialized, test passed")
         asserting_value = True
-    assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assingment"
+    assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assignment"
     # Testing input parameters for calculation
     zp = ZernPol(m=0, n=2); r = 0.0; theta = math.pi
     assert abs(zp.get_polynomial_value(r, theta) + math.sqrt(3)) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
@@ -730,5 +785,9 @@ def check_conformity():
 # %% Tests
 if __name__ == "__main__":
     check_conformity()
-    # Check plotting
+    # Check plotting functions
+    plt.close("all")
     zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)
+    zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(m=-3, n=3); coefficients = [1.0, 1.0]; polynomials = [zp1, zp2]
+    fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
+    plt.show()

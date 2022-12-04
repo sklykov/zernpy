@@ -6,15 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "zernpy"
 version = "0.0.1"
 authors = [
-  { name="Sergei Klykov", email="..." },
+  { name="Sergei Klykov", email="sergej.klykow@gmail.com" },
 ]
-description = "Calculation of Zernike polynomials"
-readme = "..."
+description = "Calculation of Zernike polynomial value, their sums and basic plotting of their values in polar coordinates"
+readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
 ]
 
 [project.urls]

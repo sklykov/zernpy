@@ -35,7 +35,7 @@ def define_orders(zernike_pol) -> tuple:
         (m, n) = zernike_pol
     else:
         (m, n) = zernike_pol.get_polynomial_orders()
-    return (m, n)
+    return m, n
 
 
 def normalization_factor(zernike_pol) -> float:
@@ -47,8 +47,8 @@ def normalization_factor(zernike_pol) -> float:
     zernike_pol : ZernPol or tuple with orders (m, n)
         ZernPol - class instance of the calling class (module zernikepol) or tuple with azimuthal and radial orders.
 
-    Reference
-    ---------
+    References
+    ----------
     Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
 
     Returns
@@ -76,8 +76,8 @@ def radial_polynomial(zernike_pol, r):
     r : float or numpy.ndarray
         Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
 
-    Reference
-    ---------
+    References
+    ----------
     [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
     [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
     [3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
@@ -86,13 +86,13 @@ def radial_polynomial(zernike_pol, r):
     Returns
     -------
     float or numpy.ndarray
-        Depending of the type of theta, return float or np.ndarray with calculated values of radial polynomial.
+        Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial.
 
     """
     (m, n) = define_orders(zernike_pol)  # get orders
     # Radial polynomials defined as analytical equation for up to 7th order (check tables from [3])
     # 0th orders
-    if ((m == 0) and (n == 0)):
+    if (m == 0) and (n == 0):
         if isinstance(r, float):
             return 1.0
         elif isinstance(r, np.ndarray):
@@ -163,10 +163,14 @@ def radial_polynomial_eq(zernike_pol, r):
     r : float or numpy.ndarray
         Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
 
+    References
+    ----------
+    [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+
     Returns
     -------
     float or numpy.ndarray
-        Depending of the type of theta, return float or np.ndarray with calculated values of radial polynomial.
+        Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial.
 
     """
     value = 0.0
@@ -192,15 +196,15 @@ def triangular_function(zernike_pol, theta):
         Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
         Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
-    Reference
-    ---------
+    References
+    ----------
     [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
     [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
 
     Returns
     -------
     float or numpy.ndarray
-        Depending of the type of theta, return float or numpy.ndarray with calculated values of triangular function.
+        Depending on the type of theta, return float or numpy.ndarray with calculated values of triangular function.
 
     """
     (m, n) = define_orders(zernike_pol)  # get orders
@@ -254,7 +258,7 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
         diff[i, :] = radial_polynomial(order, test_r) - radial_polynomial_eq(order, test_r)
-        assert abs(np.min(diff)) < 1E-9, (f"Order {order} has incosistency between tabular/recursion"
+        assert abs(np.min(diff)) < 1E-9, (f"Order {order} has inconsistency between tabular/recursion"
                                           + " and exact implementations")
     diff = np.round(diff, 9)
     return diff
