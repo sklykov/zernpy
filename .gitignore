@@ -1,3 +1,18 @@
+# My additions
+docs/
+Docs/
+Documents/
+*.doc
+*.docx
+*.odt
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.tif
+*.pdf
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -80,14 +95,3 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyproject
-
-# My additions 
-docs/ 
-Docs/
-Documents/
-*.doc
-*.docx
-*.jpg
-*.jpeg
-*.pdf
-.idea/

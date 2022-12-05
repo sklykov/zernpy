@@ -142,14 +142,23 @@ def radial_polynomial(zernike_pol, r):
         return 21.0*np.power(r, 7) - 30.0*np.power(r, 5) + 10.0*np.power(r, 3)  # 21r^7 - 30r^5 + 10r^3
     elif ((m == -1) and (n == 7)) or ((m == 1) and (n == 7)):
         return 35.0*np.power(r, 7) - 60.0*np.power(r, 5) + 30.0*np.power(r, 3) - 4.0*r  # 35r^7 - 60r^5 + 30r^3 - 4r
-    # Recurrence equations from the [1] and [3]
-    elif n > 7 and abs(m) == n:
+    # 8th order
+    elif ((m == -6) and (n == 8)) or ((m == 6) and (n == 8)):
+        return 8.0*np.power(r, 8) - 7.0*np.power(r, 6)
+    elif ((m == -4) and (n == 8)) or ((m == 4) and (n == 8)):
+        return 28.0*np.power(r, 8) - 42.0*np.power(r, 6) + 15.0*np.power(r, 4)
+    elif ((m == -2) and (n == 8)) or ((m == 2) and (n == 8)):
+        return 56.0*np.power(r, 8) - 105.0*np.power(r, 6) + 60.0*np.power(r, 4) - 10.0*np.power(r, 2)
+    elif (m == 0) and (n == 8):
+        return 70.0*np.power(r, 8) - 140.0*np.power(r, 6) + 90.0*np.power(r, 4) - 20.0*np.power(r, 2) + 1.0
+    # Recurrence equations from the [1] and [3] for higher than 8 orders
+    elif n > 7 and abs(m) == n:  # simplified recurrence formula from [3]
         return np.power(r, n)
-    elif n > 7 and m == 0:
-        return 2*r*radial_polynomial((1, n-1), r) - radial_polynomial((0, n-2), r)
+    elif n > 8 and m == 0:
+        return 2*r*radial_polynomial((1, n-1), r) - radial_polynomial((0, n-2), r)  # simplified recurrence formula from [3]
     else:
         return (r*(radial_polynomial((abs(m-1), n-1), r) + radial_polynomial((m+1, n-1), r))
-                - radial_polynomial((m, n-2), r))
+                - radial_polynomial((m, n-2), r))  # general recurrence formula from [1]
 
 
 def radial_polynomial_eq(zernike_pol, r):
@@ -271,4 +280,4 @@ if __name__ == '__main__':
     orders = (-2, 2); r = 0.5
     ZR = radial_polynomial(orders, R); ZR1 = radial_polynomial(orders, r)
     TR = triangular_function(orders, Theta); TR1 = triangular_function(orders, r)
-    diff = compare_radial_calculations(max_order=11)
+    diff = compare_radial_calculations(max_order=12)
