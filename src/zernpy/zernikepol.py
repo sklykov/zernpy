@@ -402,7 +402,7 @@ class ZernPol:
     @staticmethod
     def get_orders(**kwargs) -> tuple:
         """
-        Return tuple with (m, n) - azimuthal and radial orders of Zernike polynomials.
+        Return tuple as (azimuthal, radial) orders for the speicified by osa_, noll_ or fringe_index input paratemeter polynomial.
 
         Parameters
         ----------
@@ -616,7 +616,9 @@ class ZernPol:
     @staticmethod
     def get_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = (np.pi/180)) -> polar_vectors:
         """
-        Generate named tuple with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+
+        Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )).
 
         Parameters
         ----------
@@ -647,7 +649,9 @@ class ZernPol:
     @staticmethod
     def plot_zernike_polynomial(polynomial):
         """
-        Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure (interactive mode).
+        Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
+
+        Note that the plotting function plt.show() creates the plot in non-interactive mode.
 
         Parameters
         ----------
@@ -670,7 +674,9 @@ class ZernPol:
                                  use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
                                  show_range: bool = True) -> plt.Figure:
         """
-        Plot the provided Zernike polynomials sum on the provided figure.
+        Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.
+
+        Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show()).
 
         Parameters
         ----------
@@ -696,7 +702,7 @@ class ZernPol:
         Returns
         -------
         figure : plt.Figure
-            Figure() class there the Zernike polynomials sum plotted.
+            Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.
 
         """
         if len(coefficients) == 0:
@@ -790,4 +796,6 @@ if __name__ == "__main__":
     zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)
     zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(m=-3, n=3); coefficients = [1.0, 1.0]; polynomials = [zp1, zp2]
     fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
+    fig2 = plt.figure(figsize=(2.8, 2.8)); zp3 = ZernPol(m=2, n=2); polynomials = [zp3]; coefficients = [1.0]
+    fig2 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig2, show_range=False)
     plt.show()

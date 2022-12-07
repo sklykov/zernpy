@@ -35,7 +35,7 @@ def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, 
     None.
 
     """
-    plt.ioff()  # blocks the call of plt.show() for running this script in some IDE (PyCharm)
+    plt.ioff()  # blocks the call of plt.show() for running this script in some IDEs (e.g., PyCharm)
     plt.figure(figsize=(4, 4))  # since the figure has the circular shape, better draw it on equal box
     axes = plt.axes(projection='polar'); axes.grid(False)
     plt.pcolormesh(theta, r, polynomials_sum, cmap=plt.cm.coolwarm, shading='nearest')  # fast draw of 2D polar surface
