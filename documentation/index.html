@@ -1,5 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html> <!-- This designates that this is HTML 5 file (W3 schools) -->
+<html lang="en">  <!-- Root element of an HTML page (W3 schools) -->
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,24 +11,63 @@
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
     <!-- Embed styling here -->
     <style>
+        .flexbox-container{ 
+            display: flex;  /* allows to set elements respectively to each other */ 
+            flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
+            /* justify-content: space-evenly; */  /* It automatically populate the content evenly for 2 elements */
+        }
+
+        .navbar{
+            /* Navigation bar - takes width according to the content, height = all page height */ 
+            margin: 8px;
+            /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
+            text-align: center; background-color: lightgray;
+        }
+        .navbar a{
+            /* padding-top: 12px; padding-bottom: 12px; padding-left: 4px; padding-right: 4px;  */
+            display: block;  /* Makes all elements starting with the new line */ 
+            padding: 8px; margin: 4px;
+        }
+
+        .main-body{
+            flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
+            margin: 8px;
+        }
         .greeting{text-align: center;}
     </style>
 </head>
 
 <body>
-    <div class="main_body">
-        <div class="greeting">
-            Welcome! I am pleased that you find and want to take a look on my library "zernpy". 
+    <!-- Overall div element - for the flexbox aligning -->
+    <div class="flexbox-container">
+
+        <!-- Navigation panel, some elements and inspiration get from W3 Schools -->
+        <div class="navbar">
+            <a href="index.html"> Main </a>
+            <a href="TBP"> API Dictionary </a>
+            <a href="about.html"> About </a>
         </div>
-        <div>
-            <p>
-                Installation
-            </p>
-            <p>
-                Getting started  
-            </p>  
+
+        <!-- Main content of the webpage -->
+        <div class="main-body">
+            <h4 class="greeting"> Welcome! </h4>
+            <div class="greeting">
+                I am pleased that you've found it interesting to take a look on my library "zernpy". 
+                <hr> 
+            </div>
+            <div>
+                <h4> Installation instructions </h4>
+                <p>
+                    The straightforward way to install the package - to use the <i> pip </i> package installer:
+                    <b> <em> pip install zernpy </em></b>
+                </p>
+                <h4> A few examples of usage </h4>
+                <p>
+                    Getting started  
+                </p>  
+            </div>
         </div>
-    </div>
-    
+    </div>  
 </body>
+
 </html>
