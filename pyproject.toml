@@ -23,9 +23,10 @@ keywords = ["zernike-polynomials"]
 
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
 # But the the links themselves are mapped / parced by the PyPi website
-Homepage = "https://pypi.org/project/zernpy/"
-Repository = "https://github.com/sklykov/zernpy/"
+"Homepage" = "https://pypi.org/project/zernpy/"
+"Repository" = "https://github.com/sklykov/zernpy/"
 "Bug Tracker" = "https://github.com/sklykov/zernpy/issues/"
+"Documentation" = "https://sklykov.github.io/zernpy/"
 
 [build-system]
 requires = ["setuptools>=61.0"]

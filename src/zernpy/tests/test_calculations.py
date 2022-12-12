@@ -11,6 +11,7 @@ in command line navigate to this folder and run command pytest.
 
 """
 import math
+import time
 
 # Importing the written in the modules test functions for letting pytest library automatic exploration
 if __name__ != "__main__":
@@ -41,3 +42,19 @@ def test_sum_zernikes():
     assert abs(sum_pols - sum_pols_manual) < 1E-6, (f"Sum of Zernikes {zp1.get_polynomial()} and "
                                                     + " {zp2.get_polynomial()} for r={r}, theta={theta},"
                                                     + " amplitudes {ampls} calculated with some mistake")
+    zern_surface = ZernPol.gen_zernikes_surface(coefficients=ampls, polynomials=[zp1, zp2])
+    try:
+        import numpy as np
+    except ModuleNotFoundError:
+        assert False, "Install numpy for passing the test"
+    assert isinstance(zern_surface, tuple) and isinstance(zern_surface.ZernSurf, np.ndarray), ("Check gen_zernikes_surface()"
+                                                                                               + " method output (tuple len=3)")
+    assert len(zern_surface.ZernSurf.shape) == 2, "Check gen_zernikes_surface() method for output matrix shape"
+    try:
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        fig = ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
+                                               figure=fig, zernikes_sum_surface=zern_surface)
+        plt.show(block=False); time.sleep(1.2)  # show the figure for 1.2 sec. during test run
+    except ModuleNotFoundError:
+        assert False, "Install matplotlib for passing the test"

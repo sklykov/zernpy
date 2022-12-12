@@ -70,7 +70,7 @@ class ZernPol:
 
     def __init__(self, **kwargs):
         """
-        Initialize of the class with definition of Zernike polynomial.
+        Initialize of the class for Zernike polynomial definition as the object.
 
         Parameters
         ----------
@@ -78,7 +78,7 @@ class ZernPol:
             Acceptable variants for key word arguments: \n
             1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m; \n
             2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; \n
-            3) noll_index=int with alternative "noll" \n
+            3) noll_index=int with alternative "noll"; \n
             4) fringe_index=int with alternative "fringe" \n
 
         Raises
@@ -207,7 +207,7 @@ class ZernPol:
         Returns
         -------
         tuple
-            with elements: (tuple (azimuthal (m), radial(n)) orders, OSA index, Noll index, Fringe index) \n
+            with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) \n
             All indices are integers.
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
@@ -226,7 +226,7 @@ class ZernPol:
 
     def get_polynomial_name(self, short: bool = False) -> str:
         """
-        Return string with the name of polynomial up to 7th order.
+        Return string with the conventional name (see references for details) of polynomial up to 7th order.
 
         Parameters
         ----------
@@ -259,8 +259,8 @@ class ZernPol:
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
-        Calculation up to 7th Zernike polynomials performed by equations, after - iteratively, using
-        the equations derived in the Reference below.
+        Calculation up to 8th order of Zernike polynomials performed by exact equations, after - iteratively, using
+        the equations borrowed from the Reference [1] below.
 
         References
         ----------
@@ -273,8 +273,8 @@ class ZernPol:
         ----------
         r : float or numpy.ndarray
             Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
-        theta : float or np.ndarray
-            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated. \n
+        theta : float or numpy.ndarray
+            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -286,7 +286,7 @@ class ZernPol:
 
         Returns
         -------
-        float or np.ndarray
+        float or numpy.ndarray
             Calculated polynomial values on provided float values / arrays.
 
         """
@@ -405,7 +405,7 @@ class ZernPol:
     @staticmethod
     def index2orders(**kwargs) -> tuple:
         """
-        Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter polynomial.
+        Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter.
 
         Parameters
         ----------
@@ -556,7 +556,7 @@ class ZernPol:
     @staticmethod
     def sum_zernikes(coefficients: list, polynomials: list, r, theta, get_surface: bool = False):
         """
-        Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over unit circle).
+        Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over a unit circle).
 
         Parameters
         ----------
@@ -621,7 +621,8 @@ class ZernPol:
         """
         Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
-        Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )).
+        Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
+        defined by the specification of r_step and theta_rad_step parameters.
 
         Parameters
         ----------
@@ -673,13 +674,45 @@ class ZernPol:
             plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name())
 
     @staticmethod
+    def gen_zernikes_surface(coefficients: list, polynomials: list, r_step: float = 0.01,
+                             theta_rad_step: float = (np.pi/180)) -> zernikes_surface:
+        """
+        Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.
+
+        Parameters
+        ----------
+        coefficients : list
+            Coefficients of Zernike polynomials for summing.
+        polynomials : list
+            Initialized polynomials as class instances of ZernPol class specified in this module.
+        r_step : float, optional
+            Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. \n
+            See also the documentation for the method gen_polar_coordinates().
+        theta_rad_step : float, optional
+            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90). \n
+            See also the documentation for the method gen_polar_coordinates().
+
+        Returns
+        -------
+        zernikes_surface
+            namedtuple("ZernikesSurface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
+            ZernSurf variable is 2D matrix with the sum of the input polynomials on generated polar coordinates (R, Theta).
+
+        """
+        polar_vectors = ZernPol.gen_polar_coordinates(r_step, theta_rad_step)
+        zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R,
+                                            polar_vectors.Theta, get_surface=True)
+        return zernikes_surface(zernikes_sum, polar_vectors.R, polar_vectors.Theta)
+
+    @staticmethod
     def plot_sum_zernikes_on_fig(coefficients: list, polynomials: list, figure: plt.Figure,
                                  use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
                                  show_range: bool = True) -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.
 
-        Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show()).
+        Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show())
+        as the method of the input parameter figure.
 
         Parameters
         ----------
@@ -693,7 +726,9 @@ class ZernPol:
             Use for plotting default values for generation of a mesh of polar coordinates and calculation
             of Zernike polynomials sum. The default is True.
         zernikes_sum_surface : namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional
-            This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta. The default is ().
+            This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
+            This tuple could be generated by the call of the static method gen_zernikes_surface().
+            Check the method signature for details. The default is ().
         show_range : bool, optional
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
 
@@ -801,9 +836,12 @@ if __name__ == "__main__":
     check_conformity()  # testing initialization
     # Check plotting functions
     plt.close("all")
-    zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)
+    zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)  # basic plotting
+    # Two plots should look similar below, using different methods to call
     zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(m=-3, n=3); coefficients = [1.0, 1.0]; polynomials = [zp1, zp2]
     fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
-    fig2 = plt.figure(figsize=(2.8, 2.8)); zp3 = ZernPol(m=2, n=2); polynomials = [zp3]; coefficients = [1.0]
-    fig2 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig2, show_range=False)
+    fig1 = plt.figure(figsize=(4, 4)); zern_surf = ZernPol.gen_zernikes_surface(coefficients, polynomials)
+    fig1 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig1, show_range=False)
+    # fig2 = plt.figure(figsize=(2.8, 2.8)); zp3 = ZernPol(m=2, n=2); polynomials = [zp3]; coefficients = [1.0]
+    # fig2 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig2, show_range=False)
     plt.show()

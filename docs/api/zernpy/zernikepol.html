@@ -76,6 +76,9 @@
                                 <a class="function" href="#ZernPol.plot_zernike_polynomial">plot_zernike_polynomial</a>
                         </li>
                         <li>
+                                <a class="function" href="#ZernPol.gen_zernikes_surface">gen_zernikes_surface</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#ZernPol.plot_sum_zernikes_on_fig">plot_sum_zernikes_on_fig</a>
                         </li>
                 </ul>
@@ -135,7 +138,7 @@ zernpy<wbr>.zernikepol    </h1>
     </div>
     <a class="headerlink" href="#ZernPol.__init__"></a>
     
-            <div class="docstring"><p>Initialize of the class with definition of Zernike polynomial.</p>
+            <div class="docstring"><p>Initialize of the class for Zernike polynomial definition as the object.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -147,7 +150,7 @@ Acceptable variants for key word arguments: </p>
 
 <p>2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; </p>
 
-<p>3) noll_index=int with alternative "noll" </p>
+<p>3) noll_index=int with alternative "noll"; </p>
 
 <p>4) fringe_index=int with alternative "fringe"</p></li>
 </ul>
@@ -190,7 +193,7 @@ Acceptable variants for key word arguments: </p>
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>tuple</strong>: with elements: (tuple (azimuthal (m), radial(n)) orders, OSA index, Noll index, Fringe index) </li>
+<li><strong>tuple</strong>: with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) </li>
 </ul>
 
 <p>All indices are integers.</p>
@@ -229,7 +232,7 @@ Acceptable variants for key word arguments: </p>
     </div>
     <a class="headerlink" href="#ZernPol.get_polynomial_name"></a>
     
-            <div class="docstring"><p>Return string with the name of polynomial up to 7th order.</p>
+            <div class="docstring"><p>Return string with the conventional name (see references for details) of polynomial up to 7th order.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -267,8 +270,8 @@ If True, this method returns shortened name. The default is False.</li>
     
             <div class="docstring"><p>Calculate Zernike polynomial value(-s) within the unit circle.</p>
 
-<p>Calculation up to 7th Zernike polynomials performed by equations, after - iteratively, using
-the equations derived in the Reference below.</p>
+<p>Calculation up to 8th order of Zernike polynomials performed by exact equations, after - iteratively, using
+the equations borrowed from the Reference [1] below.</p>
 
 <h6 id="references">References</h6>
 
@@ -284,10 +287,9 @@ circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
 <ul>
 <li><strong>r</strong> (float or numpy.ndarray):
 Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.</li>
-<li><p><strong>theta</strong> (float or np.ndarray):
-Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated. </p>
-
-<p>Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</p></li>
+<li><strong>theta</strong> (float or numpy.ndarray):
+Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -300,7 +302,7 @@ Theta - angle in radians, float or array of angles on which the Zernike polynomi
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>float or np.ndarray</strong>: Calculated polynomial values on provided float values / arrays.</li>
+<li><strong>float or numpy.ndarray</strong>: Calculated polynomial values on provided float values / arrays.</li>
 </ul>
 </div>
 
@@ -422,7 +424,7 @@ Radial order.</li>
     </div>
     <a class="headerlink" href="#ZernPol.index2orders"></a>
     
-            <div class="docstring"><p>Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter polynomial.</p>
+            <div class="docstring"><p>Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -591,7 +593,7 @@ The noll index with int type, it must be not less than 1.</li>
     </div>
     <a class="headerlink" href="#ZernPol.sum_zernikes"></a>
     
-            <div class="docstring"><p>Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over unit circle).</p>
+            <div class="docstring"><p>Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over a unit circle).</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -639,7 +641,8 @@ If True, it forces to calculate 2D sum of polynomials based on r and theta (as a
     
             <div class="docstring"><p>Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
 
-<p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )).</p>
+<p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
+defined by the specification of r_step and theta_rad_step parameters.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -697,6 +700,46 @@ Instance of ZernPol class.</li>
 
 
                             </div>
+                            <div id="ZernPol.gen_zernikes_surface" class="classattr">
+                                <div class="attr function">
+                    <div class="decorator">@staticmethod</div>
+
+        <span class="def">def</span>
+        <span class="name">gen_zernikes_surface</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.017453292519943295</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.gen_zernikes_surface"></a>
+    
+            <div class="docstring"><p>Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>coefficients</strong> (list):
+Coefficients of Zernike polynomials for summing.</li>
+<li><strong>polynomials</strong> (list):
+Initialized polynomials as class instances of ZernPol class specified in this module.</li>
+<li><p><strong>r_step</strong> (float, optional):
+Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. </p>
+
+<p>See also the documentation for the method gen_polar_coordinates().</p></li>
+<li><p><strong>theta_rad_step</strong> (float, optional):
+Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90). </p>
+
+<p>See also the documentation for the method gen_polar_coordinates().</p></li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>zernikes_surface</strong>: namedtuple("ZernikesSurface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
+ZernSurf variable is 2D matrix with the sum of the input polynomials on generated polar coordinates (R, Theta).</li>
+</ul>
+</div>
+
+
+                            </div>
                             <div id="ZernPol.plot_sum_zernikes_on_fig" class="classattr">
                                 <div class="attr function">
                     <div class="decorator">@staticmethod</div>
@@ -710,7 +753,8 @@ Instance of ZernPol class.</li>
     
             <div class="docstring"><p>Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.</p>
 
-<p>Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show()).</p>
+<p>Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show())
+as the method of the input parameter figure.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -725,7 +769,9 @@ Figure() class there the plotting will be done, previous plot will be cleared.</
 Use for plotting default values for generation of a mesh of polar coordinates and calculation
 of Zernike polynomials sum. The default is True.</li>
 <li><strong>zernikes_sum_surface</strong> (namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional):
-This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta. The default is ().</li>
+This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
+This tuple could be generated by the call of the static method gen_zernikes_surface().
+Check the method signature for details. The default is ().</li>
 <li><strong>show_range</strong> (bool, optional):
 Flag for showing range of provided values as the colorbar on the figure. The default is True.</li>
 </ul>
