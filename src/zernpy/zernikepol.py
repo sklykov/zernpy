@@ -2,8 +2,8 @@
 """
 Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.
 
-@author: Sergei Klykov
-@licence: MIT
+@author: Sergei Klykov, @year: 2022 \n
+@licence: MIT \n
 
 """
 # %% Global imports
@@ -30,7 +30,7 @@ zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as 
 
 # %% Class def.
 class ZernPol:
-    """Specify the Zernike polynomial and associated calculation methods."""
+    """Define the Zernike polynomial class and associated calculation methods."""
 
     # Pre-initialized class variables
     __initialized: bool = False  # will be set to true after successful construction
@@ -74,12 +74,12 @@ class ZernPol:
 
         Parameters
         ----------
-        **kwargs : orders or index for Zernike polynomial initialization.
-            Acceptable variants for key word arguments:
-            1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m;
-            2) osa_index=int with alternatives: "osa", "ansi_index", "ansi";
-            3) noll_index=int with alternative "noll"
-            4) fringe_index=int with alternative "fringe"
+        **kwargs : orders or index for Zernike polynomial initialization. \n
+            Acceptable variants for key word arguments: \n
+            1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m; \n
+            2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; \n
+            3) noll_index=int with alternative "noll" \n
+            4) fringe_index=int with alternative "fringe" \n
 
         Raises
         ------
@@ -88,9 +88,9 @@ class ZernPol:
 
         References
         ----------
-        [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
-        [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
-        [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
+        [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials \n
+        [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
+        [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
 
         Returns
         -------
@@ -157,7 +157,7 @@ class ZernPol:
                     key = "ansi"
                 if isinstance(kwargs.get(key), int):
                     self.__osa_index = kwargs.get(key); __index_specified = True
-                    self.__m, self.__n = ZernPol.get_orders(osa_index=self.__osa_index)
+                    self.__m, self.__n = ZernPol.index2orders(osa_index=self.__osa_index)
                     self.__noll_index = ZernPol.get_noll_index(self.__m, self.__n)
                     self.__fringe_index = ZernPol.get_fringe_index(self.__m, self.__n)
                 else:
@@ -173,7 +173,7 @@ class ZernPol:
                     key = "noll"
                 if isinstance(kwargs.get(key), int):
                     self.__noll_index = kwargs.get(key); __index_specified = True
-                    self.__m, self.__n = ZernPol.get_orders(noll_index=self.__noll_index)
+                    self.__m, self.__n = ZernPol.index2orders(noll_index=self.__noll_index)
                     self.__osa_index = ZernPol.get_osa_index(self.__m, self.__n)
                     self.__fringe_index = ZernPol.get_fringe_index(self.__m, self.__n)
                 else:
@@ -189,7 +189,7 @@ class ZernPol:
                     key = "fringe"
                 if isinstance(kwargs.get(key), int):
                     self.__fringe_index = kwargs.get(key); __index_specified = True
-                    self.__m, self.__n = ZernPol.get_orders(fringe_index=self.__fringe_index)
+                    self.__m, self.__n = ZernPol.index2orders(fringe_index=self.__fringe_index)
                     self.__osa_index = ZernPol.get_osa_index(self.__m, self.__n)
                     self.__noll_index = ZernPol.get_noll_index(self.__m, self.__n)
                 else:
@@ -207,12 +207,12 @@ class ZernPol:
         Returns
         -------
         tuple
-            (1 tuple with (azimuthal (m), radial(n)) orders, OSA index, Noll index, Fringe index.
-             All indices are integers.
+            with elements: (tuple (azimuthal (m), radial(n)) orders, OSA index, Noll index, Fringe index) \n
+            All indices are integers.
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
 
-    def get_polynomial_orders(self) -> tuple:
+    def get_mn_orders(self) -> tuple:
         """
         Return tuple with the (azimuthal, radial) orders, i.e. return (m, n).
 
@@ -222,7 +222,7 @@ class ZernPol:
             with the (azimuthal, radial) orders for the initialized Zernike polynomial.
 
         """
-        return (self.__m, self.__n)
+        return self.__m, self.__n
 
     def get_polynomial_name(self, short: bool = False) -> str:
         """
@@ -235,9 +235,9 @@ class ZernPol:
 
         References
         ----------
-        [1] Up to 4th order: Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
-        [2] 5th order names: from the website https://www.telescope-optics.net/monochromatic_eye_aberrations.htm
-        6th order - 7th order: my guess about the naming
+        [1] Up to 4th order: Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials \n
+        [2] 5th order names: from the website https://www.telescope-optics.net/monochromatic_eye_aberrations.htm \n
+        6th order - 7th order: my guess about the naming \n
 
         Returns
         -------
@@ -255,23 +255,26 @@ class ZernPol:
         return name
 
     # %% Calculations
-    def get_polynomial_value(self, r, theta):
+    def polynomial_value(self, r, theta):
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
         Calculation up to 7th Zernike polynomials performed by equations, after - iteratively, using
         the equations derived in the Reference below.
 
-        Reference
-        ---------
-        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+        References
+        ----------
+        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
+        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
+        [3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
+        circle polynomials and their derivatives in Cartesian coordinates" (2018) \n
 
         Parameters
         ----------
         r : float or numpy.ndarray
             Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.
         theta : float or np.ndarray
-            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated. \n
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -307,7 +310,7 @@ class ZernPol:
             if np.min(r) < 0.0 or np.max(r) > 1.0:
                 raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
         elif isinstance(r, float):
-            if r < 0.0 and r > 1.0:
+            if 0.0 > r > 1.0:
                 raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
         elif isinstance(theta, np.ndarray):
             if np.max(theta) + abs(np.min(theta)) > 2*np.pi:
@@ -400,9 +403,9 @@ class ZernPol:
         return (1 + (n + abs(m))//2)**2 - 2*abs(m) + (1 - np.sign(m))//2
 
     @staticmethod
-    def get_orders(**kwargs) -> tuple:
+    def index2orders(**kwargs) -> tuple:
         """
-        Return tuple as (azimuthal, radial) orders for the speicified by osa_, noll_ or fringe_index input paratemeter polynomial.
+        Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter polynomial.
 
         Parameters
         ----------
@@ -464,7 +467,7 @@ class ZernPol:
 
         """
         if isinstance(osa_index, int) and osa_index >= 0:
-            m, n = ZernPol.get_orders(osa_index=osa_index)
+            m, n = ZernPol.index2orders(osa_index=osa_index)
             return ZernPol.get_noll_index(m, n)
         else:
             raise ValueError(f"Provided {osa_index} isn't integer or less than 0")
@@ -491,7 +494,7 @@ class ZernPol:
 
         """
         if isinstance(noll_index, int) and noll_index >= 1:
-            m, n = ZernPol.get_orders(noll_index=noll_index)
+            m, n = ZernPol.index2orders(noll_index=noll_index)
             return ZernPol.get_osa_index(m, n)
         else:
             raise ValueError(f"Provided {noll_index} isn't integer or less than 1")
@@ -518,7 +521,7 @@ class ZernPol:
 
         """
         if isinstance(osa_index, int) and osa_index >= 0:
-            m, n = ZernPol.get_orders(osa_index=osa_index)
+            m, n = ZernPol.index2orders(osa_index=osa_index)
             return ZernPol.get_fringe_index(m, n)
         else:
             raise ValueError(f"Provided {osa_index} isn't integer or less than 0")
@@ -545,7 +548,7 @@ class ZernPol:
 
         """
         if isinstance(fringe_index, int) and fringe_index >= 1:
-            m, n = ZernPol.get_orders(fringe_index=fringe_index)
+            m, n = ZernPol.index2orders(fringe_index=fringe_index)
             return ZernPol.get_osa_index(m, n)
         else:
             raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
@@ -573,7 +576,7 @@ class ZernPol:
         TypeError
             If the input parameters aren't iterable (doesn't support len() function), this error will be raised.
         ValueError
-            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials.
+            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials. \n
             Or if the list (tuple, numpy.ndarray vector, ...) with Zernike polynomials instances (ZernPol()).
 
         Returns
@@ -591,9 +594,9 @@ class ZernPol:
                     if not isinstance(polynomials[i], ZernPol):
                         raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
                     if i == 0:
-                        S = coefficient*polynomials[i].get_polynomial_value(r, theta)
+                        S = coefficient*polynomials[i].polynomial_value(r, theta)
                     else:
-                        S += coefficient*polynomials[i].get_polynomial_value(r, theta)
+                        S += coefficient*polynomials[i].polynomial_value(r, theta)
             elif get_surface:
                 if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                     warnings.warn("Requested calculation of surface (mesh) values with"
@@ -607,14 +610,14 @@ class ZernPol:
                             raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
                         if theta_size > r_size:
                             for j in range(r_size):
-                                S[j, :] += coefficient*polynomials[i].get_polynomial_value(r[j], theta)[:]
+                                S[j, :] += coefficient*polynomials[i].polynomial_value(r[j], theta)[:]
                         else:
                             for j in range(theta_size):
-                                S[:, j] += coefficient*polynomials[i].get_polynomial_value(r, theta[j])[:]
+                                S[:, j] += coefficient*polynomials[i].polynomial_value(r, theta[j])[:]
         return S
 
     @staticmethod
-    def get_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = (np.pi/180)) -> polar_vectors:
+    def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = (np.pi/180)) -> polar_vectors:
         """
         Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
@@ -664,7 +667,7 @@ class ZernPol:
 
         """
         if isinstance(polynomial, ZernPol):
-            r, theta = ZernPol.get_polar_coordinates()
+            r, theta = ZernPol.gen_polar_coordinates()
             amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
             zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
             plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name())
@@ -710,7 +713,7 @@ class ZernPol:
         if not use_defaults and len(zernikes_sum_surface) != 3:
             raise ValueError("Zernike surface isn't specified as tuple with values Sum surface, R, Theta")
         if use_defaults:
-            polar_vectors = ZernPol.get_polar_coordinates()
+            polar_vectors = ZernPol.gen_polar_coordinates()
             zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta,
                                                 get_surface=True)
             figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
@@ -745,7 +748,7 @@ def check_conformity():
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
     print(f"Initialization of polynomials Z{(m1, n1)}, Z{(m2, n2)}, Z{(m3, n3)} tested")
     osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
-    m, n = zp.get_polynomial_orders()
+    m, n = zp.get_mn_orders()
     assert (m == 0 and n == 4), f"Check consistency of Z[OSA index = {osa_i}] orders {m, n}"
     assert zp.get_fringe_index(m, n) == 9, f"Check consistency of Z[OSA index = {osa_i}] Fringe index"
     assert zp.get_noll_index(m, n) == 11, f"Check consistency of Z[OSA index = {osa_i}] Noll index"
@@ -766,13 +769,13 @@ def check_conformity():
     assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assignment"
     # Testing input parameters for calculation
     zp = ZernPol(m=0, n=2); r = 0.0; theta = math.pi
-    assert abs(zp.get_polynomial_value(r, theta) + math.sqrt(3)) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
+    assert abs(zp.polynomial_value(r, theta) + math.sqrt(3)) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
     zp = ZernPol(m=-1, n=1); r = 0.5; theta = math.pi/2
-    assert abs(zp.get_polynomial_value(r, theta) - 1.0) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
+    assert abs(zp.polynomial_value(r, theta) - 1.0) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
     print("Simple values of Zernike polynomials tested successfully")
     try:
         r = 'd'; theta = [1, 2]
-        zp.get_polynomial_value(r, theta)
+        zp.polynomial_value(r, theta)
         asserting_value = False
     except ValueError:
         print("Input as string is not allowed for calculation of polynomial value, tested successfully")
@@ -780,7 +783,7 @@ def check_conformity():
     assert asserting_value, "Wrong parameter passed (string) for calculation of polynomial value"
     try:
         r = [0.1, 0.2, 1.0+1E-9]; theta = math.pi
-        zp.get_polynomial_value(r, theta)
+        zp.polynomial_value(r, theta)
         asserting_value = False
     except ValueError:
         print("Radius more than 1.0 is not allowed, tested successfully")
@@ -790,7 +793,7 @@ def check_conformity():
 
 # %% Tests
 if __name__ == "__main__":
-    check_conformity()
+    check_conformity()  # testing initialization
     # Check plotting functions
     plt.close("all")
     zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)

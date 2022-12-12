@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About "zernpy"</title>
+    <!-- Favicon specification from the local file -->
+    <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
+
+    <!-- CSS styling -->
+    <style>
+        .flexboxContainer{ 
+            display: flex;  /* allows to set elements respectively to each other */ 
+            flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
+        }
+        /* Styling for left-side navigation bar */
+        .navbar{
+            /* Navigation bar - takes width according to the content, height = all page height */ 
+            margin: 8px;
+            /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
+            text-align: center; background-color: lightgray;
+            font-size: 16px; font-family: Verdana, Geneva, Tahoma, sans-serif;
+            /* display: flex; flex-direction: column; */
+        }
+        /* Selector > is used for selecting all child elements of the class "navbar" */
+        .navbar > a{
+            display: block;  /* Makes all elements starting with the new line */ 
+            padding-top: 18px; padding-bottom: 18px; padding-left: 8px; padding-right: 8px; margin: 6px;
+        }
+        /* Styling for links */
+        .link:link{color: darkblue;} link:visited{color: brown;}
+        /* Styling for the main body with text */
+        .mainBody{
+            flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
+            margin: 8px;
+            font-size: 16px; font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+        }
+    </style>
+
+</head>
+<body>
+    <div class="flexboxContainer">
+        <!-- Navigation panel, some elements and inspiration get from W3 Schools -->
+        <div class="navbar">
+            <a class="link" href="index.html"> Main </a>
+            <a class="link" href="./api/index.html"> API Dictionary </a>
+            <a class="link" href="about.html"> About </a>
+        </div>
+        <!-- Main text body -->
+        <div class="mainBody">
+            <h4> Reasons for the developing </h4> 
+            <div>
+            This library was developed because I was struggle to find simple function / method for Zernike polynomial calculation
+            and get some transformations between all indexing schemes for them. 
+            </div>
+        </div>
+    </div>
+</body>
+</html>

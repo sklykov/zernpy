@@ -34,7 +34,7 @@ def define_orders(zernike_pol) -> tuple:
     if isinstance(zernike_pol, tuple):
         (m, n) = zernike_pol
     else:
-        (m, n) = zernike_pol.get_polynomial_orders()
+        (m, n) = zernike_pol.get_mn_orders()
     return m, n
 
 
