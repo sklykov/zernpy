@@ -742,10 +742,14 @@ def check_conformity():
     (m2, n2), osa_i, noll_i, fringe_i = zp.get_indices()
     assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indices: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
+    assert len(zp.get_polynomial_name(short=True)) > 0, f"Short name for Z{(m2, n2)} is zero length"
     zp = ZernPol(azimuthal_order=-1, radial_order=5)
     (m3, n3), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m2, n2)} indices: "
+    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m3, n3)} indices: "
                                                                + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
+    assert len(zp.get_polynomial_name()) > 0, f"Name for Z{(m3, n3)} is zero length"
+    m4, n4 = zp.get_mn_orders()
+    assert m4 == m3 and n3 == n4, f"Check method get_mn_orders() for Z{(m3, n3)}"
     print(f"Initialization of polynomials Z{(m1, n1)}, Z{(m2, n2)}, Z{(m3, n3)} tested")
     osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
     m, n = zp.get_mn_orders()
@@ -789,6 +793,7 @@ def check_conformity():
         print("Radius more than 1.0 is not allowed, tested successfully")
         asserting_value = True
     assert asserting_value, "Wrong parameter passed (r > 1.0) for calculation of polynomial value"
+    print("ALL TEST PASSED")
 
 
 # %% Tests
