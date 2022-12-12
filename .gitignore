@@ -1,13 +1,15 @@
 # My additions
-docs/
-Docs/
+# docs/
+# Docs/
 Documents/
 *.doc
 *.docx
 *.odt
+*.txt
+*.rtf
 *.jpg
 *.jpeg
-*.png
+# *.png
 *.tiff
 *.tif
 *.pdf
