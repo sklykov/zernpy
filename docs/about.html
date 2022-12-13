@@ -10,6 +10,8 @@
 
     <!-- CSS styling -->
     <style>
+         /* floating for copy comment */ 
+
         .flexboxContainer{ 
             display: flex;  /* allows to set elements respectively to each other */ 
             flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
@@ -19,8 +21,8 @@
             /* Navigation bar - takes width according to the content, height = all page height */ 
             margin: 8px;
             /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
-            text-align: center; background-color: lightgray;
-            font-size: 16px; font-family: Verdana, Geneva, Tahoma, sans-serif;
+            text-align: center; background-color: beige;
+            font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
             /* display: flex; flex-direction: column; */
         }
         /* Selector > is used for selecting all child elements of the class "navbar" */
@@ -29,13 +31,35 @@
             padding-top: 18px; padding-bottom: 18px; padding-left: 8px; padding-right: 8px; margin: 6px;
         }
         /* Styling for links */
-        .link:link{color: darkblue;} link:visited{color: brown;}
+        .link:link{color: darkblue;} .link:visited{color: blueviolet;}
         /* Styling for the main body with text */
         .mainBody{
             flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
-            margin: 8px;
             font-size: 16px; font-family: Arial, Helvetica, sans-serif;
-            text-align: center;
+            background-color: whitesmoke;  margin: 8px;
+        }
+        .header{
+            text-align: center; margin: 8px;
+        }
+        .bulletPoint{
+            text-align: justify;
+            margin-bottom: 8px; margin-right: 6px;
+            padding-right: 12px; padding-left: 4px; 
+        }
+        .textLine{
+            padding: 8px; text-align: center;
+        }   
+
+        /* Setting images in the pyramidal order */
+        .imagesContainer{
+            position: relative;   /* Makes the child to select position relative to it */ 
+            width: inherit; height: fit-content;
+            font-size: 0;
+        }
+        .ZernProfile{
+            width: 100px; height: 100px; display: inline-block;
+            position: relative;  /* Position relative allows setting top, left coordinates. */
+            padding: 0; margin: 0;  /* Padding = 0 and marging = 0 removes additional white spaces between inline blocks */
         }
     </style>
 
@@ -50,12 +74,78 @@
         </div>
         <!-- Main text body -->
         <div class="mainBody">
-            <h4> Reasons for the developing </h4> 
-            <div>
-            This library was developed because I was struggle to find simple function / method for Zernike polynomial calculation
-            and get some transformations between all indexing schemes for them. 
+            <h4 class="header"> Reasons for developing </h4> 
+            <ul>
+                <li class="bulletPoint">
+                    This library was developed because I struggled to find open and fast enough implementation of simple function for Zernike polynomial
+                    calculation.
+                </li>
+                <li class="bulletPoint">
+                    Moreover, the exact equation for calculation isn't difficult to code in Python, but the exact equation gets really slow for
+                    high order polynomials. To overcome that, the recursive equations are used instead of the exact ones.  
+                </li>
+                <li class="bulletPoint">
+                    However, anyway, there are exist many specifically implemented and well acknowledged libraries included Zernike polynomials calculation,
+                    for example: <a class="link" href="https://github.com/jacopoantonello/zernike">zernike</a> and 
+                    <a class="link" href="https://docs.hcipy.org/dev/api/hcipy.mode_basis.zernike.html">HCIpy</a>. 
+                </li>
+            </ul>
+
+            <br>
+            <h4 class="header"> Representing a few Zernike profiles in a pyramid </h4>
+            <div class="textLine"> 
+                The following images generated using the static method plot_sum_zernikes_on_fig() for single element in a list as polynomials list.
+            </div>
+            <div class="imagesContainer">
+                <img class="ZernProfile" src="./images/ZernOsa1.png" id="ZernOsa1">
+                <img class="ZernProfile" src="./images/ZernOsa2.png" id="ZernOsa2">
+                <img class="ZernProfile" src="./images/ZernOsa3.png" id="ZernOsa3">
+                <img class="ZernProfile" src="./images/ZernOsa4.png" id="ZernOsa4">
+                <img class="ZernProfile" src="./images/ZernOsa5.png" id="ZernOsa5">
+                <img class="ZernProfile" src="./images/ZernOsa6.png" id="ZernOsa6">
+                <img class="ZernProfile" src="./images/ZernOsa7.png" id="ZernOsa7">
+                <img class="ZernProfile" src="./images/ZernOsa8.png" id="ZernOsa8">
+                <img class="ZernProfile" src="./images/ZernOsa9.png" id="ZernOsa9">
             </div>
         </div>
     </div>
+
+    <!-- JavaScript part -->
+    <script>
+        window.onload = ()=>{console.log("Page loaded")};  // only sends command to the console that page was loaded
+        // var images = [document.getElementById("ZernOsa1"), document.getElementById("ZernOsa2")];  // manually construct the list
+        // var images = document.getElementsByClassName("ZernProfile");  // returns some HTMLCollection class, how to loop over the elements?
+        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+        // console.log(images);
+        
+        // Below - making the pyramidal order for the images
+        var i = 0; var y_shift = 15;  var x_shift = 100; var add_step = 15;
+        var elementsInRow = 2; var previousShift = 0;
+        var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
+        var n_row = 0; var max_row = 2; var initial_x_shift = half_width_main - (1.5*x_shift + add_step)
+        // console.log(Math.round(width_main/2));
+        images.forEach(element => {
+            // element.style.position = "absolute";  // This is useless because it breaks the relative positioning of elements
+            element.style.top = `${y_shift}px`; 
+            // Below - not that each further row shifted more than previous one
+            element.style.left = `${initial_x_shift + x_shift*i + add_step - previousShift}px`;
+            console.log(element.style.left, element.style.top)
+            i += 1;
+            if(i == elementsInRow){
+                y_shift += x_shift + add_step;
+                // Below - the adding height to imagesContainer element
+                if (n_row < max_row){
+                    height = document.querySelector(".imagesContainer").clientHeight;
+                    document.querySelector(".imagesContainer").style.height = `${height*(n_row)+y_shift}px`;
+                }
+                n_row += 1;
+                // console.log(document.querySelector(".imagesContainer").clientHeight);
+                previousShift += x_shift*i  // necessary for returning back the next row on x axis
+                initial_x_shift -= x_shift  // makes the pyramidal shift
+                elementsInRow += 1; i = 0; 
+            }
+        });
+    </script>
+
 </body>
 </html>

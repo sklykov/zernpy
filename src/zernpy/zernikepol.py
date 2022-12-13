@@ -758,6 +758,33 @@ class ZernPol:
                                         zernikes_sum_surface.Theta, show_range_colorbar=show_range)
         return figure
 
+    @staticmethod
+    def _plot_zernikes_half_pyramid():
+        """
+        Generate halb-pyramid with Zernikes polynomials.
+
+        Returns
+        -------
+        None.
+
+        """
+        n_cols = 7; n_rows = 6; fig = plt.figure(figsize=(10, 7.8))
+        axes = fig.subplots(n_rows, n_cols, subplot_kw=dict(projection='polar'), squeeze=False)
+        zps = []; ampls = [1.0]; k = 1  # k for OSA indexing
+        ignored_column = n_cols - 2
+        for i in range(len(axes)):
+            for j in range(len(axes[0])):
+                axes[i, j].grid(False)  # demanded by pcolormesh function, if not called - deprecation warning
+                if j > ignored_column-1:
+                    zps = [ZernPol(osa=k)]
+                    zernike_surface, r, theta = ZernPol.gen_zernikes_surface(coefficients=ampls, polynomials=zps)
+                    axes[i, j].pcolormesh(theta, r, zernike_surface, cmap=plt.cm.coolwarm, shading='nearest')
+                    k += 1
+                axes[i, j].axis('off')  # off polar coordinate axes
+            ignored_column -= 1
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
+        fig.tight_layout()
+
 
 # %% Test functions for the external call
 def check_conformity():
@@ -842,6 +869,7 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
     fig1 = plt.figure(figsize=(4, 4)); zern_surf = ZernPol.gen_zernikes_surface(coefficients, polynomials)
     fig1 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig1, show_range=False)
-    # fig2 = plt.figure(figsize=(2.8, 2.8)); zp3 = ZernPol(m=2, n=2); polynomials = [zp3]; coefficients = [1.0]
-    # fig2 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig2, show_range=False)
-    plt.show()
+    # ZernPol._plot_zernikes_half_pyramid()
+    fig3 = plt.figure(figsize=(2, 2)); zp3 = ZernPol(osa=9); polynomials = [zp3]; coefficients = [1.0]
+    fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False)
+    fig3.subplots_adjust(0, 0, 1, 1); plt.show()

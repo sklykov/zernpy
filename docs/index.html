@@ -11,6 +11,7 @@
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
     <!-- Embed styling here -->
     <style>
+        /* floating for copy comment */ 
         .flexbox-container{ 
             display: flex;  /* allows to set elements respectively to each other */ 
             flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
@@ -22,7 +23,8 @@
             margin: 8px;
             /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
             text-align: center; background-color: lightgray;
-            font-size: 16px; font-family: Verdana, Geneva, Tahoma, sans-serif;
+            font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
+            z-index: 1; position: relative;
             /* display: flex; flex-direction: column; */
         }
         /* Selector > is used for selecting all child elements of the class "navbar" */
@@ -33,17 +35,43 @@
             /* flex: auto; */
         }
         /* Styling for links */
-        .link:link{color: darkblue;} link:visited{color: brown;}
+        .link:link{color: darkblue;} .link:visited{color: blueviolet;}
         /* Styling for the main body with text */
-        .main-body{
+        .mainBody{
             flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
             margin: 8px;
             font-size: 16px; font-family: Arial, Helvetica, sans-serif;
+            position: relative;
+            /* Below - background-image specification */
+            /* background-image: url('half_pyramid_zerns.png');
+            /* background-repeat: no-repeat;  */
+            /* background-repeat: repeat-x;
+            background-size: contain;  */
+            /* background-position-x: 90%; */
         }
-        .greeting{text-align: center;}
+        .contentContainer{
+            z-index: 1; position: relative; /* Position relative needed for z-index choosing*/
+        }
+        .bgImage{
+            background-image: url('half_pyramid_zerns.png');
+            background-position-x: left; 
+            /* background-position: center; */
+            /* background-repeat: no-repeat; */
+            background-repeat: repeat;
+            background-size: contain;
+            width: 100%; height: 100%;
+            opacity: 0.25; 
+            position: absolute; top: 0; left: 0; /* Allows to manipulate the position inside of mainBody */
+            z-index: 0;  /* NOTE this z-index because setting absolute position and opacity put their own rules in z-indexing */  
+            /* background-color: yellow; */
+        }
+        /* Heading style */
+        .greeting{
+            text-align: center;
+        }
         /* Styling with inline elements with code */
         .commandCode{
-            font-style: italic; font-weight: bold; font-family: 'Courier New', Courier, monospace;
+            font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial;
         }
         /* Style for each text string */
         .textString{
@@ -64,45 +92,51 @@
         </div>
 
         <!-- Main content of the webpage -->
-        <div class="main-body">
-            <h3 class="greeting"> Welcome! </h3>
-            <div class="greeting">
-                I am pleased that you've found it interesting to take a look on my library <b>"zernpy"</b>. 
-                <hr> 
+        <div class="mainBody">
+
+            <div class="contentContainer">
+                <h3 class="greeting"> Welcome! </h3>
+                <div class="greeting">
+                    I am pleased that you've found it interesting to take a look on my library <b>"zernpy"</b>. 
+                    <hr> 
+                </div>
+                <div>
+                    <h4> Installation instructions </h4>
+                    <div class="textString">
+                        The straightforward way to install the library - to use the following command for the <i> pip </i> package installer:
+                        <span class="commandCode"> pip install zernpy </span>
+                    </div>
+                    <div class="textString"> 
+                        The requirements for installation: Python version >= 3.8, libraries <i>numpy</i> and <i>matplotlib</i>. 
+                        Check the <a class="link" href="https://pypi.org/project/zernpy/">webpage</a> of this library on PyPi package index.
+                    </div>
+                    <br>
+                    <h4> Import and class initialization </h4>
+                    <div class="textString">
+                        The basic import command: <span class="commandCode"> from zernpy import ZernPol </span>
+                    </div>
+                    <div class="textString">
+                        The initialization of the <i>ZernPol</i> class instance: <span class="commandCode">zp = ZernPol(m=-2, n=2)</span>.
+                        This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
+                        Other acceptable initialization parameters names: <span style="font-style:italic">osa_index / noll_index / fringe_index</span> or 
+                        for shortness <span style="font-style:italic">osa / noll / fringe</span>, for example: <br>
+                        <span class="commandCode">zp = ZernPol(osa_index=3)</span> or <span class="commandCode">zp = ZernPol(osa=3)</span>
+                    </div>
+                    <br>
+                    <h4> Calculation methods </h4>
+                    <div class="textString">
+                        For reading about most useful method, please, refer to the README files either on PyPi package 
+                        <a class="link" href="https://pypi.org/project/zernpy/">page</a>, or on the 
+                        <a class="link" href="https://github.com/sklykov/zernpy">repository</a>. 
+                    </div>
+                    <div class="textString">
+                        For accessing the full list of implemented methods please follow the link to the API Dictionary on the left navigation tab. 
+                    </div>
+                </div>
             </div>
-            <div>
-                <h4> Installation instructions </h4>
-                <div class="textString">
-                    The straightforward way to install the library - to use the following command for the <i> pip </i> package installer:
-                    <span class="commandCode"> pip install zernpy </span>
-                </div>
-                <div class="textString"> 
-                    The requirements for installation: Python version >= 3.8, libraries <i>numpy</i> and <i>matplotlib</i>. 
-                    Check the <a href="https://pypi.org/project/zernpy/">webpage</a> of this library on PyPi package index.
-                </div>
-                <br>
-                <h4> Import and class initialization </h4>
-                <div class="textString">
-                    The basic import command: <span class="commandCode"> from zernpy import ZernPol </span>
-                </div>
-                <div class="textString">
-                    The initialization of the <i>ZernPol</i> class instance: <span class="commandCode">zp = ZernPol(m = -2, n = 2)</span>.
-                    This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
-                    Other acceptable initialization parameters names: <span style="font-style:italic">osa_index / noll_index / fringe_index</span> or 
-                    for shortness <span style="font-style:italic">osa / noll / fringe</span>, for example: <br>
-                    <span class="commandCode"> zp = ZernPol(osa_index = 3) </span> or <span class="commandCode"> zp = ZernPol(osa = 3) </span>
-                </div>
-                <br>
-                <h4> Calculation methods </h4>
-                <div class="textString">
-                    For reading about most useful method, please, refer to the README files either on PyPi package 
-                    <a class="link" href="https://pypi.org/project/zernpy/">page</a>, or on the 
-                    <a class="link" href="https://github.com/sklykov/zernpy">repository</a>. 
-                </div>
-                <div class="textString">
-                    For accessing the full list of implemented methods please follow the link to the API Dictionary on the left navigation tab. 
-                </div>
-            </div>
+            <!-- Below - just loads the image as an element of the page -->
+            <!-- <img class = src="half_pyramid_zerns.png"> --> 
+            <div class="bgImage"></div>
         </div>
     </div>  
 </body>
