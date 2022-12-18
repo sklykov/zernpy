@@ -54,11 +54,14 @@
         .imagesContainer{
             position: relative;   /* Makes the child to select position relative to it */ 
             width: inherit; height: fit-content;
-            font-size: 0;
+            font-size: 0;  /* This setting removes additional whitespaces between images in this container */ 
+        }
+        .DisplayZernikeName{
+            font-size: 16px; text-align: center; font-weight: bold; font-style: italic;
         }
         .ZernProfile{
             width: 100px; height: 100px; display: inline-block;
-            position: relative;  /* Position relative allows setting top, left coordinates. */
+            position: absolute; /* Seems in this case it's necessary for avoiding relative shifts for top, left coordnates in script below */
             padding: 0; margin: 0;  /* Padding = 0 and marging = 0 removes additional white spaces between inline blocks */
         }
     </style>
@@ -97,6 +100,7 @@
                 The following images generated using the static method plot_sum_zernikes_on_fig() for single element in a list as polynomials list.
             </div>
             <div class="imagesContainer">
+                <div class="DisplayZernikeName"> Hover mouse over the images (right) for getting polynomial name </div>
                 <img class="ZernProfile" src="./images/ZernOsa1.png" id="ZernOsa1">
                 <img class="ZernProfile" src="./images/ZernOsa2.png" id="ZernOsa2">
                 <img class="ZernProfile" src="./images/ZernOsa3.png" id="ZernOsa3">
@@ -107,44 +111,127 @@
                 <img class="ZernProfile" src="./images/ZernOsa8.png" id="ZernOsa8">
                 <img class="ZernProfile" src="./images/ZernOsa9.png" id="ZernOsa9">
             </div>
+
+            <br>
+            <h4 class="header"> Next steps </h4> 
+
         </div>
     </div>
 
-    <!-- JavaScript part -->
+    <!-- JavaScript part - making page interactive and dynamic -->
     <script>
         window.onload = ()=>{console.log("Page loaded")};  // only sends command to the console that page was loaded
-        // var images = [document.getElementById("ZernOsa1"), document.getElementById("ZernOsa2")];  // manually construct the list
+
+        var nameImage = document.querySelector(".DisplayZernikeName");
+        var defaultNameImageText = nameImage.textContent;
+        // console.log(nameImage);
+        // Move the element showing the name of image to the left
+        function moveNamePolEl(){
+            nameImage.style.textAlign = "left"; 
+            nameImage.style.position = "relative";  // allows moving this field below
+            nameImage.style.left = "15px"; nameImage.style.top = "35px";
+        }
+
         // var images = document.getElementsByClassName("ZernProfile");  // returns some HTMLCollection class, how to loop over the elements?
-        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
-        // console.log(images);
-        
-        // Below - making the pyramidal order for the images
-        var i = 0; var y_shift = 15;  var x_shift = 100; var add_step = 15;
-        var elementsInRow = 2; var previousShift = 0;
-        var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-        var n_row = 0; var max_row = 2; var initial_x_shift = half_width_main - (1.5*x_shift + add_step)
-        // console.log(Math.round(width_main/2));
-        images.forEach(element => {
-            // element.style.position = "absolute";  // This is useless because it breaks the relative positioning of elements
-            element.style.top = `${y_shift}px`; 
-            // Below - not that each further row shifted more than previous one
-            element.style.left = `${initial_x_shift + x_shift*i + add_step - previousShift}px`;
-            console.log(element.style.left, element.style.top)
-            i += 1;
-            if(i == elementsInRow){
-                y_shift += x_shift + add_step;
-                // Below - the adding height to imagesContainer element
-                if (n_row < max_row){
-                    height = document.querySelector(".imagesContainer").clientHeight;
-                    document.querySelector(".imagesContainer").style.height = `${height*(n_row)+y_shift}px`;
+        // Below - making the pyramidal order for the images in the recallable function
+        function makePyramid(init_y_shift, x_reduce_distance){
+            var i = 0; var y_shift = 20 + init_y_shift;  var x_shift = 80 - x_reduce_distance; var y_step = 120; var element_width = 100;
+            var elementsInRow = 2;
+            var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
+            var n_row = 0; var max_row = 2; var initial_x_shift = half_width_main - x_shift - element_width/2 - x_reduce_distance/2;
+            var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+            // Below - loop over all images queried by querySelectorAll
+            images.forEach(element => {
+                // element.style.position = "absolute";  // This is useless because it breaks the relative positioning of elements
+                // console.log(i);
+                element.style.top = `${y_shift}px`; 
+                // Below - not that each further row shifted more than previous one
+                element.style.left = `${initial_x_shift + i*(x_shift + element_width)}px`;
+                // console.log(element.style.left, element.style.top);
+                i += 1;
+                // move to the next row
+                if(i == elementsInRow){
+                    y_shift += y_step;
+                    // Below - the adding height to imagesContainer element
+                    if (n_row < max_row){
+                        height = document.querySelector(".imagesContainer").clientHeight;
+                        document.querySelector(".imagesContainer").style.height = `${height*(n_row) + y_shift}px`;
+                    }
+                    n_row += 1;
+                    // console.log(document.querySelector(".imagesContainer").clientHeight))
+                    // This makes positioning of the elements in a pyramid + CSS property: position: absolute
+                    if(n_row % 2 != 0){
+                        initial_x_shift -= (n_row*(element_width + x_shift))/2;
+                    } else {
+                        initial_x_shift -= ((n_row-1)*(element_width + x_shift))/2;
+                    }
+                    // return values for the next row
+                    elementsInRow += 1; i = 0;
                 }
-                n_row += 1;
-                // console.log(document.querySelector(".imagesContainer").clientHeight);
-                previousShift += x_shift*i  // necessary for returning back the next row on x axis
-                initial_x_shift -= x_shift  // makes the pyramidal shift
-                elementsInRow += 1; i = 0; 
-            }
+            });
+        }
+        moveNamePolEl();
+        makePyramid(shift_y = 0, x_reduce_distance = 0); // call once on the loading of this page with default parameters
+            
+        // Below - add event listeners to each image for changing the string to represent their name
+        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+        images.forEach(element => {
+            var namePrefix = "Pointer on the image of:  ";
+            element.addEventListener("mouseenter", (event) => {
+                // console.log("Mouse event listener registered");
+                // switch statement for getting id of image container
+                switch(element.id){
+                    case "ZernOsa1":
+                        // console.log("Should change the naming string");
+                        nameImage.textContent = namePrefix + "Vertical Tilt";
+                        break;
+                    case "ZernOsa2":
+                        nameImage.textContent = namePrefix + "Horizontal Tilt"; break;
+                    case "ZernOsa3":
+                        nameImage.textContent = namePrefix + "Oblique Astigmatism"; break;
+                    case "ZernOsa4":
+                        nameImage.textContent = namePrefix + "Defocus"; break;
+                    case "ZernOsa5":
+                        nameImage.textContent = namePrefix + "Vertical Astigmatism"; break;
+                    case "ZernOsa6":
+                        nameImage.textContent = namePrefix + "Vertical Trefoil"; break;
+                    case "ZernOsa7":
+                        nameImage.textContent = namePrefix + "Vertical Coma"; break;
+                    case "ZernOsa8":
+                        nameImage.textContent = namePrefix + "Horizontal Coma"; break;
+                    case "ZernOsa9":
+                        nameImage.textContent = namePrefix + "Oblique Trefoil"; break;
+                }
+            });
+            // assign default text to the div element if cursor left the image area
+            element.addEventListener("mouseleave", (event) => {
+                nameImage.textContent = defaultNameImageText;
+                // console.log("Mouseover event");
+            });
         });
+
+        // making the page more responsive
+        visualViewport.onresize = (event) => {
+            if(visualViewport.width < 1550){
+                // below - attempt to input line break, but seems that HTML div element ignores it
+                // defaultNameImageText = "Hover mouse over the images (right) \n for getting polynomial name"; 
+                // nameImage.textContent = defaultNameImageText;
+                nameImage.style.textAlign = "center"; nameImage.style.position = "static";
+            }
+            else{
+                moveNamePolEl();  // move the displaying of name string (element) back
+                makePyramid(shift_y=0, x_reduce_distance = 0); // call the put images in pyramid
+            }
+            if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
+                makePyramid(shift_y = 25, x_reduce_distance = 0); // call the put images in pyramid
+            }
+            if((visualViewport.width < 1000) && (visualViewport.width > 700)){
+                makePyramid(shift_y = 25, x_reduce_distance = 60);
+            }
+            if(visualViewport.width < 700){
+                makePyramid(shift_y = 25, x_reduce_distance = 76);
+            }
+        }
     </script>
 
 </body>
