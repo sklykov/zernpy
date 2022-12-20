@@ -12,6 +12,10 @@
     <style>
          /* floating for copy comment */ 
 
+        body{
+            overflow-y: scroll;  /* Allows scrolling vertically of the content of the entire page is overflow */ 
+        }
+        
         .flexboxContainer{ 
             display: flex;  /* allows to set elements respectively to each other */ 
             flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
@@ -61,8 +65,8 @@
         }
         .ZernProfile{
             width: 100px; height: 100px; display: inline-block;
-            position: absolute; /* Seems in this case it's necessary for avoiding relative shifts for top, left coordnates in script below */
-            padding: 0; margin: 0;  /* Padding = 0 and marging = 0 removes additional white spaces between inline blocks */
+            position: absolute; /* Seems in this case it's necessary for avoiding relative shifts for top, left coordinates in script below */
+            padding: 0; margin: 0;  /* Padding = 0 and margins = 0 removes additional white spaces between inline blocks */
         }
     </style>
 
@@ -157,7 +161,7 @@
                     // Below - the adding height to imagesContainer element
                     if (n_row < max_row){
                         height = document.querySelector(".imagesContainer").clientHeight;
-                        document.querySelector(".imagesContainer").style.height = `${height*(n_row) + y_shift}px`;
+                        document.querySelector(".imagesContainer").style.height = `${height*(n_row-0.05) + y_shift}px`;
                     }
                     n_row += 1;
                     // console.log(document.querySelector(".imagesContainer").clientHeight))
@@ -174,10 +178,10 @@
         }
 
         function putImagesInCols(initial_set){
-            var i = 0; var y_shift = 50;  var x_shift = 10; var y_step = 110; var element_width = 100;
-            var elementsInRow = 2;
+            var i = 0; var y_shift = 50;  var x_shift = 5; var y_step = 110; var element_width = 100;
+            var elementsInRow = 3;
             var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-            var n_row = 0; var max_row = 4; var initial_x_shift = half_width_main - x_shift - element_width;
+            var n_row = 0; var max_row = 3; var initial_x_shift = half_width_main - 1.5*(x_shift + element_width);
             var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
             // Below - loop over all images queried by querySelectorAll
             images.forEach(element => {
@@ -195,9 +199,9 @@
             if(initial_set){
                 height = document.querySelector(".imagesContainer").clientHeight;
                 if(previousPageWidth > 500){
-                    document.querySelector(".imagesContainer").style.height = `${height + (max_row-2)*(element_width)}px`;
+                    document.querySelector(".imagesContainer").style.height = `${height + (max_row-3.5)*(element_width)}px`;
                 } else {
-                    document.querySelector(".imagesContainer").style.height = `${height + (max_row+2)*(element_width)}px`;
+                    document.querySelector(".imagesContainer").style.height = `${height + (max_row+0.5)*(element_width)}px`;
                 }
             }
         }
