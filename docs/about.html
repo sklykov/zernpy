@@ -95,7 +95,7 @@
             </ul>
 
             <br>
-            <h4 class="header"> Representing a few Zernike profiles in a pyramid </h4>
+            <h4 class="header" id="RepresentingZernikeStr"> Representing a few Zernike profiles in a pyramid </h4>
             <div class="textLine"> 
                 The following images generated using the static method plot_sum_zernikes_on_fig() for single element in a list as polynomials list.
             </div>
@@ -112,19 +112,21 @@
                 <img class="ZernProfile" src="./images/ZernOsa9.png" id="ZernOsa9">
             </div>
 
-            <br>
             <h4 class="header"> Next steps </h4> 
-
+            <ol>
+                <li class="bulletPoint"> Implement calculation of derivatives </li>
+                <li class="bulletPoint"> Implement conversion from raw deformations on an unit pupil to set of Zernike polynomials </li>
+            </ol>
         </div>
     </div>
 
     <!-- JavaScript part - making page interactive and dynamic -->
     <script>
         window.onload = ()=>{console.log("Page loaded")};  // only sends command to the console that page was loaded
-
+        var previousPageWidth = false;
         var nameImage = document.querySelector(".DisplayZernikeName");
         var defaultNameImageText = nameImage.textContent;
-        // console.log(nameImage);
+
         // Move the element showing the name of image to the left
         function moveNamePolEl(){
             nameImage.style.textAlign = "left"; 
@@ -170,8 +172,35 @@
                 }
             });
         }
-        moveNamePolEl();
-        makePyramid(shift_y = 0, x_reduce_distance = 0); // call once on the loading of this page with default parameters
+
+        function putImagesInCols(initial_set){
+            var i = 0; var y_shift = 50;  var x_shift = 10; var y_step = 110; var element_width = 100;
+            var elementsInRow = 2;
+            var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
+            var n_row = 0; var max_row = 4; var initial_x_shift = half_width_main - x_shift - element_width;
+            var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+            // Below - loop over all images queried by querySelectorAll
+            images.forEach(element => {
+                element.style.top = `${y_shift}px`; 
+                element.style.left = `${initial_x_shift + i*(2*x_shift + element_width)}px`;
+                // console.log(element.style.left, element.style.top);
+                i += 1;
+                // move to the next row
+                if(i == elementsInRow){
+                    y_shift += y_step;
+                    n_row += 1; i = 0;
+                }
+            });
+            // Below - the adding height to imagesContainer element
+            if(initial_set){
+                height = document.querySelector(".imagesContainer").clientHeight;
+                if(previousPageWidth > 500){
+                    document.querySelector(".imagesContainer").style.height = `${height + (max_row-2)*(element_width)}px`;
+                } else {
+                    document.querySelector(".imagesContainer").style.height = `${height + (max_row+2)*(element_width)}px`;
+                }
+            }
+        }
             
         // Below - add event listeners to each image for changing the string to represent their name
         var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
@@ -210,28 +239,58 @@
             });
         });
 
-        // making the page more responsive
+        // making the page more responsive - adding the monitoring of size changed
         visualViewport.onresize = (event) => {
             if(visualViewport.width < 1550){
                 // below - attempt to input line break, but seems that HTML div element ignores it
                 // defaultNameImageText = "Hover mouse over the images (right) \n for getting polynomial name"; 
                 // nameImage.textContent = defaultNameImageText;
                 nameImage.style.textAlign = "center"; nameImage.style.position = "static";
+                document.querySelector(".flexboxContainer").style.flexDirection = "row";
             }
             else{
                 moveNamePolEl();  // move the displaying of name string (element) back
                 makePyramid(shift_y=0, x_reduce_distance = 0); // call the put images in pyramid
+                document.querySelector(".flexboxContainer").style.flexDirection = "row";
             }
             if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
                 makePyramid(shift_y = 25, x_reduce_distance = 0); // call the put images in pyramid
+                document.querySelector(".flexboxContainer").style.flexDirection = "row";
             }
             if((visualViewport.width < 1000) && (visualViewport.width > 700)){
-                makePyramid(shift_y = 25, x_reduce_distance = 60);
+                makePyramid(shift_y = 25, x_reduce_distance = 60); document.querySelector(".flexboxContainer").style.flexDirection = "row";
             }
-            if(visualViewport.width < 700){
+            if((visualViewport.width < 700) && (visualViewport.width > 500)){
+                document.querySelector(".flexboxContainer").style.flexDirection = "column";  // change representation of webpage - moving navbar on top
                 makePyramid(shift_y = 25, x_reduce_distance = 76);
             }
+            if(visualViewport.width <= 500){
+                document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
+                document.querySelector(".flexboxContainer").style.flexDirection = "column";
+                if(previousPageWidth <= 500){
+                    putImagesInCols(initial_set=false);
+                } else {
+                    putImagesInCols(initial_set=true);
+                }
+            }
+            previousPageWidth = visualViewport.width; 
         }
+
+        // Call functions when the page is loaded for initial placing the elements - repeating the logic from above
+        if(visualViewport.width > 1550){
+            moveNamePolEl(); makePyramid(shift_y=0, x_reduce_distance = 0);
+        } else if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
+            makePyramid(shift_y = 25, x_reduce_distance = 0);
+        } else if((visualViewport.width < 1000) && (visualViewport.width > 700)){
+            makePyramid(shift_y = 25, x_reduce_distance = 60);
+        } else if((visualViewport.width < 700) && (visualViewport.width > 500)){
+            makePyramid(shift_y = 25, x_reduce_distance = 76); document.querySelector(".flexboxContainer").style.flexDirection = "column";
+        } else if(visualViewport.width <= 500){
+            document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
+            document.querySelector(".flexboxContainer").style.flexDirection = "column";
+            putImagesInCols(initial_set=true);
+        }
+        
     </script>
 
 </body>
