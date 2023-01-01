@@ -9,6 +9,8 @@
     <title>Project "zernpy"</title>
     <!-- Favicon specification from the local file -->
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
+    <!-- Load script --> 
+    <script src="index_page.js"></script>
     <!-- Embed styling here -->
     <style>
         /* floating for copy comment */ 
@@ -95,7 +97,6 @@
 
         <!-- Main content of the webpage -->
         <div class="mainBody">
-
             <div class="contentContainer">
                 <h3 class="greeting"> Welcome! </h3>
                 <div class="greeting">
@@ -137,6 +138,24 @@
                     <div class="textString">
                         This page and "About" section are also used for honing my skills in Frontend development. 
                         Thus, not everything here is intended to reveal the features of the implemented library
+                    </div>
+                    <br>
+                    <h4> Definition of Zernike polynomial </h4>
+                    <div>
+                        <div class="textString">
+                            Specify below the index (indices) for Zernike polynomial specification
+                            (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
+                        </div>
+                        <label> Select the indexing type: </label>
+                        <select name="Index type">
+                            <option value="m,n">Radial, angular</option>
+                            <option value="osa">OSA/ANSI</option>
+                            <option value="noll">Noll</option>
+                            <option value="fringe">Fringe</option>
+                        </select>
+                        <div style="display: inline-block; margin-left: 1.5em; margin-right: 0.5em;"> orders: </div>
+                        <label tag="n_order_label"> n = </label>
+                        <input type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3">
                     </div>
                 </div>
             </div>
