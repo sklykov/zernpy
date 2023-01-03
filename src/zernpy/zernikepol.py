@@ -121,7 +121,7 @@ class ZernPol:
                     if isinstance(kwargs.get(key), int):
                         self.__m = kwargs.get(key)  # azimuthal order acknowledged
                         # Checking that the provided orders are reasonable
-                        if not((self.__n - abs(self.__m)) % 2 == 0):  # see [1]
+                        if not (self.__n - abs(self.__m)) % 2 == 0:  # see [1]
                             raise ValueError("Failed sanity check: n - |m| == even number")
                         elif self.__n < 0:
                             raise ValueError("Failed sanity check: order n less than 0")
@@ -317,6 +317,12 @@ class ZernPol:
                 warnings.warn("Theta angles defined in range more than 2*pi, check them")
         # Calculation using imported function
         return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
+
+    def radial_derivative(self):
+        pass
+
+    def triangular_derivative(self):
+        pass
 
     # %% Static methods
     @staticmethod
