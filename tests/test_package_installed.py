@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test the installed package.
+Test if the package "zernpy" has been installed.
 
 @author: Sergei Klykov
 @licence: MIT
@@ -13,4 +13,4 @@ try:
         assert len(zp.get_polynomial_name()) > 0, "Failed simple function call for getting polynomial name"
 
 except ModuleNotFoundError:
-    print("The package zernpy isn't installed, if the test is run as the module")
+    print("The package zernpy isn't installed, install it for passing this basic test")

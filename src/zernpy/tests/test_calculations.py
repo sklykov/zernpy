@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Test the implemented classes and methods by using pytest library.
+Test the implemented calculation functions for module calc_zernike_pol and ZernPol static methods by using pytest library.
 
 pytest library avalaible on: https://docs.pytest.org/en/latest/contents.html
-Note that for the running test without module installation, run this script by pytest module itself:
-in command line navigate to this folder and run command pytest.
+For running this test, it's enough to run the command "pytest" from the repository location.
 
 @author: Sergei Klykov
 @licence: MIT
@@ -13,25 +12,30 @@ in command line navigate to this folder and run command pytest.
 import math
 import time
 
-# Importing the written in the modules test functions for letting pytest library automatic exploration
+# Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
-    from ..calculations.calc_zernike_pol import compare_radial_calculations
-    from ..zernikepol import check_conformity, ZernPol
+    from ..calculations.calc_zernike_pol import compare_radial_calculations, compare_radial_derivatives
+    from ..zernikepol import ZernPol
 
 
-# Testing implemented equations for tabular R(m, n) from References by comparing with the exact ones
+# Testing implemented equations for tabular R(m, n) from References by comparing with the exact ones (with factorials)
 def test_tabular_orders():
-    compare_radial_calculations(max_order=7)
+    compare_radial_calculations(max_order=8)
 
 
-# Testing implemented recursive equations for R(m, n) from References by comparing with the exact ones
+# Testing implemented tabular and recursive equations for R(m, n) by comparing with the exact ones (with factorials)
 def test_recursive_orders():
     compare_radial_calculations(max_order=21)
 
 
-# Testing initialization of Zernike polynomials
-def test_polynomials_initialization():
-    check_conformity()
+# Testing derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
+def test_tabular_derivatives():
+    compare_radial_derivatives(max_order=8)
+
+
+# Testing recursive and derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
+def test_recursive_derivatives():
+    compare_radial_derivatives(max_order=16)
 
 
 # Testing sum of Zernike polynomials
