@@ -274,9 +274,9 @@ class ZernPol:
         Parameters
         ----------
         r : float or numpy.ndarray
-            Radius from the unit circle (range [0.0, 1.0]), float or array, for which the Zernike polynomial is calculated.
+            Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.
         theta : float or numpy.ndarray
-            Theta - angle in radians from range [0, 2*pi], float or array, for which the Zernike polynomial is calculated.
+            Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -284,7 +284,7 @@ class ZernPol:
         ValueError
             Check the Error stack trace for reasons of raising, most probably input parameters aren't acceptable.
         Warning
-            If the theta angles lie outside of the range [0, 2*pi] (entire period).
+            If the theta angles lie outside the range [0, 2*pi] (entire period).
 
         Returns
         -------
@@ -293,40 +293,80 @@ class ZernPol:
 
         """
         # Checking input parameters for avoiding errors and unexpectable values
-        # Trying to convert known data types into numpy , if they provided as input
-        if not isinstance(r, np.ndarray) and not isinstance(r, float):
-            if isinstance(r, list) or isinstance(r, tuple):
-                r = np.asarray(r)  # convert list or tuple to np.array
-            else:
-                r = float(r)  # attempt to convert r to float number, will raise ValueError if it's impossible
-        if not isinstance(theta, np.ndarray) and not isinstance(theta, float):
-            if isinstance(theta, list) or isinstance(theta, tuple):
-                theta = np.asarray(theta)  # convert list or tuple to np.array
-            else:
-                theta = float(theta)  # attempt to convert to float number, will raise ValueError if it's impossible
-        # Checking the basic demands for radiuses and angles on acceptable data types - np.ndarray and float
+        # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
+        r = ZernPol._check_radii(r)
+        # Checking that angles lie in the range [0, 2*pi] and their type
+        theta = ZernPol._check_angles(theta)
         # Checking coincidence of shapes if theta and r are arrays
         if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
-        # Checking that radiuses lie in the range [0.0, 1.0]
-        if isinstance(r, np.ndarray):
-            if np.min(r) < 0.0 or np.max(r) > 1.0:
-                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
-        elif isinstance(r, float):
-            if 0.0 > r > 1.0:
-                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
-        # Checking that angles lie in the range [0, 2*pi]
-        if isinstance(theta, np.ndarray):
-            if np.max(theta) + abs(np.min(theta)) > 2.0*np.pi:
-                warnings.warn("Theta angles defined in range outside of interval [0, 2*pi]")
-            elif np.max(theta) > 2.0*np.pi or np.min(theta) < 0.0:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
-        elif isinstance(theta, float):
-            if theta < 0.0 or theta > 2.0*np.pi:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
         # Calculation using imported function
         return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
+
+    def radial(self, r):
+        """
+        Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.
+
+        Calculation up to 8th order of Zernike function performed by exact equations, after - iteratively, using
+        the equations borrowed from the Reference [1] below.
+
+        References
+        ----------
+        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
+        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
+        [3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
+        circle polynomials and their derivatives in Cartesian coordinates" (2018) \n
+
+        Parameters
+        ----------
+        r : float or numpy.ndarray
+            Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the function is calculated.
+
+        Raises
+        ------
+        ValueError
+            The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Calculated Zernike radial function value(-s) on provided float values / arrays of radiuses.
+
+        """
+        # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
+        r = ZernPol._check_radii(r)
+        # Calculation using imported function
+        return radial_polynomial(self, r)
+
+    def triangular(self, theta):
+        """
+        Calculate triangular Zernike function value(-s) within the unit circle.
+
+        Parameters
+        ----------
+        theta : float or numpy.ndarray
+            Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+            Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
+
+        Raises
+        ------
+        ValueError
+            Most probably, raised if the conversion to float number is failed. \n
+            It happens when input parameter is not float, numpy.ndarray, list or tuple.
+        Warning
+            If the theta angles lie outside the range [0, 2*pi] (entire period).
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Calculated value(-s) of Zernike triangular function on provided angle.
+
+        """
+        # Check theta type and that angles are lying in the single period range [0, 2pi]
+        theta = ZernPol._check_angles(theta)
+        # Calculation using imported function
+        return triangular_function(self, theta)
 
     def radial_dr(self, r):
         """
@@ -342,33 +382,21 @@ class ZernPol:
         Parameters
         ----------
         r : float or numpy.ndarray
-            Radius from the unit circle (range [0.0, 1.0]), float or array, for which the Zernike polynomial is calculated.
+            Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.
 
         Raises
         ------
         ValueError
-            Check the Error stack trace for reasons of raising, most probably input parameters aren't acceptable.
+            The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.
 
         Returns
         -------
         float or numpy.ndarray
-            Calculated polynomial derivative values on provided float values / arrays of radiuses.
+            Calculated derivative of Zernike radial function value(-s) on provided float values / arrays of radiuses.
 
         """
         # Checking input parameters for avoiding errors and unexpectable values
-        # Trying to convert known data types into numpy , if they provided as input
-        if not isinstance(r, np.ndarray) and not isinstance(r, float):
-            if isinstance(r, list) or isinstance(r, tuple):
-                r = np.asarray(r)  # convert list or tuple to np.array
-            else:
-                r = float(r)  # attempt to convert r to float number, will raise ValueError if it's impossible
-        # Checking that radiuses lie in the range [0.0, 1.0]
-        if isinstance(r, np.ndarray):
-            if np.min(r) < 0.0 or np.max(r) > 1.0:
-                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
-        elif isinstance(r, float):
-            if 0.0 > r > 1.0:
-                raise ValueError("Minimal or maximal value of radiuses laying outside unit circle [0.0, 1.0]")
+        r = ZernPol._check_radii(r)
         return radial_derivative(self, r)
 
     def triangular_dtheta(self, theta):
@@ -378,7 +406,7 @@ class ZernPol:
         Parameters
         ----------
         theta : float or numpy.ndarray
-            Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+            Theta - angle in radians from the range [0, 2*pi], float or array, for which the function is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -387,29 +415,16 @@ class ZernPol:
             Most probably, raised if the conversion to float number is failed. \n
             It happens when input parameter is not float, numpy.ndarray, list or tuple.
         Warning
-            If the theta angles lie outside of the range [0, 2*pi] (entire period).
+            If the theta angles lie outside the range [0, 2*pi] (entire period).
 
         Returns
         -------
         float or numpy.ndarray
-            Calculated derivative value on provided angle.
+            Calculated derivative value(-s) of Zernike triangular function on provided angle.
 
         """
         # Check input parameter type and attempt to convert to acceptable types
-        if not isinstance(theta, np.ndarray) and not isinstance(theta, float):
-            if isinstance(theta, list) or isinstance(theta, tuple):
-                theta = np.asarray(theta)  # convert list and tuple to np.array
-            else:
-                theta = float(theta)  # attempt to convert to float number, will raise ValueError if it's impossible
-        # Checking that angles lie in the range [0, 2*pi]
-        if isinstance(theta, np.ndarray):
-            if np.max(theta) + abs(np.min(theta)) > 2.0*np.pi:
-                warnings.warn("Theta angles defined in range outside of interval [0, 2*pi]")
-            elif np.max(theta) > 2.0*np.pi or np.min(theta) < 0.0:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
-        elif isinstance(theta, float):
-            if theta < 0.0 or theta > 2.0*np.pi:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
+        theta = ZernPol._check_angles(theta)
         return triangular_derivative(self, theta)
 
     # %% Static methods
@@ -676,7 +691,7 @@ class ZernPol:
         Returns
         -------
         Sum of Zernike polynomials
-            Depending on the input values and parameter get_surface - can be float, 1D or 2D numpy.ndarrays.
+            Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.
 
         """
         S = 0.0  # default value - sum
@@ -878,6 +893,83 @@ class ZernPol:
             ignored_column -= 1
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
         fig.tight_layout()
+
+    @staticmethod
+    def _check_radii(radii):
+        """
+        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that r is inside [0.0, 1.0].
+
+        Parameters
+        ----------
+        radii : float or numpy.ndarray
+            Radii from the unit circle (range [0.0, 1.0]), float or array, for which the Zernike polynomials are defined.
+
+        Raises
+        ------
+        ValueError
+            The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.
+
+        Returns
+        -------
+        radii : float or numpy.ndarray
+            Return radii, converted, if it's applicable, to float or numpy.ndarray.
+
+        """
+        # Trying to convert known (list, tuple) data types into numpy, if they provided as input
+        if not isinstance(radii, np.ndarray) and not isinstance(radii, float):
+            if isinstance(radii, list) or isinstance(radii, tuple):
+                radii = np.asarray(radii)  # convert list or tuple to np.array
+            else:
+                radii = float(radii)  # attempt to convert r to float number, will raise ValueError if it's impossible
+        # Checking that radii or radius lie in the range [0.0, 1.0]
+        if isinstance(radii, np.ndarray):
+            if np.min(radii) < 0.0 or np.max(radii) > 1.0:
+                raise ValueError("Minimal or maximal value of radii laying outside unit circle [0.0, 1.0]")
+        elif isinstance(radii, float):
+            if 0.0 > radii > 1.0:
+                raise ValueError("Radius laying outside unit circle [0.0, 1.0]")
+        return radii
+
+    @staticmethod
+    def _check_angles(angles):
+        """
+        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside [0, 2pi].
+
+        Parameters
+        ----------
+        angles : float or numpy.ndarray
+            Theta polar coordinates from unit circle there Zernike polynomials are defined.
+
+        Raises
+        ------
+        ValueError
+            Most probably, raised if the conversion to float number is failed. \n
+            It happens when input parameter is not float, numpy.ndarray, list or tuple.
+        Warning
+            If the theta angles lie outside the range [0, 2*pi] (entire period).
+
+        Returns
+        -------
+        angles : float or numpy.ndarray
+            Return angles, converted, if it's applicable, to float or numpy.ndarray.
+
+        """
+        # Check input parameter type and attempt to convert to acceptable types
+        if not isinstance(angles, np.ndarray) and not isinstance(angles, float):
+            if isinstance(angles, list) or isinstance(angles, tuple):
+                angles = np.asarray(angles)  # convert list or tuple to np.array
+            else:
+                angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
+        # Checking that angles lie in the range [0, 2*pi]
+        if isinstance(angles, np.ndarray):
+            if np.max(angles) + abs(np.min(angles)) > 2.0*np.pi:
+                warnings.warn("Theta angles defined in range outside of interval [0, 2*pi]")
+            elif np.max(angles) > 2.0*np.pi or np.min(angles) < 0.0:
+                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
+        elif isinstance(angles, float):
+            if angles < 0.0 or angles > 2.0*np.pi:
+                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
+        return angles
 
 
 # %% Test functions for the external call
