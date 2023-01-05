@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The "zenrpy" package is intended for initialization and calculation attributes / properties of Zernike polynomials.
+The "zernpy" package is intended for initialization and calculation attributes / properties of Zernike polynomials.
 
 @author: Sergei Klykov
 @licence: MIT, @year: 2023

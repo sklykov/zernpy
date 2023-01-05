@@ -1,7 +1,8 @@
 ### zernpy - package for calculation Zernike polynomials
 
-This project is intended for calculation of Zernike polynomials using recursive equations, that might be the
-faster way to calculate polynomials with high orders in comparison to calculation using exact equation.   
+This project is intended for calculation of Zernike polynomials parameters / values / properties using tabular and recursive equations, that might be the
+faster way to calculate values of high order polynomials in comparison to usage of the exact definition (that used the sum of factorials, 
+see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).    
 Several useful transformations (e.g., from OSA / ANSI index to Noll one) are implemented as the methods of the main class.
 
 ### Setup instructions
@@ -10,21 +11,23 @@ Several useful transformations (e.g., from OSA / ANSI index to Noll one) are imp
 For installation of this package, use the command: ***pip install zernpy***  
 
 #### Running tests for the code from the repository
-Using the library *pytest* just run in the root folder for this code: ***pytest***    
-It should collect 5 tests and automatically runs them.
+Using the library *pytest* just run in the root folder for the folder, containing the package: ***pytest***    
+It should collect 8 tests and automatically runs them.
 
 #### Requirements
-For installation the *numpy* and *matplotlib* libraries are required.
+For installation the *numpy* and *matplotlib* libraries are required.  
+For running tests, the *pytest* library is required for automatic recognition of tests stored in package folders.  
 
 ### A few examples of the library features usage
 #### Initialization of base class instance
-The useful calculation methods are written as the instance and static methods. The first ones are accessible after initialization of instance class
-by providing the relevant characteristic orders (see the Zernike polynomial definition, e.g. in [Wiki](https://en.wikipedia.org/wiki/Zernike_polynomials)):   
+The useful calculation methods are written as the instance and static methods. The first ones are accessible after initialization of a class instance
+by providing characteristic orders (see the Zernike polynomial definition, e.g. in [Wiki](https://en.wikipedia.org/wiki/Zernike_polynomials)):   
 ```python  # code block for Python code
 from zernpy import ZernPol
 zp = ZernPol(m=-2, n=2)  
 ```
-Alternative initializations using other indices: ***ZernPol(osa_index=3)***, ***ZernPol(noll_index=5)***, ***ZernPol(fringe_index=6)***
+Alternative initializations using other indices: ***ZernPol(osa_index=3)***, ***ZernPol(noll_index=5)***, ***ZernPol(fringe_index=6)***   
+For details, please, refer to the API Dictionary provided on the GitHub page (see "Documentation" tab on [pypi](https://pypi.org/project/zernpy/)).
 
 #### Some useful class instance methods:
 1) For getting all characteristic indices for the initialized polynomial: ***zp.get_indices()***   
@@ -32,6 +35,11 @@ This method returns the following tuple: *((azimuthal order, radial order), OSA 
 2) For getting the string name of the initialized polynomial (up to 7th order): ***zp.get_polynomial_name()***
 3) For calculating polynomial value for polar coordinates (r, theta): ***zp.polynomial_value(r, theta)***  
 Note that *r* and *theta* are accepted as float numbers or numpy.ndarrays with the equal shape.
+4) For calculating radial polynomial value for radius (radii) r: ***zp.radial(r)***  
+5) For calculating derivative of radial polynomial value for radius (radii) r: ***zp.radial_dr(r)***
+6) For calculating triangular function value for angle theta: ***zp.triangular(theta)*** 
+7) For calculating derivative of triangular function value for angle theta: ***zp.triangular_dtheta(theta)***   
+8) For calculating normalization factor (N): ***zp.normf()*** 
 
 #### Some useful static methods of ZernPol class:
 1) For getting tuple as (azimuthal order, radial order) for OSA index i: ***ZernPol.index2orders(osa_index=i)***  
