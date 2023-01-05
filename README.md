@@ -1,8 +1,10 @@
 ### zernpy - package for calculation Zernike polynomials
 
 This project is intended for calculation of Zernike polynomials parameters / values / properties using tabular and recursive equations, that might be the
-faster way to calculate values of high order polynomials in comparison to usage of the exact definition (that used the sum of factorials, 
+faster way to calculate values of high order polynomials in comparison to usage of their exact definition (that used the sum of factorials, 
 see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).    
+The recursive and tabular equations are taken from the articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
+[[2]](https://doi.org/10.1080/09500340.2011.554896) and [[3]](https://doi.org/10.1364/OE.26.018878).    
 Several useful transformations (e.g., from OSA / ANSI index to Noll one) are implemented as the methods of the main class.
 
 ### Setup instructions
@@ -12,7 +14,7 @@ For installation of this package, use the command: ***pip install zernpy***
 
 #### Running tests for the code from the repository
 Using the library *pytest* just run in the root folder for the folder, containing the package: ***pytest***    
-It should collect 8 tests and automatically runs them.
+It should collect 8 tests and automatically run them.
 
 #### Requirements
 For installation the *numpy* and *matplotlib* libraries are required.  
@@ -34,7 +36,8 @@ For details, please, refer to the API Dictionary provided on the GitHub page (se
 This method returns the following tuple: *((azimuthal order, radial order), OSA index, Noll index, Fringe index)*
 2) For getting the string name of the initialized polynomial (up to 7th order): ***zp.get_polynomial_name()***
 3) For calculating polynomial value for polar coordinates (r, theta): ***zp.polynomial_value(r, theta)***  
-Note that *r* and *theta* are accepted as float numbers or numpy.ndarrays with the equal shape.
+Note that *r* and *theta* are accepted as float numbers or numpy.ndarrays with the equal shape, it is also applicable for
+functions below 4. - 7.    
 4) For calculating radial polynomial value for radius (radii) r: ***zp.radial(r)***  
 5) For calculating derivative of radial polynomial value for radius (radii) r: ***zp.radial_dr(r)***
 6) For calculating triangular function value for angle theta: ***zp.triangular(theta)*** 
