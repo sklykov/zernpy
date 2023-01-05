@@ -394,7 +394,7 @@ class ZernPol:
         Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.
 
         Calculation up to 10th order of Zernike polynomials performed by exact equations,
-        after - using the recerrunce equations.
+        after - using the recurrence equations.
 
         References
         ----------

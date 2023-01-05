@@ -59,6 +59,6 @@ def test_sum_zernikes():
         fig = plt.figure()
         ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
                                          figure=fig, zernikes_sum_surface=zern_surface)
-        plt.show(block=False); time.sleep(1.0)  # show the figure for 1.2 sec. during test run
+        plt.show(block=False); time.sleep(1.05)  # show the figure for 1.2 sec. during test run
     except ModuleNotFoundError:
         assert False, "Install matplotlib for passing the test"
