@@ -20,22 +20,22 @@ if __name__ != "__main__":
 
 # Testing implemented equations for tabular R(m, n) from References by comparing with the exact ones (with factorials)
 def test_tabular_orders():
-    compare_radial_calculations(max_order=8)
+    compare_radial_calculations(max_order=10)
 
 
 # Testing implemented tabular and recursive equations for R(m, n) by comparing with the exact ones (with factorials)
 def test_recursive_orders():
-    compare_radial_calculations(max_order=19)
+    compare_radial_calculations(max_order=21)
 
 
 # Testing derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
 def test_tabular_derivatives():
-    compare_radial_derivatives(max_order=8)
+    compare_radial_derivatives(max_order=10)
 
 
 # Testing recursive and derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
 def test_recursive_derivatives():
-    compare_radial_derivatives(max_order=16)
+    compare_radial_derivatives(max_order=19)
 
 
 # Testing sum of Zernike polynomials
@@ -59,6 +59,6 @@ def test_sum_zernikes():
         fig = plt.figure()
         ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
                                          figure=fig, zernikes_sum_surface=zern_surface)
-        plt.show(block=False); time.sleep(1.2)  # show the figure for 1.2 sec. during test run
+        plt.show(block=False); time.sleep(1.0)  # show the figure for 1.2 sec. during test run
     except ModuleNotFoundError:
         assert False, "Install matplotlib for passing the test"

@@ -90,7 +90,7 @@ def radial_polynomial(zernike_pol, r):
 
     """
     (m, n) = define_orders(zernike_pol)  # get orders
-    # Radial polynomials defined as analytical equations for up to 8th order (check tables from [3])
+    # Radial polynomials defined as analytical equations for up to 10th order (check tables from [2])
     # 0th order
     if (m == 0) and (n == 0):
         if isinstance(r, float):
@@ -153,11 +153,38 @@ def radial_polynomial(zernike_pol, r):
     elif (m == 0) and (n == 8):
         # 70r^8 - 140r^6 + 90r^4 - 20r^2 + 1
         return 70.0*np.power(r, 8) - 140.0*np.power(r, 6) + 90.0*np.power(r, 4) - 20.0*np.power(r, 2) + 1.0
-    # Recurrence equations from the [1] and [3] for higher than 8 order polynomials
+    # 9th order
+    elif ((m == -7) and (n == 9)) or ((m == 7) and (n == 9)):
+        return 9.0*np.power(r, 9) - 8.0*np.power(r, 7)  # 9r^9 - 8r^7
+    elif ((m == -5) and (n == 9)) or ((m == 5) and (n == 9)):
+        return 36.0*np.power(r, 9) - 56.0*np.power(r, 7) + 21.0*np.power(r, 5)  # 36r^9 - 56r^7 + 21r^5
+    elif ((m == -3) and (n == 9)) or ((m == 3) and (n == 9)):
+        # 84r^9 - 168r^7 + 105r^5 - 20r^3
+        return 84.0*np.power(r, 9) - 168.0*np.power(r, 7) + 105.0*np.power(r, 5) - 20.0*np.power(r, 3)
+    elif ((m == -1) and (n == 9)) or ((m == 1) and (n == 9)):
+        # 126r^9 - 280r^7 + 210r^5 - 60r^3 + 5r
+        return 126.0*np.power(r, 9) - 280.0*np.power(r, 7) + 210.0*np.power(r, 5) - 60.0*np.power(r, 3) + 5.0*r
+    # 10th order
+    elif ((m == -8) and (n == 10)) or ((m == 8) and (n == 10)):
+        return 10.0*np.power(r, 10) - 9.0*np.power(r, 8)  # 10r^10 - 9r^8
+    elif ((m == -6) and (n == 10)) or ((m == 6) and (n == 10)):
+        return 45.0*np.power(r, 10) - 72.0*np.power(r, 8) + 28.0*np.power(r, 6)  # 45r^10 - 72r^8 + 28r^6
+    elif ((m == -4) and (n == 10)) or ((m == 4) and (n == 10)):
+        # 120r^10 - 252r^8 + 168r^6 - 35r^4
+        return 120.0*np.power(r, 10) - 252.0*np.power(r, 8) + 168.0*np.power(r, 6) - 35.0*np.power(r, 4)
+    elif ((m == -2) and (n == 10)) or ((m == 2) and (n == 10)):
+        # 210r^10 - 504r^8 + 420r^6 - 140r^4 + 15r^2
+        return 210.0*np.power(r, 10) - 504.0*np.power(r, 8) + 420.0*np.power(r, 6) - 140.0*np.power(r, 4) + 15.0*np.power(r, 2)
+    elif (m == 0) and (n == 10):
+        # 252r^10 - 630r^8 + 560r^6 - 210r^4 + 30r^2 - 1
+        return 252.0*np.power(r, 10) - 630.0*np.power(r, 8) + 560.0*np.power(r, 6) - 210.0*np.power(r, 4) + 30.0*np.power(r, 2) - 1.0
+    # Recurrence equations from the [1] and [3] for higher than 10 order polynomials
     elif n > 7 and abs(m) == n:  # simplified recurrence formula from [3]
         return np.power(r, n)
-    elif n > 8 and m == 0:
-        return 2.0*r*radial_polynomial((1, n-1), r) - radial_polynomial((0, n-2), r)  # simplified recurrence formula from [3]
+    elif n > 10 and m == 0:  # simplified recurrence formula from [3]
+        return 2.0*r*radial_polynomial((1, n-1), r) - radial_polynomial((0, n-2), r)
+    elif n > 10 and abs(m) == n-2:  # my guess about overall equation
+        return float(n)*np.power(r, n) - float(n-1)*np.power(r, n-2)
     else:
         return (r*(radial_polynomial((abs(m-1), n-1), r) + radial_polynomial((m+1, n-1), r))
                 - radial_polynomial((m, n-2), r))  # general recurrence formula from [1]
@@ -247,10 +274,35 @@ def radial_derivative(zernike_pol, r):
     elif (m == 0) and (n == 8):
         # 560r^7 - 840r^5 + 360r^3 - 40r
         return 560.0*np.power(r, 7) - 840.0*np.power(r, 5) + 360.0*np.power(r, 3) - 40.0*r
-    # Recurrence equations from the [1] and [3] for higher than 8 order polynomials
+    # 9th order
+    elif ((m == -5) and (n == 9)) or ((m == 5) and (n == 9)):
+        # 324r^8 - 392r^6 + 105r^4
+        return 324.0*np.power(r, 8) - 392.0*np.power(r, 6) + 105.0*np.power(r, 4)
+    elif ((m == -3) and (n == 9)) or ((m == 3) and (n == 9)):
+        # 756r^8 - 1176r^6 + 525r^4 - 60r^2
+        return 756.0*np.power(r, 8) - 1176.0*np.power(r, 6) + 525.0*np.power(r, 4) - 60.0*np.power(r, 2)
+    elif ((m == -1) and (n == 9)) or ((m == 1) and (n == 9)):
+        # 1134r^8 - 1960r^6 + 1050r^4 - 180r^2 + 5
+        return 1134.0*np.power(r, 8) - 1960.0*np.power(r, 6) + 1050.0*np.power(r, 4) - 180.0*np.power(r, 2) + 5.0
+    # 10th order
+    elif ((m == -6) and (n == 10)) or ((m == 6) and (n == 10)):
+        # 450r^9 - 576r^7 + 168r^5
+        return 450.0*np.power(r, 9) - 576.0*np.power(r, 7) + 168.0*np.power(r, 5)
+    elif ((m == -4) and (n == 10)) or ((m == 4) and (n == 10)):
+        # 1200r^9 - 2016r^7 + 1008r^5 - 140r^3
+        return 1200.0*np.power(r, 9) - 2016.0*np.power(r, 7) + 1008.0*np.power(r, 5) - 140.0*np.power(r, 3)
+    elif ((m == -2) and (n == 10)) or ((m == 2) and (n == 10)):
+        # 2100r^9 - 4032r^7 + 2520r^5 - 560r^3 + 30r
+        return 2100.0*np.power(r, 9) - 4032.0*np.power(r, 7) + 2520.0*np.power(r, 5) - 560.0*np.power(r, 3) + 30.0*r
+    elif (m == 0) and (n == 10):
+        # 2520r^9 - 5040r^7 + 3360r^5 - 840r^3 + 60r
+        return 2520.0*np.power(r, 9) - 5040.0*np.power(r, 7) + 3360.0*np.power(r, 5) - 840.0*np.power(r, 3) + 60.0*r
+    # Recurrence equations from the [1] and [3] for higher than 10 order polynomials
     elif n > 7 and abs(m) == n:
-        return n*np.power(r, n-1)  # derivative from the simplified recurrence formula from [3]
-    elif n > 8 and m == 0:
+        return float(n)*np.power(r, n-1)  # derivative from the simplified recurrence formula from [3]
+    elif n > 8 and abs(m) == n-2:  # derivative from my guess about overall equation
+        return float(n)*float(n)*np.power(r, n-1) - float(n-1)*float(n-2)*np.power(r, n-3)
+    elif n > 10 and m == 0:
         # derivative from the simplified recurrence formula from [3]
         return 2.0*(radial_polynomial((1, n-1), r) + r*radial_derivative((1, n-1), r)) - radial_derivative((0, n-2), r)
     else:
@@ -432,7 +484,7 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
         assert abs(np.min(diff)) < 1E-9, (f"Order {order} has inconsistency between tabular/recursion"
                                           + f" and exact implementations, diff: {abs(np.min(diff))}")
     diff = np.round(diff, 9)
-    print("Difference between analytical equations and definitive equations for Zernike pol-s is negligible, test passed")
+    print("Difference between analytical and implemented equations for Zernike pol-s is negligible, test passed")
     return diff
 
 
@@ -482,7 +534,7 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
         assert abs(np.min(diff)) < 1E-9, (f"Order {order} has inconsistency between tabular/recursion"
                                           + f" and exact implementations, diff: {abs(np.min(diff))}")
     diff = np.round(diff, 9)
-    print("Difference between analytical equations and definitive equations for Zernike pol-s is negligible, test passed")
+    print("Difference between analytical and implemented equations for derivatives of Zernike pol-s is negligible, test passed")
     return diff
 
 
@@ -492,6 +544,8 @@ if __name__ == '__main__':
     Theta = [i*np.pi/3 for i in range(6)]; Theta = np.asarray(Theta)
     orders = (-2, 2); r = 0.5
     ZR = radial_polynomial(orders, R); ZR1 = radial_polynomial(orders, r)
-    TR = triangular_function(orders, Theta); TR1 = triangular_function(orders, r)
-    diff = compare_radial_calculations(max_order=16)
-    diff_deriv = compare_radial_derivatives(max_order=16)
+    TR = triangular_function(orders, Theta)
+    diff = compare_radial_calculations(max_order=20)
+    diff_deriv = compare_radial_derivatives(max_order=18)
+    # Test specific implementations
+    orders = (-7, 11); r = 0.55; val = radial_polynomial(orders, r)
