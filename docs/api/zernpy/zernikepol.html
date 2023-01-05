@@ -43,6 +43,21 @@
                                 <a class="function" href="#ZernPol.polynomial_value">polynomial_value</a>
                         </li>
                         <li>
+                                <a class="function" href="#ZernPol.radial">radial</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ZernPol.triangular">triangular</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ZernPol.radial_dr">radial_dr</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ZernPol.triangular_dtheta">triangular_dtheta</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ZernPol.normf">normf</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#ZernPol.get_osa_index">get_osa_index</a>
                         </li>
                         <li>
@@ -90,7 +105,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.0.4, 2022 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.5, 2022 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -106,7 +121,7 @@ zernpy<wbr>.zernikepol    </h1>
 
                         <div class="docstring"><p>Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.</p>
 
-<p>@author: Sergei Klykov, @year: 2022 </p>
+<p>@author: Sergei Klykov, @year: 2023 </p>
 
 <p>@licence: MIT</p>
 </div>
@@ -270,8 +285,8 @@ If True, this method returns shortened name. The default is False.</li>
     
             <div class="docstring"><p>Calculate Zernike polynomial value(-s) within the unit circle.</p>
 
-<p>Calculation up to 8th order of Zernike polynomials performed by exact equations, after - iteratively, using
-the equations borrowed from the Reference [1] below.</p>
+<p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
+after - using the recurrence equations taken from the Ref.[1].</p>
 
 <h6 id="references">References</h6>
 
@@ -286,23 +301,217 @@ circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
 
 <ul>
 <li><strong>r</strong> (float or numpy.ndarray):
-Radius from the unit circle, float or array of values on which the Zernike polynomial is calculated.</li>
+Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.</li>
 <li><strong>theta</strong> (float or numpy.ndarray):
-Theta - angle in radians, float or array of angles on which the Zernike polynomial is calculated.
+Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
 Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Check the Error signature for reasons, most probably some data inconsistency detected.</li>
-<li><strong>Warning</strong>: If the theta angles cover the range more than 2*pi (period).</li>
+<li><strong>ValueError</strong>: Check the Error stack trace for reasons of raising, most probably input parameters aren't acceptable.</li>
+<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
 <li><strong>float or numpy.ndarray</strong>: Calculated polynomial values on provided float values / arrays.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPol.radial" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">radial</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.radial"></a>
+    
+            <div class="docstring"><p>Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.</p>
+
+<p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
+after - using the recurrence equations taken from the Ref.[1].</p>
+
+<h6 id="references">References</h6>
+
+<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) </p>
+
+<p>[2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) </p>
+
+<p>[3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
+circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>r</strong> (float or numpy.ndarray):
+Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the function is calculated.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>float or numpy.ndarray</strong>: Calculated Zernike radial function value(-s) on provided float values / arrays of radiuses.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPol.triangular" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">triangular</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">theta</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.triangular"></a>
+    
+            <div class="docstring"><p>Calculate triangular Zernike function value(-s) within the unit circle.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>theta</strong> (float or numpy.ndarray):
+Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed. </li>
+</ul>
+
+<p>It happens when input parameter is not float, numpy.ndarray, list or tuple.</p>
+
+<ul>
+<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>float or numpy.ndarray</strong>: Calculated value(-s) of Zernike triangular function on provided angle.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPol.radial_dr" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">radial_dr</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.radial_dr"></a>
+    
+            <div class="docstring"><p>Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.</p>
+
+<p>Calculation up to 10th order of Zernike polynomials performed by exact equations,
+after - using the recurrence equations.</p>
+
+<h6 id="references">References</h6>
+
+<p>Same as for the method "radial" or "polynomial value"</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>r</strong> (float or numpy.ndarray):
+Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>float or numpy.ndarray</strong>: Calculated derivative of Zernike radial function value(-s) on provided float values / arrays of radiuses.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPol.triangular_dtheta" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">triangular_dtheta</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">theta</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.triangular_dtheta"></a>
+    
+            <div class="docstring"><p>Calculate derivative from triangular function on angle theta.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>theta</strong> (float or numpy.ndarray):
+Theta - angle in radians from the range [0, 2*pi], float or array, for which the function is calculated.
+Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed. </li>
+</ul>
+
+<p>It happens when input parameter is not float, numpy.ndarray, list or tuple.</p>
+
+<ul>
+<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>float or numpy.ndarray</strong>: Calculated derivative value(-s) of Zernike triangular function on provided angle.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPol.normf" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">normf</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPol.normf"></a>
+    
+            <div class="docstring"><p>Calculate normalization factor for the Zernike polynomial calculated according to the Reference below.</p>
+
+<h6 id="references">References</h6>
+
+<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)</p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>float</strong>: Normalization factor calculated according to the Reference.</li>
 </ul>
 </div>
 
@@ -622,7 +831,7 @@ If True, it forces to calculate 2D sum of polynomials based on r and theta (as a
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>Sum of Zernike polynomials</strong>: Depending on the input values and parameter get_surface - can be float, 1D or 2D numpy.ndarrays.</li>
+<li><strong>Sum of Zernike polynomials</strong>: Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.</li>
 </ul>
 </div>
 
