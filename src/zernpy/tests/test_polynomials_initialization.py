@@ -40,24 +40,28 @@ def test_explicit_initialization():
             and m == -3 and n == 3), f"Some error in definition of indices: {(m, n), osa, noll, fringe} for ZernPol(fringe = 11)"
     zp = ZernPol(noll=1); assert abs(zp.normf() - 1) < 1E-9, "Normalization factor for Z(noll=1) calculated with error"
     # Test wrong initialization parameters
+
     # OSA
     try:
         ZernPol(osa=-1); assert_flag = False
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(osa=-1)"
+
     # Noll
     try:
         ZernPol(noll=0); assert_flag = False
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(noll=0)"
+
     # Fringe
     try:
         ZernPol(fringe=0); assert_flag = False
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=0)"
+
     # Orders radial, azimuthal
     try:
         ZernPol(l=2, n=3); assert_flag = False
@@ -69,6 +73,12 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(m=4, n=3)"
+    try:
+        ZernPol(n=-2, l=2); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(n=-2, l=2)"
+
     # Wrong mix of orders
     try:
         ZernPol(osa=2, noll=9); assert_flag = False
@@ -85,9 +95,25 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol()"
-    # Wrong order specification
+    try:
+        ZernPol(fringe=5, l=2); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=5, l=2)"
+    try:
+        ZernPol(m=2, l=2); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(m=2, l=2)"
+
+    # Wrong orders specification
     try:
         ZernPol(n=2, m=1.01); assert_flag = False
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(n=2, m=1.01)"
+    try:
+        ZernPol(fringe='1'); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe='1')"

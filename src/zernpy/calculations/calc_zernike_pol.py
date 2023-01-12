@@ -14,7 +14,7 @@ import math
 __docformat__ = "numpydoc"
 
 
-# %% Function definitions
+# %% Functions definitions
 def define_orders(zernike_pol) -> tuple:
     """
     Return orders as tuple (m, n) for using in the functions below.

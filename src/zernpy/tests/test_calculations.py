@@ -11,6 +11,7 @@ For running this test, it's enough to run the command "pytest" from the reposito
 """
 import math
 import time
+import numpy as np
 
 # Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
@@ -62,3 +63,47 @@ def test_sum_zernikes():
         plt.show(block=False); time.sleep(1.05)  # show the figure for 1.2 sec. during test run
     except ModuleNotFoundError:
         assert False, "Install matplotlib for passing the test"
+
+
+# Testing the calculation of polynomial values for edge cases
+def test_pol_values_edge_cases():
+    zp = ZernPol(osa=8)  # test polynomial, could be any
+    # Combination list + float
+    r = [0, 0.1, 0.2, 0.5]; theta = 0.2; values = zp.polynomial_value(r, theta)
+    assert_flag = True
+    if not isinstance(values, np.ndarray):
+        assert_flag = False
+    assert assert_flag, "Wrong calculation of combination list (r) and float (theta)"
+    # Combination float + float
+    r = 0.2; theta = 0.2; values = zp.polynomial_value(r, theta)
+    assert_flag = True
+    if not isinstance(values, float):
+        assert_flag = False
+    assert assert_flag, "Wrong calculation of combination float (r) and float (theta)"
+    # Combination list + tuple, equal sizes
+    r = [0, 0.1, 0.2, 0.5]; theta = (0, 0.4, 0.2, 0.1); values = zp.polynomial_value(r, theta)
+    assert_flag = True
+    if not isinstance(values, np.ndarray):
+        assert_flag = False
+    assert assert_flag, "Wrong calculation of combination list (r) and tuple (theta)"
+    # Combination of lists with different sizes
+    r = [0, 0.1, 0.2, 0.5]; theta = [0, 0.1, 0.2, 0.5, 0.8, 1.0]
+    try:
+        assert_flag = False; values = zp.polynomial_value(r, theta)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong calculation of combination list (r) and list (theta) with not equal sizes"
+    # Combination 1D and 2D arrays
+    r = [0, 0.1, 0.2, 0.5]; theta = [[0, 0.3, 0.6, 0.9]]
+    try:
+        assert_flag = False; values = zp.polynomial_value(r, theta)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong calculation of combination list (r) and list (theta) with not equal dimensions"
+    # Out of range value for r
+    r = [0, 0.1, 0.2, 1.00000001]; theta = [0, 0.3, 0.6, 0.9]
+    try:
+        assert_flag = False; values = zp.polynomial_value(r, theta)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong calculation of using r > 1.0"
