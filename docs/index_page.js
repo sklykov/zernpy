@@ -2,8 +2,9 @@
 document.addEventListener("DOMContentLoaded", function () {
     console.log("Page loaded");
 
-    // Set explicitly default values for m, n orders
-    let nOrderInput = document.getElementById("firstInputOrder"); nOrderInput.value = 0; 
+    // Set explicitly default values for indexing scheme and m,n associated orders
+    let nOrderInput = document.getElementById("firstInputOrder"); nOrderInput.value = 0;
+    let mOrderInput = document.getElementById("secondInputOrder"); mOrderInput.value = 0;
 
     // register event for tracing the new selected value from index.html
     let selector = document.getElementsByName("Index type")[0];  // get the selected HTML element by name

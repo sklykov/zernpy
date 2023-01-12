@@ -75,11 +75,14 @@
         }
         /* Styling with inline elements with code */
         .commandCode{
-            font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial;
+            font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial; font-size: 0.98em;
         }
         /* Style for each text string */
         .textString{
             margin: 4px;
+        }
+        #page_footer{
+            font-size: 0.9em; font-family: 'Courier New', Courier, monospace; padding-top: 4em;
         }
     </style>
 </head>
@@ -88,82 +91,89 @@
     <!-- Overall div element - for the flexbox aligning -->
     <div class="flexbox-container">
 
-        <!-- Navigation panel, some elements and inspiration get from W3 Schools -->
-        <div class="navbar">
+        <!-- Navigation panel, some elements and inspiration get from W3 Schools, better use <nav> element -->
+        <nav class="navbar">
             <a class="link" href="index.html"> Main </a>
             <a class="link" href="./api/index.html"> API Dictionary </a>
             <a class="link" href="about.html"> About </a>
-        </div>
+        </nav>
 
         <!-- Main content of the webpage -->
-        <div class="mainBody">
-            <div class="contentContainer">
-                <h3 class="greeting"> Welcome! </h3>
-                <div class="greeting">
-                    I am pleased that you've found it interesting to take a look on my library <b>"zernpy"</b>. 
-                    <hr> 
-                </div>
+        <main class="mainBody">
+            <section class="contentContainer">
+                <p>
+                    <h3 class="greeting"> Welcome! </h3>
+                    <div class="greeting">
+                        I am pleased that you've found it interesting to take a look on my library <strong>"zernpy"</strong>. 
+                    </div>
+                    <hr>
+                </p>
                 <div>
-                    <h4> Installation instructions </h4>
-                    <div class="textString">
-                        The straightforward way to install the library - to use the following command for the <i> pip </i> package installer:
-                        <span class="commandCode"> pip install zernpy </span>
-                    </div>
-                    <div class="textString"> 
-                        The requirements for installation: Python version >= 3.8, libraries <i>numpy</i> and <i>matplotlib</i>. 
-                        Check the <a class="link" href="https://pypi.org/project/zernpy/">webpage</a> of this library on PyPi package index.
-                    </div>
-                    <br>
-                    <h4> Import and class initialization </h4>
-                    <div class="textString">
-                        The basic import command: <span class="commandCode"> from zernpy import ZernPol </span>
-                    </div>
-                    <div class="textString">
-                        The initialization of the <i>ZernPol</i> class instance: <span class="commandCode">zp = ZernPol(m=-2, n=2)</span>.
-                        This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
-                        Other acceptable initialization parameters names: <span style="font-style:italic">osa_index / noll_index / fringe_index</span> or 
-                        for shortness <span style="font-style:italic">osa / noll / fringe</span>, for example: <br>
-                        <span class="commandCode">zp = ZernPol(osa_index=3)</span> or <span class="commandCode">zp = ZernPol(osa=3)</span>
-                    </div>
-                    <br>
-                    <h4> Calculation methods </h4>
-                    <div class="textString">
-                        For reading about most useful method, please, refer to the README files either on PyPi package 
-                        <a class="link" href="https://pypi.org/project/zernpy/">page</a>, or on the 
-                        <a class="link" href="https://github.com/sklykov/zernpy">repository</a>. 
-                    </div>
-                    <div class="textString">
-                        For accessing the full list of implemented methods please follow the link to the API Dictionary on the left navigation tab. 
-                    </div>
-                    <div class="textString">
-                        This page and "About" section are also used for honing my skills in Frontend development. 
-                        Thus, not everything here is intended to reveal the features of the implemented library.
-                    </div>
-                    <br>
-                    <h4> Definition of Zernike polynomial </h4>
-                    <div>
+                    <p>
+                        <h4> Installation instructions </h4>
                         <div class="textString">
-                            Specify below the index (indices) for Zernike polynomial specification
-                            (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
+                            The straightforward way to install the library - to use the following command for the <em> pip </em> package installer:
+                            <code class="commandCode"> pip install zernpy </code>
                         </div>
-                        <label style="margin-left: 4px;"> Select the indexing type: </label>
-                        <select name="Index type" style="margin-left: 0.1em;">
-                            <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
-                            <option value="osa">OSA/ANSI</option>
-                            <option value="noll">Noll</option>
-                            <option value="fringe">Fringe</option>
-                        </select>
-                        <div style="display: inline-block; margin-left: 0.2em; margin-right: 0.5em;" id="ordersLabel"> orders: </div>
-                        <label tag="n_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="firstOrderLabel"> n = </label>
-                        <input type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3" value="0" id="firstInputOrder">
-                        <label tag="m_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="secondOrderLabel"> m = </label>
-                        <input type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
-                    </div>
+                        <div class="textString"> 
+                            The requirements for installation: Python version >= 3.8, libraries <em>numpy</em> and <em>matplotlib</em>. 
+                            Check the <a class="link" href="https://pypi.org/project/zernpy/" target="_blank">webpage</a> of this library on the PyPi package index.
+                        </div>
+                    </p>
+                    <p>
+                        <h4> Import and class initialization </h4>
+                        <div class="textString">
+                            The basic import command: <code class="commandCode"> from zernpy import ZernPol </code>
+                            The initialization of the <em>ZernPol</em> class instance: <code class="commandCode">zp = ZernPol(m=-2, n=2)</code>. <br>
+                            This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
+                            Other acceptable initialization parameters names: <span style="font-style:italic"> osa_index / noll_index / fringe_index </span> or 
+                            for shortness <span style="font-style:italic">osa / noll / fringe</span>, e.g.:
+                            <code class="commandCode">zp = ZernPol(osa_index=3)</code> or <code class="commandCode">zp = ZernPol(osa=3)</code>
+                        </div>
+                    </p>
+                    <p>
+                        <h4> Calculation methods </h4>
+                        <div class="textString">
+                            For getting info about this library, please, refer to the API Dictionary tab and README section from 
+                            <a class="link" href="https://pypi.org/project/zernpy/">page</a>, or on the 
+                            <a class="link" href="https://github.com/sklykov/zernpy">repository</a>. 
+                        </div>
+                        <div class="textString">
+                            For accessing the full list of implemented methods please follow the link to the API Dictionary on the left navigation tab. 
+                        </div>
+                        <div class="textString">
+                            This and "About" pages are also used for honing my skills in Frontend development. 
+                            Thus, not everything here is intended to reveal the features of the implemented library.
+                        </div>
+                    </p>
+                    <p>
+                        <h4> Definition of Zernike polynomial </h4>
+                        <div>
+                            <div class="textString">
+                                Specify below the index (indices) for Zernike polynomial specification
+                                (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
+                            </div>
+                            <label style="margin-left: 4px;"> Select the indexing type: </label>
+                            <select name="Index type" style="margin-left: 0.1em;">
+                                <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
+                                <option value="osa">OSA/ANSI</option>
+                                <option value="noll">Noll</option>
+                                <option value="fringe">Fringe</option>
+                            </select>
+                            <div style="display: inline-block; margin-left: 0.2em; margin-right: 0.5em;" id="ordersLabel"> orders: </div>
+                            <label tag="n_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="firstOrderLabel"> n = </label>
+                            <input type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3" value="0" id="firstInputOrder">
+                            <label tag="m_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="secondOrderLabel"> m = </label>
+                            <input type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
+                        </div>
+                    </p>
                 </div>
-            </div>
+            </section>
             <!-- Below - image element that used for setting it as the background image -->
             <div class="bgImage"></div> 
-        </div>
+            <!-- Footer with some info -->
+            <footer id="page_footer"> 2022-2023 S.K., MIT licensed </footer>
+        </main>
     </div>  
 </body>
 

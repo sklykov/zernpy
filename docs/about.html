@@ -8,6 +8,9 @@
     <!-- Favicon specification from the local file -->
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
 
+    <!-- Load script for handle page appearance and provide some interactivity -->
+    <script src="./about_page.js"></script>
+
     <!-- CSS styling -->
     <style>
          /* floating for copy comment */ 
@@ -30,7 +33,7 @@
             /* display: flex; flex-direction: column; */
         }
         /* Selector > is used for selecting all child elements of the class "navbar" */
-        .navbar > a{
+        .navbarLink {
             display: block;  /* Makes all elements starting with the new line */ 
             padding-top: 18px; padding-bottom: 18px; padding-left: 8px; padding-right: 8px; margin: 6px;
         }
@@ -45,13 +48,8 @@
         .header{
             text-align: center; margin: 8px;
         }
-        .bulletPoint{
-            text-align: justify;
-            margin-bottom: 8px; margin-right: 6px;
-            padding-right: 12px; padding-left: 4px; 
-        }
         .textLine{
-            padding: 8px; text-align: center;
+            padding: 6px; text-align: center;
         }   
 
         /* Setting images in the pyramidal order */
@@ -68,236 +66,86 @@
             position: absolute; /* Seems in this case it's necessary for avoiding relative shifts for top, left coordinates in script below */
             padding: 0; margin: 0;  /* Padding = 0 and margins = 0 removes additional white spaces between inline blocks */
         }
-    </style>
 
+        /* Styling of the list with next steps */
+        #nextStepsList{
+            text-align: center; list-style-position: inside;
+        }
+        .bulletPoint{
+            margin-bottom: 8px; margin-right: 6px;
+            padding-right: 12px; padding-left: 4px; 
+        }
+        #page_footer{
+            font-size: 0.9em; font-family: 'Courier New', Courier, monospace; padding-top: 2em;
+        }
+    </style>
 </head>
+
 <body>
     <div class="flexboxContainer">
-        <!-- Navigation panel, some elements and inspiration get from W3 Schools -->
-        <div class="navbar">
-            <a class="link" href="index.html"> Main </a>
-            <a class="link" href="./api/index.html"> API Dictionary </a>
-            <a class="link" href="about.html"> About </a>
-        </div>
+
+        <!-- Navigation panel, some elements and inspiration get from W3 Schools, better use <nav> element  -->
+        <nav class="navbar">
+            <a class="link navbarLink" href="index.html"> Main </a>
+            <a class="link navbarLink" href="./api/index.html"> API Dictionary </a>
+            <a class="link navbarLink" href="about.html"> About </a>
+        </nav>
+
         <!-- Main text body -->
-        <div class="mainBody">
-            <h4 class="header"> Reasons for developing </h4> 
-            <ul>
-                <li class="bulletPoint">
-                    This library was developed because I struggled to find open and fast enough implementation of simple function for Zernike polynomial
-                    calculation.
-                </li>
-                <li class="bulletPoint">
-                    Moreover, the exact equation for calculation isn't difficult to code in Python, but the exact equation gets really slow for
-                    high order polynomials. To overcome that, the recursive equations are used instead of the exact ones.  
-                </li>
-                <li class="bulletPoint">
-                    However, anyway, there are exist many specifically implemented and well acknowledged libraries included Zernike polynomials calculation,
-                    for example: <a class="link" href="https://github.com/jacopoantonello/zernike">zernike</a> and 
-                    <a class="link" href="https://docs.hcipy.org/dev/api/hcipy.mode_basis.zernike.html" rel="noopener noreferrer">HCIpy</a>. <!-- Security addition for demo in "rel" attribute  -->
-                </li>
-            </ul>
+        <main class="mainBody">
+            <p>
+                <h4 class="header"> Reasons for developing </h4> 
+                <ul>
+                    <li class="bulletPoint">
+                        This library was developed because I struggled to find open and fast enough implementation of simple function for Zernike polynomial
+                        calculation.
+                    </li>
+                    <li class="bulletPoint">
+                        Moreover, the exact equation for calculation isn't difficult to code in Python, but the exact equation gets really slow for
+                        high order polynomials. To overcome that, the recursive equations are used instead of the exact ones.  
+                    </li>
+                    <li class="bulletPoint">
+                        However, anyway, there are exist many specifically implemented and well acknowledged libraries included Zernike polynomials calculation,
+                        for example: <a class="link" href="https://github.com/jacopoantonello/zernike" target="_blank">zernike</a> and 
+                        <!-- Security addition for demo in "rel" attribute, because it's the external website   -->
+                        <a class="link" href="https://docs.hcipy.org/dev/api/hcipy.mode_basis.zernike.html" rel="noopener noreferrer" target="_blank">HCIpy</a>.
+                    </li>
+                </ul>
+            </p>
 
-            <br>
-            <h4 class="header" id="RepresentingZernikeStr"> Representing a few Zernike profiles in a pyramid </h4>
-            <div class="textLine"> 
-                The following images generated using the static method plot_sum_zernikes_on_fig() for single element in a list as polynomials list.
-            </div>
-            <div class="imagesContainer">
-                <div class="DisplayZernikeName"> Hover mouse over the images (right) for getting polynomial name </div>
-                <img class="ZernProfile" src="./images/ZernOsa1.png" id="ZernOsa1">
-                <img class="ZernProfile" src="./images/ZernOsa2.png" id="ZernOsa2">
-                <img class="ZernProfile" src="./images/ZernOsa3.png" id="ZernOsa3">
-                <img class="ZernProfile" src="./images/ZernOsa4.png" id="ZernOsa4">
-                <img class="ZernProfile" src="./images/ZernOsa5.png" id="ZernOsa5">
-                <img class="ZernProfile" src="./images/ZernOsa6.png" id="ZernOsa6">
-                <img class="ZernProfile" src="./images/ZernOsa7.png" id="ZernOsa7">
-                <img class="ZernProfile" src="./images/ZernOsa8.png" id="ZernOsa8">
-                <img class="ZernProfile" src="./images/ZernOsa9.png" id="ZernOsa9">
-            </div>
+            <p>
+                <h4 class="header" id="RepresentingZernikeStr"> Representing a few Zernike profiles in a pyramid </h4>
+                <div class="textLine"> 
+                    The following images generated using the static method plot_sum_zernikes_on_fig() for single element in a list as polynomials list.
+                </div>
+                <div class="imagesContainer">
+                    <div class="DisplayZernikeName"> Hover mouse over the images (right) for getting polynomial name </div>
+                    <img class="ZernProfile" src="./images/ZernOsa1.png" id="ZernOsa1">
+                    <img class="ZernProfile" src="./images/ZernOsa2.png" id="ZernOsa2">
+                    <img class="ZernProfile" src="./images/ZernOsa3.png" id="ZernOsa3">
+                    <img class="ZernProfile" src="./images/ZernOsa4.png" id="ZernOsa4">
+                    <img class="ZernProfile" src="./images/ZernOsa5.png" id="ZernOsa5">
+                    <img class="ZernProfile" src="./images/ZernOsa6.png" id="ZernOsa6">
+                    <img class="ZernProfile" src="./images/ZernOsa7.png" id="ZernOsa7">
+                    <img class="ZernProfile" src="./images/ZernOsa8.png" id="ZernOsa8">
+                    <img class="ZernProfile" src="./images/ZernOsa9.png" id="ZernOsa9">
+                </div>
+            </p>
 
-            <h4 class="header"> Next steps </h4> 
-            <ol>
-                <li class="bulletPoint"> <del> Implement calculation of derivatives</del>  Done in version 0.0.5 of the library </li>
-                <li class="bulletPoint"> Implement conversion from raw deformations on an unit pupil to set of Zernike polynomials </li>
-                <li class="bulletPoint"> Implement more interactivity for these pages </li>
-                <li class="bulletPoint"> Provide more tests for checking derivatives, values and initialization of polynomials </li>
-            </ol>
-        </div>
+            <p>
+                <h4 class="header"> Next steps </h4> 
+                <ol id="nextStepsList">
+                    <li class="bulletPoint"> <del> Implement calculation of derivatives</del>  Done in version 0.0.5 of the library </li>
+                    <li class="bulletPoint"> Implement conversion from raw deformations on an unit pupil to set of Zernike polynomials </li>
+                    <li class="bulletPoint"> Implement more interactivity for these pages </li>
+                    <li class="bulletPoint"> Provide more tests for checking derivatives, values and initialization of polynomials </li>
+                </ol>
+            </p>
+
+        <!-- Footer with some info -->
+        <footer id="page_footer"> 2022-2023 S.K., MIT licensed </footer>
+        </main>
     </div>
-
-    <!-- JavaScript part - making page interactive and dynamic -->
-    <script>
-        window.onload = ()=>{console.log("Page loaded")};  // only sends command to the console that page was loaded
-        var previousPageWidth = false;
-        var nameImage = document.querySelector(".DisplayZernikeName");
-        var defaultNameImageText = nameImage.textContent;
-
-        // Move the element showing the name of image to the left
-        function moveNamePolEl(){
-            nameImage.style.textAlign = "left"; 
-            nameImage.style.position = "relative";  // allows moving this field below
-            nameImage.style.left = "15px"; nameImage.style.top = "35px";
-        }
-
-        // var images = document.getElementsByClassName("ZernProfile");  // returns some HTMLCollection class, how to loop over the elements?
-        // Below - making the pyramidal order for the images in the recallable function
-        function makePyramid(init_y_shift, x_reduce_distance){
-            var i = 0; var y_shift = 20 + init_y_shift;  var x_shift = 80 - x_reduce_distance; var y_step = 120; var element_width = 100;
-            var elementsInRow = 2;
-            var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-            var n_row = 0; var max_row = 2; var initial_x_shift = half_width_main - x_shift - element_width/2 - x_reduce_distance/2;
-            var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
-            // Below - loop over all images queried by querySelectorAll
-            images.forEach(element => {
-                // element.style.position = "absolute";  // This is useless because it breaks the relative positioning of elements
-                // console.log(i);
-                element.style.top = `${y_shift}px`; 
-                // Below - not that each further row shifted more than previous one
-                element.style.left = `${initial_x_shift + i*(x_shift + element_width)}px`;
-                // console.log(element.style.left, element.style.top);
-                i += 1;
-                // move to the next row
-                if(i == elementsInRow){
-                    y_shift += y_step;
-                    // Below - the adding height to imagesContainer element
-                    if (n_row < max_row){
-                        height = document.querySelector(".imagesContainer").clientHeight;
-                        document.querySelector(".imagesContainer").style.height = `${height*(n_row-0.05) + y_shift}px`;
-                    }
-                    n_row += 1;
-                    // console.log(document.querySelector(".imagesContainer").clientHeight))
-                    // This makes positioning of the elements in a pyramid + CSS property: position: absolute
-                    if(n_row % 2 != 0){
-                        initial_x_shift -= (n_row*(element_width + x_shift))/2;
-                    } else {
-                        initial_x_shift -= ((n_row-1)*(element_width + x_shift))/2;
-                    }
-                    // return values for the next row
-                    elementsInRow += 1; i = 0;
-                }
-            });
-        }
-
-        function putImagesInCols(initial_set){
-            var i = 0; var y_shift = 50;  var x_shift = 5; var y_step = 110; var element_width = 100;
-            var elementsInRow = 3;
-            var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-            var n_row = 0; var max_row = 3; var initial_x_shift = half_width_main - 1.5*(x_shift + element_width);
-            var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
-            // Below - loop over all images queried by querySelectorAll
-            images.forEach(element => {
-                element.style.top = `${y_shift}px`; 
-                element.style.left = `${initial_x_shift + i*(2*x_shift + element_width)}px`;
-                // console.log(element.style.left, element.style.top);
-                i += 1;
-                // move to the next row
-                if(i == elementsInRow){
-                    y_shift += y_step;
-                    n_row += 1; i = 0;
-                }
-            });
-            // Below - the adding height to imagesContainer element
-            if(initial_set){
-                height = document.querySelector(".imagesContainer").clientHeight;
-                if(previousPageWidth > 500){
-                    document.querySelector(".imagesContainer").style.height = `${height + (max_row-3.5)*(element_width)}px`;
-                } else {
-                    document.querySelector(".imagesContainer").style.height = `${height + (max_row+0.5)*(element_width)}px`;
-                }
-            }
-        }
-            
-        // Below - add event listeners to each image for changing the string to represent their name
-        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
-        images.forEach(element => {
-            var namePrefix = "Pointer on the image of:  ";
-            element.addEventListener("mouseenter", (event) => {
-                // console.log("Mouse event listener registered");
-                // switch statement for getting id of image container
-                switch(element.id){
-                    case "ZernOsa1":
-                        // console.log("Should change the naming string");
-                        nameImage.textContent = namePrefix + "Vertical Tilt";
-                        break;
-                    case "ZernOsa2":
-                        nameImage.textContent = namePrefix + "Horizontal Tilt"; break;
-                    case "ZernOsa3":
-                        nameImage.textContent = namePrefix + "Oblique Astigmatism"; break;
-                    case "ZernOsa4":
-                        nameImage.textContent = namePrefix + "Defocus"; break;
-                    case "ZernOsa5":
-                        nameImage.textContent = namePrefix + "Vertical Astigmatism"; break;
-                    case "ZernOsa6":
-                        nameImage.textContent = namePrefix + "Vertical Trefoil"; break;
-                    case "ZernOsa7":
-                        nameImage.textContent = namePrefix + "Vertical Coma"; break;
-                    case "ZernOsa8":
-                        nameImage.textContent = namePrefix + "Horizontal Coma"; break;
-                    case "ZernOsa9":
-                        nameImage.textContent = namePrefix + "Oblique Trefoil"; break;
-                }
-            });
-            // assign default text to the div element if cursor left the image area
-            element.addEventListener("mouseleave", (event) => {
-                nameImage.textContent = defaultNameImageText;
-                // console.log("Mouseover event");
-            });
-        });
-
-        // making the page more responsive - adding the monitoring of size changed
-        visualViewport.onresize = (event) => {
-            if(visualViewport.width < 1550){
-                // below - attempt to input line break, but seems that HTML div element ignores it
-                // defaultNameImageText = "Hover mouse over the images (right) \n for getting polynomial name"; 
-                // nameImage.textContent = defaultNameImageText;
-                nameImage.style.textAlign = "center"; nameImage.style.position = "static";
-                document.querySelector(".flexboxContainer").style.flexDirection = "row";
-            }
-            else{
-                moveNamePolEl();  // move the displaying of name string (element) back
-                makePyramid(shift_y=0, x_reduce_distance = 0); // call the put images in pyramid
-                document.querySelector(".flexboxContainer").style.flexDirection = "row";
-            }
-            if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
-                makePyramid(shift_y = 25, x_reduce_distance = 0); // call the put images in pyramid
-                document.querySelector(".flexboxContainer").style.flexDirection = "row";
-            }
-            if((visualViewport.width < 1000) && (visualViewport.width > 700)){
-                makePyramid(shift_y = 25, x_reduce_distance = 60); document.querySelector(".flexboxContainer").style.flexDirection = "row";
-            }
-            if((visualViewport.width < 700) && (visualViewport.width > 500)){
-                document.querySelector(".flexboxContainer").style.flexDirection = "column";  // change representation of webpage - moving navbar on top
-                makePyramid(shift_y = 25, x_reduce_distance = 76);
-            }
-            if(visualViewport.width <= 500){
-                document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
-                document.querySelector(".flexboxContainer").style.flexDirection = "column";
-                if(previousPageWidth <= 500){
-                    putImagesInCols(initial_set=false);
-                } else {
-                    putImagesInCols(initial_set=true);
-                }
-            }
-            previousPageWidth = visualViewport.width; 
-        }
-
-        // Call functions when the page is loaded for initial placing the elements - repeating the logic from above
-        if(visualViewport.width > 1550){
-            moveNamePolEl(); makePyramid(shift_y=0, x_reduce_distance = 0);
-        } else if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
-            makePyramid(shift_y = 25, x_reduce_distance = 0);
-        } else if((visualViewport.width < 1000) && (visualViewport.width > 700)){
-            makePyramid(shift_y = 25, x_reduce_distance = 60);
-        } else if((visualViewport.width < 700) && (visualViewport.width > 500)){
-            makePyramid(shift_y = 25, x_reduce_distance = 76); document.querySelector(".flexboxContainer").style.flexDirection = "column";
-        } else if(visualViewport.width <= 500){
-            document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
-            document.querySelector(".flexboxContainer").style.flexDirection = "column";
-            putImagesInCols(initial_set=true);
-        }
-        
-    </script>
 
 </body>
 </html>
