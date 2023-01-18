@@ -1,0 +1,47 @@
+/* Overall stylesheets for 2 pages: index.html and about.html */
+/* floating string for copy comment this and insert specific inline comment */ 
+
+/* Activate scroll bar showing */
+body{
+    overflow-y: scroll;  /* Allows scrolling vertically of the content of the entire page is overflow */ 
+}
+
+/* This container allows to locate main body and navigation bar on the left side */
+.flexboxContainer{ 
+    display: flex;  /* allows to set elements respectively to each other */ 
+    flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
+    /* justify-content: space-evenly; */  /* It automatically populate the content evenly for 2 elements */
+}
+
+/* Styling for left-side navigation bar */
+.navbar{
+    /* Navigation bar - takes width according to the content, height = all page height */ 
+    margin: 6px; padding: 0.2rem;
+    /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
+    text-align: center; background-color: lightgray;
+    font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
+    /* z-index: 1;  */
+    position: relative;
+}
+
+/* Styling of all links in the navigation bar (all descendants) */
+.navbar a{
+    display: block;  /* Makes all elements starting with the new line */ 
+    padding-top: 18px; padding-bottom: 18px; padding-left: 2px; padding-right: 2px; 
+    margin: 0.4em;
+}
+
+/* Styling for links */
+.link:link{color: darkblue;} .link:visited{color: blueviolet;}
+
+/* Styling for the main body with text */
+.mainBody{
+    flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
+    font-size: 16px; font-family: Arial, Helvetica, sans-serif;
+    margin: 6px;
+    position: relative;
+}
+
+.header{
+    text-align: center; margin: 8px;
+}

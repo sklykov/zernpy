@@ -4,49 +4,27 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>About "zernpy"</title>
+    
     <!-- Favicon specification from the local file -->
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
 
     <!-- Load script for handle page appearance and provide some interactivity -->
     <script src="./about_page.js"></script>
 
+    <!-- Load external overall applicable stylesheets -->
+    <link rel="stylesheet" href="index_about_styling.css">
+
     <!-- CSS styling -->
     <style>
-         /* floating for copy comment */ 
-
-        body{
-            overflow-y: scroll;  /* Allows scrolling vertically of the content of the entire page is overflow */ 
-        }
-        
-        .flexboxContainer{ 
-            display: flex;  /* allows to set elements respectively to each other */ 
-            flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
-        }
-        /* Styling for left-side navigation bar */
+        /* Define another background color for this page */
         .navbar{
-            /* Navigation bar - takes width according to the content, height = all page height */ 
-            margin: 8px;
-            /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
-            text-align: center; background-color: beige;
-            font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
-            /* display: flex; flex-direction: column; */
+            background-color: beige; 
         }
-        /* Selector > is used for selecting all child elements of the class "navbar" */
-        .navbarLink {
-            display: block;  /* Makes all elements starting with the new line */ 
-            padding-top: 18px; padding-bottom: 18px; padding-left: 8px; padding-right: 8px; margin: 6px;
-        }
-        /* Styling for links */
-        .link:link{color: darkblue;} .link:visited{color: blueviolet;}
-        /* Styling for the main body with text */
+        /* Specifics for main content of the page */
         .mainBody{
-            flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
-            font-size: 16px; font-family: Arial, Helvetica, sans-serif;
-            background-color: whitesmoke;  margin: 8px;
-        }
-        .header{
-            text-align: center; margin: 8px;
+            background-color: whitesmoke;  
         }
         .textLine{
             padding: 6px; text-align: center;
@@ -86,9 +64,9 @@
 
         <!-- Navigation panel, some elements and inspiration get from W3 Schools, better use <nav> element  -->
         <nav class="navbar">
-            <a class="link navbarLink" href="index.html"> Main </a>
-            <a class="link navbarLink" href="./api/index.html"> API Dictionary </a>
-            <a class="link navbarLink" href="about.html"> About </a>
+            <a class="link" href="index.html"> Main </a>
+            <a class="link" href="./api/index.html"> API Dictionary </a>
+            <a class="link" href="about.html"> About </a>
         </nav>
 
         <!-- Main text body -->

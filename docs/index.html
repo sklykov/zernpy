@@ -7,50 +7,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Project "zernpy"</title>
+
     <!-- Favicon specification from the local file -->
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
+
     <!-- Load script --> 
     <script src="index_page.js"></script>
-    <!-- Embed styling here -->
+
+    <!-- Load external overall applicable stylesheets -->
+    <link rel="stylesheet" href="index_about_styling.css">
+
+    <!-- Overall styling and page-specific styles -->
     <style>
-        /* floating for copy comment */ 
-        .flexbox-container{ 
-            display: flex;  /* allows to set elements respectively to each other */ 
-            flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
-            /* justify-content: space-evenly; */  /* It automatically populate the content evenly for 2 elements */
-        }
-        /* Styling for left-side navigation bar */
-        .navbar{
-            /* Navigation bar - takes width according to the content, height = all page height */ 
-            margin: 8px;
-            /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
-            text-align: center; background-color: lightgray;
-            font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
-            z-index: 1; position: relative;
-            /* display: flex; flex-direction: column; */
-        }
-        /* Selector > is used for selecting all child elements of the class "navbar" */
-        .navbar > a{
-            /* padding-top: 12px; padding-bottom: 12px; padding-left: 4px; padding-right: 4px;  */
-            display: block;  /* Makes all elements starting with the new line */ 
-            padding-top: 18px; padding-bottom: 18px; padding-left: 8px; padding-right: 8px; margin: 6px;
-            /* flex: auto; */
-        }
-        /* Styling for links */
-        .link:link{color: darkblue;} .link:visited{color: blueviolet;}
-        /* Styling for the main body with text */
-        .mainBody{
-            flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
-            margin: 8px;
-            font-size: 16px; font-family: Arial, Helvetica, sans-serif;
-            position: relative;
-            /* Below - background-image specification */
-            /* background-image: url('half_pyramid_zerns.png');
-            /* background-repeat: no-repeat;  */
-            /* background-repeat: repeat-x;
-            background-size: contain;  */
-            /* background-position-x: 90%; */
-        }
         /* This class contains all the text inside */
         .contentContainer{
             z-index: 1; position: relative; /* Position relative needed for z-index choosing*/
@@ -69,10 +37,6 @@
             z-index: 0;  /* NOTE this z-index because setting absolute position and opacity put their own rules in z-indexing */  
             /* background-color: yellow; */
         }
-        /* Heading style */
-        .greeting{
-            text-align: center;
-        }
         /* Styling with inline elements with code */
         .commandCode{
             font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial; font-size: 0.98em;
@@ -89,7 +53,7 @@
 
 <body>
     <!-- Overall div element - for the flexbox aligning -->
-    <div class="flexbox-container">
+    <div class="flexboxContainer">
 
         <!-- Navigation panel, some elements and inspiration get from W3 Schools, better use <nav> element -->
         <nav class="navbar">
@@ -102,8 +66,8 @@
         <main class="mainBody">
             <section class="contentContainer">
                 <p>
-                    <h3 class="greeting"> Welcome! </h3>
-                    <div class="greeting">
+                    <h3 class="header"> Welcome! </h3>
+                    <div class="header">
                         I am pleased that you've found it interesting to take a look on my library <strong>"zernpy"</strong>. 
                     </div>
                     <hr>
@@ -123,8 +87,8 @@
                     <p>
                         <h4> Import and class initialization </h4>
                         <div class="textString">
-                            The basic import command: <code class="commandCode"> from zernpy import ZernPol </code>
-                            The initialization of the <em>ZernPol</em> class instance: <code class="commandCode">zp = ZernPol(m=-2, n=2)</code>. <br>
+                            The basic import command: <code class="commandCode"> from zernpy import ZernPol </code> <br>
+                            Initialization of the <em>ZernPol</em> class instance: <code class="commandCode">zp = ZernPol(m=-2, n=2) </code> <br>
                             This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
                             Other acceptable initialization parameters names: <span style="font-style:italic"> osa_index / noll_index / fringe_index </span> or 
                             for shortness <span style="font-style:italic">osa / noll / fringe</span>, e.g.:
