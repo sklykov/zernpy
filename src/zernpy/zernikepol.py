@@ -1009,6 +1009,47 @@ class ZernPol:
         return angles
 
 
+# %% Methods defs.
+def generate_polynomials(max_order: int = 10) -> tuple:
+    """
+    Generate tuple with ZernPol instances - ultimately, tuple with Zernike polynomials.
+
+    Parameters
+    ----------
+    max_order : int, optional
+        Maximum overall radial order (n) for generated Zernike list (pyramid). The default is 10.
+
+    Raises
+    ------
+    ValueError
+        Raised if max_order < 1, because it should be not less than 0.
+
+    Returns
+    -------
+    tuple
+        It composes generated ZernPol instances (Zernike polynomials).
+
+    """
+    # Sanity check of max_order parameter
+    if not isinstance(max_order, int):
+        __warning_mess = "The parameter max_order provided not as integer, there will be attempt to convert it to int"
+        warnings.warn(__warning_mess)
+        max_order = int(max_order)
+    if max_order < 0:
+        raise ValueError("The maximum order should be not less than 0")
+    if max_order > 30:
+        __warning_mess = "Calculation polynomial values with orders higher than 30 is really slow"
+        warnings.warn(__warning_mess)
+    polynomials_list = []
+    for order in range(1, max_order + 1):  # going through all specified orders
+        m = -order  # azimuthal order
+        n = order  # radial order
+        for _ in range(order + 1):  # number of polynomials = order + 1
+            polynomials_list.append(ZernPol(azimuthal_order=m, radial_order=n))
+            m += 2  # according to the specification of Zernike polynomial
+    return tuple(polynomials_list)
+
+
 # %% Test functions for the external call
 def check_conformity():
     """
@@ -1099,3 +1140,5 @@ if __name__ == "__main__":
     z = ZernPol(n=26, m=-10); print(z.radial(0.85))
     # Check that warning not raised
     ZernPol(n=32, m=32); ZernPol(n=28, m=-26)
+    # Simple test of generation tuple with polynomials
+    pols = generate_polynomials(3)
