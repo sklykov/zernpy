@@ -13,6 +13,7 @@ import warnings
 import math
 from collections import namedtuple
 import matplotlib.pyplot as plt
+import random
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -1050,6 +1051,50 @@ def generate_polynomials(max_order: int = 10) -> tuple:
     return tuple(polynomials_list)
 
 
+def generate_random_phases(max_order: int = 4, img_width: int = 257, img_height: int = 257) -> tuple:
+    # Generate list with radial and angular orders for identifying polynomials
+    polynomials_list = list(generate_polynomials(max_order))
+    # Generate list with non-zero polynomials
+    if max_order < 3:
+        selector_list = [False, False, True]
+    elif 3 <= max_order <= 4:
+        selector_list = [False, False, False, False, True]
+    elif 4 < max_order <= 8:
+        selector_list = [False, False, False, False, False, False, True]
+    else:
+        selector_list = [False, False, False, False, False, False, False, False, True]
+    polynomials_amplitudes = np.zeros(shape=(len(polynomials_list, )))
+    for i in range(polynomials_amplitudes.shape[0]):
+        if random.choice(selector_list):
+            polynomials_amplitudes[i] = random.uniform(-1.0, 1.0)
+    polynomials_amplitudes = np.round(polynomials_amplitudes, 3)
+    # Additional check that at least some amplitude is non-zero
+    if np.max(np.absolute(polynomials_amplitudes)) < 0.01:
+        index = random.choice(range(polynomials_amplitudes.shape[0]))
+        polynomials_amplitudes[index] = random.uniform(-1.0, 1.0)
+    # Generate some phases image - sum of polynomials on some 2D array of pixels converted to polar coordinates
+    phases_image = np.zeros(shape=(img_height, img_width))  # blank image
+    row_center = img_height // 2; cols_center = img_width // 2
+    # below - defines radius of the Zernike circular profile, it is +1 for including more pixels in profile
+    min_img_size = min(img_width, img_height); img_radius = 1 + min_img_size // 2
+    center = np.asarray([row_center, cols_center])  # center point of an image
+    for i in range(img_height):
+        for j in range(img_width):
+            euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
+            if euclidean_dist <= img_radius:
+                r = euclidean_dist / img_radius
+                theta = np.arctan2(row_center - i, j - cols_center)
+                if theta < 0:
+                    theta += 2.0*np.pi
+                phases_image[i, j] = ZernPol.sum_zernikes(polynomials_amplitudes.tolist(),
+                                                          polynomials_list, r, theta)
+    return phases_image, polynomials_amplitudes, polynomials_list
+
+
+def fit_polynomials() -> tuple:
+    pass
+
+
 # %% Test functions for the external call
 def check_conformity():
     """
@@ -1137,8 +1182,12 @@ if __name__ == "__main__":
     fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False)
     fig3.subplots_adjust(0, 0, 1, 1); plt.show()
     # Check that warning is raised
-    z = ZernPol(n=26, m=-10); print(z.radial(0.85))
+    z = ZernPol(n=26, m=-10); print("Value of radial Zernike polynomial with n=26, m=-10 r=0.85:",
+                                    round(z.radial(0.85), 4))
     # Check that warning not raised
     ZernPol(n=32, m=32); ZernPol(n=28, m=-26)
     # Simple test of generation tuple with polynomials
     pols = generate_polynomials(3)
+    # Tests with generation / restoring Zernike profiles (phases images)
+    phases_image, polynomials_ampls, polynomials = generate_random_phases()
+    plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
