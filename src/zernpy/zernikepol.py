@@ -20,10 +20,12 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                triangular_derivative, radial_derivative)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
+    from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                 triangular_derivative, radial_derivative)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
+    from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -798,7 +800,7 @@ class ZernPol:
         return polar_vectors(R, Theta)
 
     @staticmethod
-    def plot_zernike_polynomial(polynomial):
+    def plot_zernike_polynomial(polynomial, color_map: str = "coolwarm", show_title: bool = True):
         """
         Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
 
@@ -808,6 +810,10 @@ class ZernPol:
         ----------
         polynomial : ZernPol
             Instance of ZernPol class.
+        color_map : str, optional
+            Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".
+        show_title : bool, optional
+            Toggle for showing the name of polynomial on the plot or not.
 
         Returns
         -------
@@ -818,7 +824,11 @@ class ZernPol:
             r, theta = ZernPol.gen_polar_coordinates()
             amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
             zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
-            plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name())
+            if show_title:
+                plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name(),
+                             color_map=color_map)
+            else:
+                plot_sum_fig(zern_surface, r, theta, "", color_map)
 
     @staticmethod
     def gen_zernikes_surface(coefficients: list, polynomials: list, r_step: float = 0.01,
@@ -854,7 +864,7 @@ class ZernPol:
     @staticmethod
     def plot_sum_zernikes_on_fig(coefficients: list, polynomials: list, figure: plt.Figure,
                                  use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
-                                 show_range: bool = True) -> plt.Figure:
+                                 show_range: bool = True, color_map: str = "coolwarm") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.
 
@@ -878,6 +888,8 @@ class ZernPol:
             Check the method signature for details. The default is ().
         show_range : bool, optional
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
+        color_map : str, optional
+            Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".
 
         Raises
         ------
@@ -899,10 +911,11 @@ class ZernPol:
             zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta,
                                                 get_surface=True)
             figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
-                                        show_range_colorbar=show_range)
+                                        show_range_colorbar=show_range, color_map=color_map)
         else:
             figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
-                                        zernikes_sum_surface.Theta, show_range_colorbar=show_range)
+                                        zernikes_sum_surface.Theta, show_range_colorbar=show_range,
+                                        color_map=color_map)
         return figure
 
     @staticmethod
@@ -1000,13 +1013,16 @@ class ZernPol:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
         # Checking that angles lie in the range [0, 2*pi]
         if isinstance(angles, np.ndarray):
-            if np.max(angles) + abs(np.min(angles)) > 2.0*np.pi:
-                warnings.warn("Theta angles defined in range outside of interval [0, 2*pi]")
+            if np.max(angles) - np.min(angles) > 2.0*np.pi:
+                _warn_message_ = "Theta angles defined in range outside of interval [0.0, 2.0*pi]"
+                warnings.warn(_warn_message_)
             elif np.max(angles) > 2.0*np.pi or np.min(angles) < 0.0:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
+                _warn_message_ = "Max or min of theta angles lies outside of interval [0.0, 2.0*pi]"
+                warnings.warn(_warn_message_)
         elif isinstance(angles, float):
             if angles < 0.0 or angles > 2.0*np.pi:
-                warnings.warn("Max or min of theta angles lies outside of interval [0, 2*pi]")
+                _warn_message_ = "Max or min of theta angles lies outside of interval [0.0, 2.0*pi]"
+                warnings.warn(_warn_message_)
         return angles
 
 
@@ -1051,7 +1067,31 @@ def generate_polynomials(max_order: int = 10) -> tuple:
     return tuple(polynomials_list)
 
 
-def generate_random_phases(max_order: int = 4, img_width: int = 257, img_height: int = 257) -> tuple:
+def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height: int = 513,
+                           round_digits: int = 4) -> tuple:
+    """
+    Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.
+
+    Parameters
+    ----------
+    max_order : int, optional
+        Maximum radial order of generated Zernike polynomials. The default is 4.
+    img_width : int, optional
+        Width of generated image. The default is 513.
+    img_height : int, optional
+        Height of generated image. The default is 513.
+    round_digits : int, optional
+        Round digits for polynomials amplitudes generation (nunpy.round(...) function call). The default is 4.
+
+    Returns
+    -------
+    tuple
+        Consisting of:
+        2D phase profile image with provided width and height;
+        1D numpy.ndarray containing randomly selected polynomials amplitudes;
+        tuple with generated Zernike polynomials.
+
+    """
     # Generate list with radial and angular orders for identifying polynomials
     polynomials_list = list(generate_polynomials(max_order))
     # Generate list with non-zero polynomials
@@ -1067,7 +1107,7 @@ def generate_random_phases(max_order: int = 4, img_width: int = 257, img_height:
     for i in range(polynomials_amplitudes.shape[0]):
         if random.choice(selector_list):
             polynomials_amplitudes[i] = random.uniform(-1.0, 1.0)
-    polynomials_amplitudes = np.round(polynomials_amplitudes, 3)
+    polynomials_amplitudes = np.round(polynomials_amplitudes, round_digits)
     # Additional check that at least some amplitude is non-zero
     if np.max(np.absolute(polynomials_amplitudes)) < 0.01:
         index = random.choice(range(polynomials_amplitudes.shape[0]))
@@ -1075,24 +1115,69 @@ def generate_random_phases(max_order: int = 4, img_width: int = 257, img_height:
     # Generate some phases image - sum of polynomials on some 2D array of pixels converted to polar coordinates
     phases_image = np.zeros(shape=(img_height, img_width))  # blank image
     row_center = img_height // 2; cols_center = img_width // 2
-    # below - defines radius of the Zernike circular profile, it is +1 for including more pixels in profile
+    # Below - define radius of the Zernike circular profile, it is +1 for including more pixels in profile
     min_img_size = min(img_width, img_height); img_radius = 1 + min_img_size // 2
     center = np.asarray([row_center, cols_center])  # center point of an image
+    # Calculation of 2D image with phases, which actually are composed by the sum of randomly selected Zernike polynomials
     for i in range(img_height):
+        r = np.zeros(shape=(img_width, )); theta = np.zeros(shape=(img_width, ))
         for j in range(img_width):
             euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
             if euclidean_dist <= img_radius:
-                r = euclidean_dist / img_radius
-                theta = np.arctan2(row_center - i, j - cols_center)
-                if theta < 0:
-                    theta += 2.0*np.pi
-                phases_image[i, j] = ZernPol.sum_zernikes(polynomials_amplitudes.tolist(),
-                                                          polynomials_list, r, theta)
+                r[j] = euclidean_dist / img_radius
+                theta[j] = np.arctan2(row_center - i, j - cols_center)
+                if theta[j] < 0.0:
+                    theta[j] += 2.0*np.pi
+        # Speed up calculations by using vectors (r, theta) as the input parameters
+        phases_image[i, :] = ZernPol.sum_zernikes(polynomials_amplitudes.tolist(),
+                                                  polynomials_list, r, theta)
+    # Final conversion
+    polynomials_list = tuple(polynomials_list)
     return phases_image, polynomials_amplitudes, polynomials_list
 
 
-def fit_polynomials() -> tuple:
-    pass
+def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: float = 1.0,
+                    suppress_warnings: bool = False, strict_circle_border: bool = False,
+                    round_digits: int = 4, return_cropped_image: bool = False) -> tuple:
+    """
+    Fit provided Zernike polynomials (instances of ZernPol class) to the 2D phase image.
+
+    Parameters
+    ----------
+    phases_image : numpy.ndarray
+        2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
+    polynomials : tuple
+        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
+    crop_radius : float, optional
+        Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of circle = min image size.
+        The default is 1.0.
+    suppress_warnings : bool, optional
+        Flag for suppress warnings about the provided 2D image sizes. The default is False.
+    strict_circle_border : bool, optional
+        Flag for controlling how the border pixels (on the circle radius) are treated: strictly or less strict for
+        allowing more pixels to be treated as belonged to a cropped circle. The default is False.
+    round_digits : int, optional
+        Round digits for returned polynomials amplitudes (nunpy.round(...) function call). The default is 4.
+    return_cropped_image : bool, optional
+        Flag for calculating and returning cropped image, used for fitting procedure. The default is False.
+
+    Returns
+    -------
+    tuple
+        DESCRIPTION.
+
+    """
+    zernike_coefficients = np.zeros(shape=(len(polynomials), ))
+    logic_mask, polar_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings,
+                                                    strict_circle_border)
+    if return_cropped_image:
+        cropped_image = logic_mask*phases_image  # for debugging
+    zernike_coefficients = fit_zernikes(phases_image, logic_mask, polar_coordinates, polynomials)
+    zernike_coefficients = np.round(zernike_coefficients, round_digits)
+    if return_cropped_image:
+        return zernike_coefficients, cropped_image
+    else:
+        return zernike_coefficients, None
 
 
 # %% Test functions for the external call
@@ -1171,7 +1256,7 @@ def check_conformity():
 if __name__ == "__main__":
     check_conformity()  # testing initialization
     plt.close("all")  # Check plotting functions
-    # zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp)  # basic plotting
+    zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plotting
     # Two plots should look similar below, using different methods to call
     zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(m=-3, n=3); coefficients = [1.0, 1.0]; polynomials = [zp1, zp2]
     # fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
@@ -1179,15 +1264,14 @@ if __name__ == "__main__":
     # fig1 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig1, show_range=False)
     # ZernPol._plot_zernikes_half_pyramid()
     fig3 = plt.figure(figsize=(2, 2)); zp3 = ZernPol(osa=9); polynomials = [zp3]; coefficients = [1.0]
-    fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False)
-    fig3.subplots_adjust(0, 0, 1, 1); plt.show()
+    fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
+    fig3.subplots_adjust(0, 0, 1, 1)
     # Check that warning is raised
-    z = ZernPol(n=26, m=-10); print("Value of radial Zernike polynomial with n=26, m=-10 r=0.85:",
-                                    round(z.radial(0.85), 4))
-    # Check that warning not raised
-    ZernPol(n=32, m=32); ZernPol(n=28, m=-26)
-    # Simple test of generation tuple with polynomials
-    pols = generate_polynomials(3)
+    # z = ZernPol(n=26, m=-10); print("Value of radial Zernike pol. with n=26, m=-10 r=0.85:", round(z.radial(0.85), 4))
     # Tests with generation / restoring Zernike profiles (phases images)
     phases_image, polynomials_ampls, polynomials = generate_random_phases()
     plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
+    polynomials_amplitdes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
+                                                         strict_circle_border=True, crop_radius=0.98)
+    plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout()
+    plt.show()
