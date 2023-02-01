@@ -866,10 +866,10 @@ class ZernPol:
                                  use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
                                  show_range: bool = True, color_map: str = "coolwarm") -> plt.Figure:
         """
-        Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.
+        Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
 
-        Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show())
-        as the method of the input parameter figure.
+        Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show()
+        or figure.show()) as the method of the input parameter figure.
 
         Parameters
         ----------
@@ -1164,8 +1164,12 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     Returns
     -------
     tuple
-        DESCRIPTION.
-
+        Depending on the input paratmer (flag) "return_cropped_image":
+        if it is True, then tuple returned with following variables: zernike_coefficients - 1D numpy.ndarray
+        with the fitted coefficients of Zernike polynomials, and cropped_image - the cropped part from the
+        input image with phases that is used for fitting procedure (useful for debugging purposes);
+        if it is False, the following tuple will be returned: zernike_coefficents, None - 1st with the same
+        meaning and type as explained before.
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), ))
     logic_mask, polar_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings,
@@ -1269,7 +1273,7 @@ if __name__ == "__main__":
     # Check that warning is raised
     # z = ZernPol(n=26, m=-10); print("Value of radial Zernike pol. with n=26, m=-10 r=0.85:", round(z.radial(0.85), 4))
     # Tests with generation / restoring Zernike profiles (phases images)
-    phases_image, polynomials_ampls, polynomials = generate_random_phases()
+    phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=300, img_width=300)
     plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
     polynomials_amplitdes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
                                                          strict_circle_border=True, crop_radius=0.98)

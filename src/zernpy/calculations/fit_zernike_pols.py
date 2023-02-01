@@ -77,7 +77,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
             else:
                 img_min_size = rows; img_max_size = rows
             if rows % 2 == 0 or cols % 2 == 0:
-                __warn_message = ("Phases image provided with even rows or columns,"
+                __warn_message = ("Phases image provided with even rows or columns, "
                                   + "it's error prone to define exact image center")
                 if not suppress_warns:
                     warnings.warn(__warn_message)
@@ -106,7 +106,9 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
             radius_epsilon = 0.001
             if not strict_border and ((rows % 2 == 0 and cols % 2 == 0) or (abs(rows - cols) == 1)):
                 radius_epsilon = 0.055  # defined for matrix(4, 4) for including border pixels
-                __warn_message = ("Phases image provided as a square or with 1 pixel difference in dimensions.\n"
+                __warn_message = ("\n Function called with flag that makes not strict cropping border of circle. \n"
+                                  + "Phases image provided with even rows and columns"
+                                  + " or with 1 pixel difference between them. \n"
                                   + "Note that additional border pixels are included to crop.")
                 if not suppress_warns:
                     warnings.warn(__warn_message)

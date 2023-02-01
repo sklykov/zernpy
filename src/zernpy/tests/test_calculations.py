@@ -2,8 +2,8 @@
 """
 Test the implemented calculation functions for module calc_zernike_pol and ZernPol static methods by using pytest library.
 
-pytest library available on: https://docs.pytest.org/en/latest/contents.html
-For running this test, it's enough to run the command "pytest" from the repository location.
+The pytest library available on: https://docs.pytest.org/en/latest/contents.html
+For running collected here tests, it's enough to run the command "pytest" from the repository location in the command line.
 
 @author: Sergei Klykov
 @licence: MIT
