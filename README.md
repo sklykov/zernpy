@@ -14,7 +14,7 @@ For installation of this package, use the command: ***pip install zernpy***
 
 #### Running tests for the code from the repository
 Using the library *pytest* just run in the root folder for the folder, containing the package: ***pytest***    
-It should collect 8 tests and automatically run them.
+It should collect 10 tests and automatically run them.
 
 #### Requirements
 For installation the *numpy* and *matplotlib* libraries are required.  
@@ -58,3 +58,15 @@ It plots the Zernike polynomial on unit circle polar coordinates (blocked non-in
 5) Plotting Zernike polynomials sum:  ***ZernPol.plot_sum_zernikes_on_fig(...)*** - check the list of parameters in the docstring.
 By using only default parameters, this method will plot sum of Zernike polynomials specified in the list with their coefficients
 on the provided figure (expected as an instance of the class *matplotlib.pyplot.Figure*).
+
+#### Fitting Zernike polynomials to a 2D image with phases
+Random generated set of Zernike polynomials plotted on an image - as the sample for testing the fitting procedure:     
+![Random Profile](./docs/images/Random_Profile.png "Random phases profile")     
+This image is assumed to contain phases wrapped in a circular aperture, used function for generation:
+***generate_random_phases(...)*** from the main *zernikepol* module.    
+Below is profile made by calculation of fitted Zernike polynomials:    
+![Fitted Profile](./docs/images/Fitted_Profile.png "Fitted polynomials profile")      
+The function used for fitting: ***fit_polynomials(...)*** from the main *zernikepol* module.    
+This function could be useful for making approximation of any image containing phases recorded by the optical system
+to the sum of Zernike polynomials. Check the detailed description of functions in the API dictionary, avalaible on
+the separate tab on the GitHub page of this repository.    

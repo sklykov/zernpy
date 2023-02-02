@@ -1081,7 +1081,7 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
     img_height : int, optional
         Height of generated image. The default is 513.
     round_digits : int, optional
-        Round digits for polynomials amplitudes generation (nunpy.round(...) function call). The default is 4.
+        Round digits for polynomials amplitudes generation (numpy.round(...) function call). The default is 4.
 
     Returns
     -------
@@ -1157,18 +1157,18 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         Flag for controlling how the border pixels (on the circle radius) are treated: strictly or less strict for
         allowing more pixels to be treated as belonged to a cropped circle. The default is False.
     round_digits : int, optional
-        Round digits for returned polynomials amplitudes (nunpy.round(...) function call). The default is 4.
+        Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.
     return_cropped_image : bool, optional
         Flag for calculating and returning cropped image, used for fitting procedure. The default is False.
 
     Returns
     -------
     tuple
-        Depending on the input paratmer (flag) "return_cropped_image":
+        Depending on the input parameter (flag) "return_cropped_image":
         if it is True, then tuple returned with following variables: zernike_coefficients - 1D numpy.ndarray
         with the fitted coefficients of Zernike polynomials, and cropped_image - the cropped part from the
         input image with phases that is used for fitting procedure (useful for debugging purposes);
-        if it is False, the following tuple will be returned: zernike_coefficents, None - 1st with the same
+        if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
         meaning and type as explained before.
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), ))
@@ -1273,9 +1273,9 @@ if __name__ == "__main__":
     # Check that warning is raised
     # z = ZernPol(n=26, m=-10); print("Value of radial Zernike pol. with n=26, m=-10 r=0.85:", round(z.radial(0.85), 4))
     # Tests with generation / restoring Zernike profiles (phases images)
-    phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=300, img_width=300)
-    plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
-    polynomials_amplitdes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
-                                                         strict_circle_border=True, crop_radius=0.98)
-    plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout()
-    plt.show()
+    phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
+    plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+    polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
+                                                          strict_circle_border=False, crop_radius=1.0)
+    plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+    plt.show()  # show all images created by plt.figure() calls

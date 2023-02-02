@@ -43,18 +43,18 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     Raises
     ------
     ValueError
-        If input parameters lay outside of specific ranges or provided with unexpected types.
+        If input parameters lay outside specific ranges or provided with unexpected types.
 
     Returns
     -------
     tuple
         Consisting of:
-        Cropped 2D logic mask with values: 0 - laying outside of cropped circle pixels, 1 - laying inside,
+        Cropped 2D logic mask with values: 0 - laying outside cropped circle pixels, 1 - laying inside,
         tuple with radii, thetas - polar coordinates of each pixel of an input phases image.
 
     """
     __warn_message = ""  # holder for warning message below
-    cropped_logic_mask = None  # initial value for returning it in the case of some incosistency
+    cropped_logic_mask = None  # initial value for returning it in the case of some inconsistency
     # Sanity checks of provided crop radius
     if not isinstance(crop_radius, float):
         crop_radius = float(crop_radius)
@@ -67,8 +67,8 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     else:
         if phases_image.ndim == 2:
             # Check input image shape
-            rows, cols = phases_image.shape; cropped_logic_mask = np.zeros(shape=phases_image.shape,
-                                                                           dtype=phases_image.dtype)
+            rows, cols = phases_image.shape
+            cropped_logic_mask = np.zeros(shape=phases_image.shape, dtype=phases_image.dtype)
             if rows != cols:
                 __warn_message = "Phases image isn't square, results of fitting could be ambiguous"
                 img_min_size = min(rows, cols); img_max_size = max(rows, cols)
@@ -138,7 +138,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     return cropped_logic_mask, (radii, thetas)
 
 
-def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray,
+def fit_zernikes(phases_image: np.ndarray, cropped_deformations_mask: np.ndarray,
                  polar_coordinates: tuple, polynomials: tuple) -> np.ndarray:
     """
     Fit provided tuple with polynomials (instances of ZernPol class) to the 2D image with phases.
@@ -147,10 +147,10 @@ def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray
     ----------
     phases_image : numpy.ndarray
         2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
-    cropped_demormations_mask : numpy.ndarray
-        Result of applying function crop_phases_img(..) from this module on an image with phases.
+    cropped_deformations_mask : numpy.ndarray
+        Result of applying function crop_phases_img(...) from this module on an image with phases.
     polar_coordinates : tuple
-        Result of calculation by using function crop_phases_img(..) from this module.
+        Result of calculation by using function crop_phases_img(...) from this module.
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
 
@@ -159,7 +159,7 @@ def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray
     AttributeError
         If the input tuple with polynomials composed not from instances of ZernPol class.
     ValueError
-        If one of input parameters is incosistent.
+        If one of input parameters is inconsistent.
     numpy.linalg.LinAlgError
         If the fit procedure doesn't converge (namely, np.linalg.lstsq(...) function doesn't converge).
 
@@ -170,23 +170,23 @@ def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray
 
     """
     # Preparing fitting values - convert 2D images to 1D vectors
-    rows, cols = cropped_demormations_mask.shape
+    rows, cols = cropped_deformations_mask.shape
     cropped_deformations_vector = np.zeros(shape=(rows*cols,), dtype=phases_image.dtype)
     cropped_radii_vector = np.zeros(shape=(rows*cols,)); cropped_thetas_vector = np.zeros(shape=(rows*cols,))
     vector_index = 0; zernike_coefficients = None
-    # Resave cropped deformations from input parameters in vectors
+    # Transform cropped deformations from input parameters in vectors
     for i in range(rows):
         for j in range(cols):
-            if cropped_demormations_mask[i, j] - 1 >= 0:
+            if cropped_deformations_mask[i, j] - 1 >= 0:
                 cropped_deformations_vector[vector_index] = phases_image[i, j]
                 cropped_radii_vector[vector_index] = polar_coordinates[0][i, j]
                 cropped_thetas_vector[vector_index] = polar_coordinates[1][i, j]
                 vector_index += 1
-    # Cut out all not resaved deformations and their coordinates
+    # Cut out all not transformed deformations and their coordinates
     cropped_deformations_vector = cropped_deformations_vector[0:vector_index]
     cropped_radii_vector = cropped_radii_vector[0:vector_index]
     cropped_thetas_vector = cropped_thetas_vector[0:vector_index]
-    # Additional check of border condition for an unit circle: the pixel has radius 1.001 but passed by cropping procedure
+    # Additional check of border condition for a unit circle: the pixel has radius 1.001 but passed by cropping procedure
     if 1.0 < np.max(cropped_radii_vector) < 1.002:
         cropped_radii_vector /= np.max(cropped_radii_vector)
         cropped_radii_vector = np.round(cropped_radii_vector, 3)
@@ -197,10 +197,10 @@ def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray
         polynomials[0].polynomial_value(0.1, np.pi/4)
     except AttributeError:
         raise AttributeError("1st provided polynomial in polynomials input parameter isn't instance of ZernPol class")
-    # Checking beliow in if condition that polynomials contain not only piston as polynomial for fitting
+    # Checking below in if condition that polynomials contain not only piston as polynomial for fitting
     m1 = polynomials[0].get_mn_orders()[0]; n1 = polynomials[0].get_mn_orders()[1]
     if len(polynomials) > 1 or (len(polynomials) == 1 and m1 == 0 and n1 == 0):
-        # Calculation of Zernike polynimials values in the polar coordinates composed in radii, thetas vectors
+        # Calculation of Zernike polynomials values in the polar coordinates composed in radii, thetas vectors
         for j in range(len(polynomials)):
             if polynomials[j].get_mn_orders()[0] == 0 and polynomials[j].get_mn_orders()[1] == 0:
                 continue  # do not calculate piston value, it's useless to fit this polynomial (constant value over aperture)
@@ -210,7 +210,7 @@ def fit_zernikes(phases_image: np.ndarray, cropped_demormations_mask: np.ndarray
         zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_deformations_vector, rcond=None)
         zernike_coefficients = zernike_coefficients[0]  # unpacking fitting results
     else:
-        raise ValueError("Lentgh of polynomials not enough for fitting or provided only piston")
+        raise ValueError("Length of polynomials not enough for fitting or provided only piston")
     return zernike_coefficients
 
 
