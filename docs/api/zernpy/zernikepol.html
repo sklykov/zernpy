@@ -100,12 +100,21 @@
 
             </li>
             <li>
+                    <a class="function" href="#generate_polynomials">generate_polynomials</a>
+            </li>
+            <li>
+                    <a class="function" href="#generate_random_phases">generate_random_phases</a>
+            </li>
+            <li>
+                    <a class="function" href="#fit_polynomials">fit_polynomials</a>
+            </li>
+            <li>
                     <a class="function" href="#check_conformity">check_conformity</a>
             </li>
     </ul>
 
 
-            <footer>zernpy ver. 0.0.5, 2022 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.6, 2023 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -120,6 +129,8 @@
 zernpy<wbr>.zernikepol    </h1>
 
                         <div class="docstring"><p>Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.</p>
+
+<p>Also, provides a few functions useful for fitting set of Zernike polynomials to a image with phases.</p>
 
 <p>@author: Sergei Klykov, @year: 2023 </p>
 
@@ -883,7 +894,7 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">plot_zernike_polynomial</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">polynomial</span></span><span class="return-annotation">):</span></span>
+        <span class="name">plot_zernike_polynomial</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">polynomial</span>, </span><span class="param"><span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>, </span><span class="param"><span class="n">show_title</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -898,6 +909,10 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
 <ul>
 <li><strong>polynomial</strong> (ZernPol):
 Instance of ZernPol class.</li>
+<li><strong>color_map</strong> (str, optional):
+Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".</li>
+<li><strong>show_title</strong> (bool, optional):
+Toggle for showing the name of polynomial on the plot or not.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -954,16 +969,16 @@ ZernSurf variable is 2D matrix with the sum of the input polynomials on generate
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">plot_sum_zernikes_on_fig</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">figure</span><span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">zernikes_sum_surface</span><span class="p">:</span> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">show_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></span><span class="return-annotation">) -> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>:</span></span>
+        <span class="name">plot_sum_zernikes_on_fig</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">figure</span><span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">zernikes_sum_surface</span><span class="p">:</span> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">show_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span></span><span class="return-annotation">) -> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>:</span></span>
 
         
     </div>
     <a class="headerlink" href="#ZernPol.plot_sum_zernikes_on_fig"></a>
     
-            <div class="docstring"><p>Plot a sum of the specified Zernike polynomials by two lists (ZernPol instances with their coefficients) on the provided figure.</p>
+            <div class="docstring"><p>Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.</p>
 
-<p>Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show() or figure.show())
-as the method of the input parameter figure.</p>
+<p>Note that for showing the plotted figure, one needs to call appropriate functions (e.g., matplotlib.pyplot.show()
+or figure.show()) as the method of the input parameter figure.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -983,6 +998,8 @@ This tuple could be generated by the call of the static method gen_zernikes_surf
 Check the method signature for details. The default is ().</li>
 <li><strong>show_range</strong> (bool, optional):
 Flag for showing range of provided values as the colorbar on the figure. The default is True.</li>
+<li><strong>color_map</strong> (str, optional):
+Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -1001,6 +1018,124 @@ Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.</li>
 
 
                             </div>
+                </section>
+                <section id="generate_polynomials">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">generate_polynomials</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#generate_polynomials"></a>
+    
+            <div class="docstring"><p>Generate tuple with ZernPol instances - ultimately, tuple with Zernike polynomials.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>max_order</strong> (int, optional):
+Maximum overall radial order (n) for generated Zernike list (pyramid). The default is 10.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: Raised if max_order &lt; 1, because it should be not less than 0.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>tuple</strong>: It composes generated ZernPol instances (Zernike polynomials).</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="generate_random_phases">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">generate_random_phases</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#generate_random_phases"></a>
+    
+            <div class="docstring"><p>Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>max_order</strong> (int, optional):
+Maximum radial order of generated Zernike polynomials. The default is 4.</li>
+<li><strong>img_width</strong> (int, optional):
+Width of generated image. The default is 513.</li>
+<li><strong>img_height</strong> (int, optional):
+Height of generated image. The default is 513.</li>
+<li><strong>round_digits</strong> (int, optional):
+Round digits for polynomials amplitudes generation (numpy.round(...) function call). The default is 4.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>tuple</strong>: Consisting of:
+2D phase profile image with provided width and height;
+1D numpy.ndarray containing randomly selected polynomials amplitudes;
+tuple with generated Zernike polynomials.</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="fit_polynomials">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">fit_polynomials</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">phases_image</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span>,</span><span class="param">	<span class="n">crop_radius</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>,</span><span class="param">	<span class="n">suppress_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">strict_circle_border</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">return_cropped_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#fit_polynomials"></a>
+    
+            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) to the 2D phase image.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>phases_image</strong> (numpy.ndarray):
+2D image with recorded phases which should be approximated by the sum of Zernike polynomials.</li>
+<li><strong>polynomials</strong> (tuple):
+Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.</li>
+<li><strong>crop_radius</strong> (float, optional):
+Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of circle = min image size.
+The default is 1.0.</li>
+<li><strong>suppress_warnings</strong> (bool, optional):
+Flag for suppress warnings about the provided 2D image sizes. The default is False.</li>
+<li><strong>strict_circle_border</strong> (bool, optional):
+Flag for controlling how the border pixels (on the circle radius) are treated: strictly or less strict for
+allowing more pixels to be treated as belonged to a cropped circle. The default is False.</li>
+<li><strong>round_digits</strong> (int, optional):
+Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.</li>
+<li><strong>return_cropped_image</strong> (bool, optional):
+Flag for calculating and returning cropped image, used for fitting procedure. The default is False.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>tuple</strong>: Depending on the input parameter (flag) "return_cropped_image":
+if it is True, then tuple returned with following variables: zernike_coefficients - 1D numpy.ndarray
+with the fitted coefficients of Zernike polynomials, and cropped_image - the cropped part from the
+input image with phases that is used for fitting procedure (useful for debugging purposes);
+if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
+meaning and type as explained before.</li>
+</ul>
+</div>
+
+
                 </section>
                 <section id="check_conformity">
                     <div class="attr function">

@@ -2,6 +2,8 @@
 """
 Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.
 
+Also, provides a few functions useful for fitting set of Zernike polynomials to a image with phases.
+
 @author: Sergei Klykov, @year: 2023 \n
 @licence: MIT \n
 
