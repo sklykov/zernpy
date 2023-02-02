@@ -12,8 +12,8 @@ if __name__ == "__main__":
 elif __name__ == "zernpy":
     pass  # do not add module "zernikepol" to __all__ attribute, because it demands to construct explicit path
 
-# Automatically bring the main class and some methods to the name space when the used command both commands:
-# 1) from zernpy import ZernPol; 2) from zernpy import *
+# Automatically bring the main class and some methods to the name space when one of import command is used commands:
+# 1) from zernpy import ZernPol, ... functions; 2) from zernpy import *
 if __name__ != "__main__" and __name__ != "__mp_main__":
-    from .zernikepol import ZernPol
-    from .zernikepol import generate_polynomials
+    from .zernikepol import ZernPol  # main class auto import
+    from .zernikepol import generate_polynomials, fit_polynomials, generate_random_phases  # functions auto import

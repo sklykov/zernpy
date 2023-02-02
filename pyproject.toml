@@ -1,6 +1,6 @@
 [project]
 name = "zernpy"
-version = "0.0.6"
+version = "0.0.7"
 authors = [
     {name = "Sergei Klykov"},
     {email = "sergej.klykow@gmail.com"}
@@ -31,8 +31,8 @@ keywords = ["zernike-polynomials"]
 # [tool.setuptools]
 # include-package-data = true  # true by default
 
-[tool.setuptools.packages.find]
-where = ["src"]
+# [tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
+# where = ["src"]  # there is no need to specify this here
 
 [build-system]
 requires = ["setuptools>=61.0"]
