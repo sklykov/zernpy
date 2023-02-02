@@ -2,7 +2,7 @@
 """
 Main script with the class definition for accessing Zernike polynomial initialization, calculation and plotting.
 
-Also, provides a few functions useful for fitting set of Zernike polynomials to a image with phases.
+Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
 @author: Sergei Klykov, @year: 2023 \n
 @licence: MIT \n
@@ -1100,20 +1100,25 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
     if max_order < 3:
         selector_list = [False, False, True]
     elif 3 <= max_order <= 4:
-        selector_list = [False, False, False, False, True]
+        selector_list = [False, False, False, True]
     elif 4 < max_order <= 8:
-        selector_list = [False, False, False, False, False, False, True]
+        selector_list = [False, False, False, False, False, True]
     else:
-        selector_list = [False, False, False, False, False, False, False, False, True]
+        selector_list = [False, False, False, False, False, False, False, True]
     polynomials_amplitudes = np.zeros(shape=(len(polynomials_list, )))
     for i in range(polynomials_amplitudes.shape[0]):
         if random.choice(selector_list):
-            polynomials_amplitudes[i] = random.uniform(-1.0, 1.0)
+            polynomials_amplitudes[i] = random.uniform(-1.5, 1.5)
     polynomials_amplitudes = np.round(polynomials_amplitudes, round_digits)
-    # Additional check that at least some amplitude is non-zero
-    if np.max(np.absolute(polynomials_amplitudes)) < 0.01:
-        index = random.choice(range(polynomials_amplitudes.shape[0]))
-        polynomials_amplitudes[index] = random.uniform(-1.0, 1.0)
+    # Additional check that at least some amplitude is non-zero and sufficiently high
+    if np.max(np.abs(polynomials_amplitudes)) < 0.08:
+        list_indices = [i for i in range(polynomials_amplitudes.shape[0])]
+        index = random.choice(list_indices)
+        rand_ampl = random.uniform(-1.5, 1.5)
+        if abs(rand_ampl) < 0.08:  # if selected amplitude again is low, shift choice borders
+            polynomials_amplitudes[index] = random.uniform(0.25, 1.5)
+        else:
+            polynomials_amplitudes[index] = rand_ampl
     # Generate some phases image - sum of polynomials on some 2D array of pixels converted to polar coordinates
     phases_image = np.zeros(shape=(img_height, img_width))  # blank image
     row_center = img_height // 2; cols_center = img_width // 2
@@ -1131,7 +1136,8 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
                 if theta[j] < 0.0:
                     theta[j] += 2.0*np.pi
         # Speed up calculations by using vectors (r, theta) as the input parameters
-        phases_image[i, :] = ZernPol.sum_zernikes(polynomials_amplitudes.tolist(),
+        polynomials_ampl_list = polynomials_amplitudes.tolist()
+        phases_image[i, :] = ZernPol.sum_zernikes(polynomials_ampl_list,
                                                   polynomials_list, r, theta)
     # Final conversion
     polynomials_list = tuple(polynomials_list)
