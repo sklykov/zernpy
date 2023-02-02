@@ -1,6 +1,6 @@
 [project]
 name = "zernpy"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
     {name = "Sergei Klykov"},
     {email = "sergej.klykow@gmail.com"}
@@ -27,6 +27,12 @@ keywords = ["zernike-polynomials"]
 "Repository" = "https://github.com/sklykov/zernpy/"
 "Bug Tracker" = "https://github.com/sklykov/zernpy/issues/"
 "Documentation" = "https://sklykov.github.io/zernpy/"
+
+# [tool.setuptools]
+# include-package-data = true  # true by default
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

@@ -61,11 +61,11 @@ on the provided figure (expected as an instance of the class *matplotlib.pyplot.
 
 #### Fitting Zernike polynomials to a 2D image with phases
 Random generated set of Zernike polynomials plotted on an image - as the sample for testing the fitting procedure:     
-![Random Profile](./docs/images/Random_Profile.png "Random phases profile")     
+![Random Profile](./src/zernpy/readme_images/Random_Profile.png "Random phases profile, could be not loaded on pypi.org")     
 This image is assumed to contain phases wrapped in a circular aperture, used function for generation:
 ***generate_random_phases(...)*** from the main *zernikepol* module.    
 Below is profile made by calculation of fitted Zernike polynomials:    
-![Fitted Profile](./docs/images/Fitted_Profile.png "Fitted polynomials profile")      
+![Fitted Profile](./src/zernpy/readme_images/Fitted_Profile.png "Fitted polynomials profile, could be not loaded on pypi.org")      
 The function used for fitting: ***fit_polynomials(...)*** from the main *zernikepol* module.    
 This function could be useful for making approximation of any image containing phases recorded by the optical system
 to the sum of Zernike polynomials. Check the detailed description of functions in the API dictionary, avalaible on
