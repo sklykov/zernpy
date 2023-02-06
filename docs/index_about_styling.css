@@ -16,7 +16,7 @@ body{
 /* Styling for left-side navigation bar */
 .navbar{
     /* Navigation bar - takes width according to the content, height = all page height */ 
-    margin: 6px; padding: 0.2rem;
+    margin: 6px; padding: 0.2rem;  /* Just experimenting with different size measure values */
     /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
     text-align: center; background-color: lightgray;
     font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
@@ -27,7 +27,7 @@ body{
 /* Styling of all links in the navigation bar (all descendants) */
 .navbar a{
     display: block;  /* Makes all elements starting with the new line */ 
-    padding-top: 18px; padding-bottom: 18px; padding-left: 2px; padding-right: 2px; 
+    padding-top: 20px; padding-bottom: 18px; padding-left: 2px; padding-right: 2px; 
     margin: 0.4em;
 }
 

@@ -17,7 +17,7 @@
     <!-- Load external overall applicable stylesheets -->
     <link rel="stylesheet" href="index_about_styling.css">
 
-    <!-- Overall styling and page-specific styles -->
+    <!-- Page-specific styles -->
     <style>
         /* This class contains all the text inside */
         .contentContainer{
@@ -64,15 +64,15 @@
 
         <!-- Main content of the webpage -->
         <main class="mainBody">
-            <section class="contentContainer">
-                <p>
+            <div class="contentContainer">
+                <header>
                     <h3 class="header"> Welcome! </h3>
                     <div class="header">
                         I am pleased that you've found it interesting to take a look on my library <strong>"zernpy"</strong>. 
                     </div>
                     <hr>
-                </p>
-                <div>
+                </header>
+                <section>
                     <p>
                         <h4> Installation instructions </h4>
                         <div class="textString">
@@ -131,8 +131,8 @@
                             <input type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
                         </div>
                     </p>
-                </div>
-            </section>
+                </section>
+            </div>
             <!-- Below - image element that used for setting it as the background image -->
             <div class="bgImage"></div> 
             <!-- Footer with some info -->
