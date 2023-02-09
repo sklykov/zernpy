@@ -1,8 +1,11 @@
 // Perform all actions below when the page is loaded
 document.addEventListener("DOMContentLoaded", () =>{
-    var previousPageWidth = false;
-    var nameImage = document.querySelector(".DisplayZernikeName");
-    var defaultNameImageText = nameImage.textContent;
+
+    // Variables accessible for all defined below functions
+    let previousPageWidth = false;
+    let nameImage = document.querySelector(".DisplayZernikeName");
+    let defaultNameImageText = nameImage.textContent;
+    let images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
 
     // Move the element showing the name of image to the left
     function moveNamePolEl(){
@@ -14,11 +17,9 @@ document.addEventListener("DOMContentLoaded", () =>{
     // var images = document.getElementsByClassName("ZernProfile");  // returns some HTMLCollection class, how to loop over the elements?
     // Below - making the pyramidal order for the images in the recallable function
     function makePyramid(init_y_shift, x_reduce_distance){
-        var i = 0; var y_shift = 20 + init_y_shift;  var x_shift = 80 - x_reduce_distance; var y_step = 120; var element_width = 100;
-        var elementsInRow = 2;
-        var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-        var n_row = 0; var max_row = 2; var initial_x_shift = half_width_main - x_shift - element_width/2 - x_reduce_distance/2;
-        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+        let i = 0; let y_shift = 20 + init_y_shift;  let x_shift = 80 - x_reduce_distance; let y_step = 120; let element_width = 100;
+        let elementsInRow = 2; let half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
+        let n_row = 0; let max_row = 2; let initial_x_shift = half_width_main - x_shift - element_width/2 - x_reduce_distance/2;
         // Below - loop over all images queried by querySelectorAll
         images.forEach(element => {
             // element.style.position = "absolute";  // This is useless because it breaks the relative positioning of elements
@@ -50,12 +51,11 @@ document.addEventListener("DOMContentLoaded", () =>{
         });
     }
 
+    // Put all images in columns close to each other for saving space on small monitors
     function putImagesInCols(initial_set){
-        var i = 0; var y_shift = 50;  var x_shift = 5; var y_step = 110; var element_width = 100;
-        var elementsInRow = 3;
-        var half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
-        var n_row = 0; var max_row = 3; var initial_x_shift = half_width_main - 1.5*(x_shift + element_width);
-        var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+        let i = 0; let y_shift = 50; let x_shift = 5; let y_step = 110; let element_width = 100;
+        let elementsInRow = 3; let half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
+        let n_row = 0; let max_row = 3; let initial_x_shift = half_width_main - 1.5*(x_shift + element_width);
         // Below - loop over all images queried by querySelectorAll
         images.forEach(element => {
             element.style.top = `${y_shift}px`; 
@@ -80,9 +80,8 @@ document.addEventListener("DOMContentLoaded", () =>{
     }
         
     // Below - add event listeners to each image for changing the string to represent their name
-    var images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
     images.forEach(element => {
-        var namePrefix = "Pointer on the image of:  ";
+        let namePrefix = "Pointer on the image of:  ";
         element.addEventListener("mouseenter", (event) => {
             // console.log("Mouse event listener registered");
             // switch statement for getting id of image container
@@ -161,19 +160,22 @@ document.addEventListener("DOMContentLoaded", () =>{
 
     // Specify less vertical margins if navigation bar goes on the top of the page
     function makeLessMarginNavbar(){
+        let navbar = document.getElementsByClassName("navbar"); navbar[0].style.display = "block";  // from flexbox representation to block (takes less space)
         let navbarLinks = document.getElementsByClassName("navbarLink");
-            // Somehow, the call navbarLinks.forEach() doesn't work on HMTLCollection
-            for (var i=0; i<navbarLinks.length; i++){
-                // console.log(navbarLinks[i]);
-                navbarLinks[i].style.paddingTop = "0.5em"; navbarLinks[i].style.paddingBottom = "0.5em"; navbarLinks[i].style.margin = "0.25em";
-            }
+        // Somehow, the call navbarLinks.forEach() doesn't work on HTMLCollection
+        for (let i=0; i<navbarLinks.length; i++){
+            navbarLinks[i].style.paddingTop = "0.25em"; navbarLinks[i].style.paddingBottom = "0.25em"; navbarLinks[i].style.margin = "0.15em";
+        }
     }
 
     // Return back margins (almost the same, better length measures)
     function restoreMarginNavbar(){
+        // restore default value for navbar element
+        let navbar = document.getElementsByClassName("navbar"); navbar[0].style.display = "flex"; navbar[0].style.flexDirection = "column"; 
+        // restore default values for navbar elements (links) 
         let navbarLinks = document.getElementsByClassName("navbarLink");
-        for (var i=0; i<navbarLinks.length; i++){
-            navbarLinks[i].style.paddingTop = "1em"; navbarLinks[i].style.paddingBottom = "1em"; navbarLinks[i].style.margin = "6px";
+        for (let i=0; i<navbarLinks.length; i++){
+            navbarLinks[i].style.paddingTop = "20px"; navbarLinks[i].style.paddingBottom = "20px"; navbarLinks[i].style.margin = "1.2em 0.5em";
         }
     }
 

@@ -22,13 +22,14 @@ body{
     font-size: 16px; font-family: Verdana, Tahoma, sans-serif;
     /* z-index: 1;  */
     position: relative;
+    display: flex; flex-direction: column;
 }
 
 /* Styling of all links in the navigation bar (all descendants) */
 .navbar a{
     display: block;  /* Makes all elements starting with the new line */ 
-    padding-top: 20px; padding-bottom: 18px; padding-left: 2px; padding-right: 2px; 
-    margin: 0.4em;
+    padding-top: 20px; padding-bottom: 20px; padding-left: 2px; padding-right: 2px; 
+    margin: 1.2em 0.5em;  /* if "auto" is specified then the elements will be spread evenly */
 }
 
 /* Styling for links */

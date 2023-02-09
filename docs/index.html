@@ -5,13 +5,15 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="S.K.">
+    <meta name="licensed" content="MIT">
 
     <title>Project "zernpy"</title>
 
     <!-- Favicon specification from the local file -->
     <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
 
-    <!-- Load script --> 
+    <!-- Load page specific script --> 
     <script src="index_page.js"></script>
 
     <!-- Load external overall applicable stylesheets -->
@@ -47,6 +49,10 @@
         }
         #page_footer{
             font-size: 0.9em; font-family: 'Courier New', Courier, monospace; padding-top: 4em;
+        }
+        /* Inline elements means various elements (labels, inputs) specified on the single line */
+        .inline-element{
+            margin-left: 0.2em; margin-right: 0.2em;
         }
     </style>
 </head>
@@ -117,18 +123,19 @@
                                 Specify below the index (indices) for Zernike polynomial specification
                                 (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
                             </div>
-                            <label style="margin-left: 4px;"> Select the indexing type: </label>
-                            <select name="Index type" style="margin-left: 0.1em;">
+                            <label class="inline-element"> Select the indexing type: </label>
+                            <select class="inline-element" name="Index type">
                                 <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
                                 <option value="osa">OSA/ANSI</option>
                                 <option value="noll">Noll</option>
                                 <option value="fringe">Fringe</option>
                             </select>
-                            <div style="display: inline-block; margin-left: 0.2em; margin-right: 0.5em;" id="ordersLabel"> orders: </div>
-                            <label tag="n_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="firstOrderLabel"> n = </label>
-                            <input type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3" value="0" id="firstInputOrder">
-                            <label tag="m_order_label" style="margin-left: 0.5em; margin-right: 0.2em;" id="secondOrderLabel"> m = </label>
-                            <input type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
+                            <span class="inline-element" id="ordersLabel"> orders: </span>
+                            <label class="inline-element" tag="n_order_label" id="firstOrderLabel"> n = </label>
+                            <input class="inline-element" type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3" value="0" id="firstInputOrder">
+                            <label class="inline-element" tag="m_order_label" id="secondOrderLabel"> m = </label>
+                            <input class="inline-element" type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
+                            <input class="inline-element" type="button" value="Get Indices/Orders">
                         </div>
                     </p>
                 </section>
