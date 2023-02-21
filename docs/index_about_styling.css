@@ -46,3 +46,17 @@ body{
 .header{
     text-align: center; margin: 8px;
 }
+
+/* Provide special styles for small screen sizes (cell phones, test on Google Chrome) */
+@media screen and (max-width: 500px){
+    .flexboxContainer{
+        flex-direction: column;  /* Explicitly designate main axis for the flexbox layout */
+    }
+    .navbar{
+        margin: 2px; padding: 0.1rem; 
+        display: block;
+    }
+    .navbar a{
+        padding-top: 0.2em; padding-bottom: 0.2em; margin: 0.15em;
+    }
+}

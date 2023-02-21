@@ -1,21 +1,24 @@
 // Perform all actions below when the page is loaded
 document.addEventListener("DOMContentLoaded", () =>{
 
-    // Variables accessible for all defined below functions
+    // Variables accessible for all defined below functions, mostly DOM elements
     let previousPageWidth = false;
     let nameImage = document.querySelector(".DisplayZernikeName");
-    let defaultNameImageText = nameImage.textContent;
+    let defaultNameImageText = nameImage.textContent;  // default text for element showing the polynomial name
     let images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+    let navbar = document.getElementsByClassName("navbar")[0];
+    let navbarLinks = document.getElementsByClassName("navbarLink");
 
     // Move the element showing the name of image to the left
     function moveNamePolEl(){
         nameImage.style.textAlign = "left"; 
         nameImage.style.position = "relative";  // allows moving this field below
         nameImage.style.left = "15px"; nameImage.style.top = "35px";
+        defaultNameImageText = defaultNameImageText.replace("below", "right");
+        nameImage.textContent = defaultNameImageText; 
     }
 
-    // var images = document.getElementsByClassName("ZernProfile");  // returns some HTMLCollection class, how to loop over the elements?
-    // Below - making the pyramidal order for the images in the recallable function
+    // Make the pyramidal order for the images in the recallable function
     function makePyramid(init_y_shift, x_reduce_distance){
         let i = 0; let y_shift = 20 + init_y_shift;  let x_shift = 80 - x_reduce_distance; let y_step = 120; let element_width = 100;
         let elementsInRow = 2; let half_width_main = Math.round(document.querySelector(".imagesContainer").clientWidth/2);
@@ -79,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () =>{
         }
     }
         
-    // Below - add event listeners to each image for changing the string to represent their name
+    // Add event listeners to each image for changing the represented on the page element to represent their name
     images.forEach(element => {
         let namePrefix = "Pointer on the image of:  ";
         element.addEventListener("mouseenter", (event) => {
@@ -115,14 +118,14 @@ document.addEventListener("DOMContentLoaded", () =>{
         });
     });
 
-    // making the page more responsive - adding the monitoring of size changed
+    // Making the page more responsive - adding the monitoring of size changed (actually, for testing on the browser resizing feature)
     visualViewport.onresize = (event) => {
+        // console.log("Event 'resize page' encountered and handled"); 
         if(visualViewport.width < 1550){
-            // below - attempt to input line break, but seems that HTML div element ignores it
-            // defaultNameImageText = "Hover mouse over the images (right) \n for getting polynomial name"; 
-            // nameImage.textContent = defaultNameImageText;
             nameImage.style.textAlign = "center"; nameImage.style.position = "static";
             document.querySelector(".flexboxContainer").style.flexDirection = "row";
+            defaultNameImageText = defaultNameImageText.replace("right", "below");
+            nameImage.textContent = defaultNameImageText; 
             restoreMarginNavbar();
         }
         else{
@@ -160,8 +163,7 @@ document.addEventListener("DOMContentLoaded", () =>{
 
     // Specify less vertical margins if navigation bar goes on the top of the page
     function makeLessMarginNavbar(){
-        let navbar = document.getElementsByClassName("navbar"); navbar[0].style.display = "block";  // from flexbox representation to block (takes less space)
-        let navbarLinks = document.getElementsByClassName("navbarLink");
+        navbar.style.display = "block";  // from flexbox representation to block (takes less space)
         // Somehow, the call navbarLinks.forEach() doesn't work on HTMLCollection
         for (let i=0; i<navbarLinks.length; i++){
             navbarLinks[i].style.paddingTop = "0.25em"; navbarLinks[i].style.paddingBottom = "0.25em"; navbarLinks[i].style.margin = "0.15em";
@@ -171,9 +173,8 @@ document.addEventListener("DOMContentLoaded", () =>{
     // Return back margins (almost the same, better length measures)
     function restoreMarginNavbar(){
         // restore default value for navbar element
-        let navbar = document.getElementsByClassName("navbar"); navbar[0].style.display = "flex"; navbar[0].style.flexDirection = "column"; 
+        navbar.style.display = "flex"; navbar.style.flexDirection = "column"; 
         // restore default values for navbar elements (links) 
-        let navbarLinks = document.getElementsByClassName("navbarLink");
         for (let i=0; i<navbarLinks.length; i++){
             navbarLinks[i].style.paddingTop = "20px"; navbarLinks[i].style.paddingBottom = "20px"; navbarLinks[i].style.margin = "1.2em 0.5em";
         }
@@ -191,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () =>{
         makeLessMarginNavbar();
     } else if(visualViewport.width <= 500){
         document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
-        document.querySelector(".flexboxContainer").style.flexDirection = "column";
+        // document.querySelector(".flexboxContainer").style.flexDirection = "column";  // shifted to the style media query property
         putImagesInCols(initial_set=true); makeLessMarginNavbar();
     }
 });

@@ -69,4 +69,13 @@ Below is profile made by calculation of fitted Zernike polynomials:
 The function used for fitting: ***fit_polynomials(...)*** from the main *zernikepol* module.    
 This function could be useful for making approximation of any image containing phases recorded by the optical system
 to the sum of Zernike polynomials. Check the detailed description of functions in the API dictionary, available on
-the separate tab on the GitHub page of this repository.    
+the separate tab on the GitHub page of this repository.  
+Import statement for using the scripts the mentioned functions:  
+```python
+from zernpy import generate_polynomials, fit_polynomials, generate_random_phases
+```
+Or for importing all available functions and base class in one statement:    
+```python
+from zernpy import *
+```
+Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of *ZernPol* class.   
