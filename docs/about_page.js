@@ -1,5 +1,6 @@
 // Perform all actions below when the page is loaded
 document.addEventListener("DOMContentLoaded", () =>{
+    "use strict";
 
     // Variables accessible for all defined below functions, mostly DOM elements
     let previousPageWidth = false;

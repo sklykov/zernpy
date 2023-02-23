@@ -54,6 +54,10 @@
         .inline-element{
             margin-left: 0.2em; margin-right: 0.2em;
         }
+        /* Specific style for placeholder for conversions */
+        #conversionString{
+            margin-left: 0.25em; border: 1px solid blue; padding: 0.2em; border-radius: 1em;
+        }
     </style>
 </head>
 
@@ -135,7 +139,8 @@
                             <input class="inline-element" type="number" tag="n_order" name="n" min="0" max="50" size="3" minlength="1" maxlength="3" value="0" id="firstInputOrder">
                             <label class="inline-element" tag="m_order_label" id="secondOrderLabel"> m = </label>
                             <input class="inline-element" type="number" tag="m_order" name="m" min="-50" max="50" size="3" minlength="1" maxlength="3" value="0" id="secondInputOrder">
-                            <input class="inline-element" type="button" value="Get Indices/Orders">
+                            <input class="inline-element" type="button" value="Get Indices/Orders" id="getIndicesBtn">
+                            <span id="conversionString"> Click button on the right to get here conversions </span>
                         </div>
                     </p>
                 </section>
