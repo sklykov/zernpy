@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () =>{
                 y_shift += y_step;
                 // Below - the adding height to imagesContainer element
                 if (n_row < max_row){
-                    height = document.querySelector(".imagesContainer").clientHeight;
+                    let height = document.querySelector(".imagesContainer").clientHeight;
                     document.querySelector(".imagesContainer").style.height = `${height*(n_row-0.05) + y_shift}px`;
                 }
                 n_row += 1;
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () =>{
         });
         // Below - the adding height to imagesContainer element
         if(initial_set){
-            height = document.querySelector(".imagesContainer").clientHeight;
+            let height = document.querySelector(".imagesContainer").clientHeight;
             if(previousPageWidth > 500){
                 document.querySelector(".imagesContainer").style.height = `${height + (max_row-3.5)*(element_width)}px`;
             } else {
@@ -131,31 +131,31 @@ document.addEventListener("DOMContentLoaded", () =>{
         }
         else{
             moveNamePolEl();  // move the displaying of name string (element) back
-            makePyramid(shift_y=0, x_reduce_distance = 0); // call the put images in pyramid
+            makePyramid(0, 0); // call the put images in pyramid
             document.querySelector(".flexboxContainer").style.flexDirection = "row";
             restoreMarginNavbar();
         }
         if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
-            makePyramid(shift_y = 25, x_reduce_distance = 0); // call the put images in pyramid
+            makePyramid(25, 0); // call the put images in pyramid
             document.querySelector(".flexboxContainer").style.flexDirection = "row";
             restoreMarginNavbar();
         }
         if((visualViewport.width < 1000) && (visualViewport.width > 700)){
-            makePyramid(shift_y = 25, x_reduce_distance = 60); document.querySelector(".flexboxContainer").style.flexDirection = "row";
+            makePyramid(25, 60); document.querySelector(".flexboxContainer").style.flexDirection = "row";
             restoreMarginNavbar();
         }
         if((visualViewport.width < 700) && (visualViewport.width > 500)){
             document.querySelector(".flexboxContainer").style.flexDirection = "column";  // change representation of webpage - moving navbar on top
-            makePyramid(shift_y = 25, x_reduce_distance = 76); 
+            makePyramid(25, 76); 
             makeLessMarginNavbar();
         }
         if(visualViewport.width <= 500){
             document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
             document.querySelector(".flexboxContainer").style.flexDirection = "column";
             if(previousPageWidth <= 500){
-                putImagesInCols(initial_set=false);
+                putImagesInCols(false);
             } else {
-                putImagesInCols(initial_set=true);
+                putImagesInCols(true);
             }
             makeLessMarginNavbar();
         }
@@ -183,17 +183,17 @@ document.addEventListener("DOMContentLoaded", () =>{
 
     // Call functions when the page is loaded for initial placing the elements - repeating the logic from above
     if(visualViewport.width > 1550){
-        moveNamePolEl(); makePyramid(shift_y=0, x_reduce_distance = 0);
+        moveNamePolEl(); makePyramid(0, 0);
     } else if((visualViewport.width < 1550) && (visualViewport.width > 1000)){
-        makePyramid(shift_y = 25, x_reduce_distance = 0);
+        makePyramid(25, 0);
     } else if((visualViewport.width < 1000) && (visualViewport.width > 700)){
-        makePyramid(shift_y = 25, x_reduce_distance = 60);
+        makePyramid(25, 60);
     } else if((visualViewport.width < 700) && (visualViewport.width > 500)){
-        makePyramid(shift_y = 25, x_reduce_distance = 76); document.querySelector(".flexboxContainer").style.flexDirection = "column";
+        makePyramid(25, 76); document.querySelector(".flexboxContainer").style.flexDirection = "column";
         makeLessMarginNavbar();
     } else if(visualViewport.width <= 500){
         document.querySelector("#RepresentingZernikeStr").textContent = "Representing a few Zernike profiles in 2 columns";
         // document.querySelector(".flexboxContainer").style.flexDirection = "column";  // shifted to the style media query property
-        putImagesInCols(initial_set=true); makeLessMarginNavbar();
+        putImagesInCols(true); makeLessMarginNavbar();
     }
 });

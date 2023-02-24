@@ -23,6 +23,7 @@ def test_polynomials_initialization():
 
 # Explicit testing initialization of Zernike polynomials
 def test_explicit_initialization():
+    # Testing the ordinar, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
     assert abs(zp.radial_dr(0.25) - 1.0) < 1E-9, f"Radial derivative calculated with error for Z{(m, n)}"
     m = 0; n = 6; zp = ZernPol(n=n, l=m)
@@ -39,8 +40,18 @@ def test_explicit_initialization():
     assert (osa == 6 and noll == 9 and fringe == 11
             and m == -3 and n == 3), f"Some error in definition of indices: {(m, n), osa, noll, fringe} for ZernPol(fringe = 11)"
     zp = ZernPol(noll=1); assert abs(zp.normf() - 1) < 1E-9, "Normalization factor for Z(noll=1) calculated with error"
-    # Test wrong initialization parameters
 
+    # Testing the initialization and getting names for various combination of parameters
+    zernpol = ZernPol(n=7, l=-5); m, n = zernpol.get_mn_orders()
+    assert zernpol.get_polynomial_name() == "Vertical secondary pentafoil", f"Returned wrong name for Z{(m, n)}"
+    zernpol = ZernPol(osa=9); m, n = zernpol.get_mn_orders()
+    assert zernpol.get_polynomial_name() == "Oblique trefoil", f"Returned wrong name for Z{(m, n)}"
+    zernpol = ZernPol(noll=15); m, n = zernpol.get_mn_orders()
+    assert zernpol.get_polynomial_name(True) == "Obliq. 4foil", f"Returned wrong short name for Z{(m, n)}"
+    zernpol = ZernPol(fringe=60); m, n = zernpol.get_mn_orders()
+    assert len(zernpol.get_polynomial_name()) == 0, f"Returned some name for Z{(m, n)}, but it's not defined"
+
+    # Testing wrong initialization parameters - for checking that they not passed through
     # OSA
     try:
         ZernPol(osa=-1); assert_flag = False
@@ -54,6 +65,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(noll=0)"
+    try:
+        ZernPol(noll=-2); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(noll=-2)"
 
     # Fringe
     try:
@@ -61,6 +77,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=0)"
+    try:
+        ZernPol(fringe=0.4); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=0.4)"
 
     # Orders radial, azimuthal
     try:

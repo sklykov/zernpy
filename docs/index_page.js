@@ -1,7 +1,7 @@
 // the way of adding the Event listener - to guarantee that the page and all elements are available
 document.addEventListener("DOMContentLoaded", function () {
     console.log("Index Page loaded");
-    "use strict";
+    "use strict";  // enables more strict behavior of JS
 
     // Variables for storing values
     let nOrder = 0; let mOrder = 0; let osaIndex = -1; let nollIndex = -1; let fringeIndex = -1;
@@ -20,9 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let selector = document.getElementsByName("Index type")[0];  // get the selected HTML element by name
     selector.selectedIndex = 0;  // set the default option to selected HTML element
     let selectedPolynomialType = selector.value;
+    let conversionReport = document.getElementById("conversionString");
 
     // Register event for tracing the new selected value from index.html
     selector.addEventListener("change", () => {
+        conversionReport.textContent = "Click button on the left to get here conversions";
         console.log("Selected type of polynomial specification:" + selector.value); 
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         nOrder = -1; mOrder = -1; osaIndex = -1; nollIndex = -1; fringeIndex = -1;
@@ -57,8 +59,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Register update of nOrder / indices
     nOrderInput.addEventListener("change", () =>{
+        conversionReport.textContent = "Click button on the left to get here conversions";
         let isNumber = validateOrderN(); 
-        console.log("Validation result: " + isNumber);
+        // console.log("Validation result: " + isNumber);
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         switch (selectedPolynomialType){
             case "m,n":
@@ -69,26 +72,48 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 break;
             case "osa":
-                osaIndex = nOrderInput.value; break;
+                if (isNumber) {
+                    osaIndex = Number(nOrderInput.value);
+                } else {
+                    nOrderInput.value = osaIndex; 
+                }
+                break;
             case "noll":
-                nollIndex = nOrderInput.value; break;
+                if (isNumber) {
+                    nollIndex = Number(nOrderInput.value);
+                } else {
+                    nOrderInput.value = nollIndex; 
+                }
+                break;
             case "fringe":
-                fringeIndex = nOrderInput.value; break;
+                if (isNumber) {
+                    fringeIndex = Number(nOrderInput.value);
+                } else {
+                    nOrderInput.value = fringeIndex; 
+                }
+                break;
         }
     });
 
     // Register update of mOrder
     mOrderInput.addEventListener("change", () => {
+        conversionReport.textContent = "Click button on the left to get here conversions";
+        let isNumber = validateOrderN(); 
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         switch (selectedPolynomialType){
             case "m,n":
-                nOrder = nOrderInput.value; mOrder = mOrderInput.value; break;
+                if (isNumber) {
+                    nOrder = Number(nOrderInput.value); mOrder = Number(mOrderInput.value);
+                } else {
+                    mOrderInput.value = mOrder; 
+                }
+                break;
             default:
                 empty;
         }
     });
 
-    // Validate input
+    // Validate input for nOrderInput
     function validateOrderN(){
         let inputValue = parseInt(nOrderInput.value);
         if (Number.isInteger(inputValue)){
@@ -99,9 +124,53 @@ document.addEventListener("DOMContentLoaded", function () {
         return false;
     }
 
+    // Validate input for mOrderInput
+    function validateOrderM(){
+        let inputValue = parseInt(mOrderInput.value);
+        if (Number.isInteger(inputValue)){
+            if (inputValue >= 0 && inputValue <= 100){
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Handle clicking on the button for getting indices and orders
     getIndicesBtn.addEventListener("click", () =>{
-        console.log(`Stored values: n=${nOrder}, type: ${typeof nOrder}, m=${mOrder}, OSA=${osaIndex}, Noll=${nollIndex}, Fringe=${fringeIndex}`);
+        console.log(`Stored values: n=${nOrder}, m=${mOrder}, OSA=${osaIndex}, Noll=${nollIndex}, Fringe=${fringeIndex}`);
+        selectedPolynomialType = selector.value;  // update value each time from the HTML selector
+        switch (selectedPolynomialType){
+            case "m,n":
+                if (checkOrders(mOrder, nOrder)) {
+                    console.log("Orders checked successfully");
+                } else {
+                    conversionReport.textContent = "Orders provided inconsistently and reassigned to default values";
+                    mOrder = 0; nOrder = 0; nOrderInput.value = 0; mOrderInput.value = 0; 
+                }
+                break;
+            case "osa":
+                break;
+            case "noll":
+                break;
+            case "fringe":
+                break;
+        }
     });
 
+    // Check provided orders - their consistency
+    function checkOrders(m, n){
+        let passedCheck = false;
+        // all requirements for orders below
+        if (n >= 0){
+            if (n > 0){
+                if ((n - Math.abs(m)) % 2 == 0){
+                    passedCheck = true;
+                }
+            } else if (m == 0){
+                passedCheck = true;
+            }
+            
+        }
+        return passedCheck;
+    }
 });

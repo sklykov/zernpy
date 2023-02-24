@@ -56,11 +56,11 @@ def test_sum_zernikes():
                                                                                                + " method output (tuple len=3)")
     assert len(zern_surface.ZernSurf.shape) == 2, "Check gen_zernikes_surface() method for output matrix shape"
     try:
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
-                                         figure=fig, zernikes_sum_surface=zern_surface)
-        plt.show(block=False); time.sleep(1.05)  # show the figure for 1.2 sec. during test run
+        from matplotlib.figure import Figure
+        fig = Figure()
+        plotted_fig = ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
+                                                       figure=fig, zernikes_sum_surface=zern_surface)
+        assert isinstance(plotted_fig, Figure) and plotted_fig.tight_layout, "Something wrong with the plotting function"
     except ModuleNotFoundError:
         assert False, "Install matplotlib for passing the test"
 

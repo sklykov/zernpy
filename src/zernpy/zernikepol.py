@@ -23,11 +23,13 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
                                                triangular_derivative, radial_derivative)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
+    from props.properties import polynomial_names, short_polynomial_names
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                 triangular_derivative, radial_derivative)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
+    from .props.properties import polynomial_names, short_polynomial_names
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -42,38 +44,6 @@ class ZernPol:
     # Pre-initialized class variables
     __initialized: bool = False  # will be set to true after successful construction
     __n: int = 0; __m: int = 0; __osa_index: int = 0; __noll_index: int = 0; __fringe_index: int = 0
-    # References for names - see the docstring of the method get_polynomial_name
-    polynomial_names: dict = {
-        (-1, 1): "Vertical tilt", (1, 1): "Horizontal tilt", (-2, 2): "Oblique astigmatism",
-        (0, 2): "Defocus", (2, 2): "Vertical astigmatism", (-3, 3): "Vertical trefoil",
-        (-1, 3): "Vertical coma", (1, 3): "Horizontal coma", (3, 3): "Oblique trefoil",
-        (-4, 4): "Oblique quadrafoil", (-2, 4): "Oblique secondary astigmatism",
-        (0, 4): "Primary spherical", (2, 4): "Vertical secondary astigmatism",
-        (4, 4): "Vertical quadrafoil", (-5, 5): "Vertical pentafoil",
-        (-3, 5): "Vertical secondary trefoil", (-1, 5): "Vertical secondary coma",
-        (1, 5): "Horizontal secondary coma", (3, 5): "Oblique secondary trefoil",
-        (5, 5): "Oblique pentafoil", (-6, 6): "Oblique sexfoil",
-        (-4, 6): "Oblique secondary quadrafoil", (-2, 6): "Oblique thirdly astigmatism",
-        (0, 6): "Secondary spherical", (2, 6): "Vertical thirdly astigmatism",
-        (4, 6): "Vertical secondary quadrafoil", (6, 6): "Vertical sexfoil",
-        (-7, 7): "Vertical septfoil", (-5, 7): "Vertical secondary pentafoil",
-        (-3, 7): "Vertical thirdly trefoil", (-1, 7): "Vertical thirdly coma",
-        (1, 7): "Horizontal thirdly coma", (3, 7): "Oblique thirdly trefoil",
-        (5, 7): "Oblique secondary pentafoil", (7, 7): "Oblique septfoil"}
-    short_polynomial_names: dict = {
-        (-1, 1): "Vert. tilt", (1, 1): "Hor. tilt", (-2, 2): "Obliq. astigm.",
-        (0, 2): "Defocus", (2, 2): "Vert. astigm.", (-3, 3): "Vert. 3foil",
-        (-1, 3): "Vert. coma", (1, 3): "Hor. coma", (3, 3): "Obliq. 3foil",
-        (-4, 4): "Obliq. 4foil", (-2, 4): "Obliq. 2d ast.",
-        (0, 4): "Spherical", (2, 4): "Vert. 2d ast.", (4, 4): "Vert. 4foil",
-        (-5, 5): "Vert. 5foil", (-3, 5): "Vert. 2d 3foil", (-1, 5): "Vert. 2d coma",
-        (1, 5): "Hor. 2d coma", (3, 5): "Obliq. 2d 3foil",
-        (5, 5): "Obliq. 5foil", (-6, 6): "Obliq. 6foil", (-4, 6): "Obliq.2d 4foil",
-        (-2, 6): "Obliq. 3d ast.", (0, 6): "2d spherical", (2, 6): "Vert. 3d ast.",
-        (4, 6): "Vert. 2d 4foil", (6, 6): "Vert. 6foil", (-7, 7): "Vert. 7foil",
-        (-5, 7): "Vert. 2d 5foil", (-3, 7): "Vert. 3d 3foil", (-1, 7): "Vert. 3d coma",
-        (1, 7): "Hor. 3d coma", (3, 7): "Obliq.3d 3foil",
-        (5, 7): "Obliq.2d 5foil", (7, 7): "Obliq. 7foil"}
 
     def __init__(self, **kwargs):
         """
@@ -225,7 +195,7 @@ class ZernPol:
             raise ValueError("The initialization parameters for Zernike polynomial hasn't been parsed / recognized")
         else:
             if self.__n >= 26 and not self.__n == abs(self.__m) and not self.__n - 2 == abs(self.__m):
-                message = f"Initialized polynomial with order {self.__n} possibly will take long time to compute a value"
+                message = f"Initialized polynomial with orders {self.__m, self.__n} will take long time to compute a value"
                 warnings.warn(message)
 
     def get_indices(self):
@@ -275,11 +245,11 @@ class ZernPol:
         """
         name = ""
         if short:
-            if (self.__m, self.__n) in self.short_polynomial_names.keys():
-                name = self.short_polynomial_names[(self.__m, self.__n)]
+            if (self.__m, self.__n) in short_polynomial_names.keys():
+                name = short_polynomial_names[(self.__m, self.__n)]
         else:
-            if (self.__m, self.__n) in self.polynomial_names.keys():
-                name = self.polynomial_names[(self.__m, self.__n)]
+            if (self.__m, self.__n) in polynomial_names.keys():
+                name = polynomial_names[(self.__m, self.__n)]
         return name
 
     # %% Calculations
@@ -1031,7 +1001,7 @@ class ZernPol:
 # %% Methods defs.
 def generate_polynomials(max_order: int = 10) -> tuple:
     """
-    Generate tuple with ZernPol instances - ultimately, tuple with Zernike polynomials.
+    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme.
 
     Parameters
     ----------
@@ -1046,7 +1016,7 @@ def generate_polynomials(max_order: int = 10) -> tuple:
     Returns
     -------
     tuple
-        It composes generated ZernPol instances (Zernike polynomials).
+        It composes generated ZernPol instances (Zernike polynomials) ordered using OSA indexing scheme.
 
     """
     # Sanity check of max_order parameter
