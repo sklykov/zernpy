@@ -1118,7 +1118,10 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
                     suppress_warnings: bool = False, strict_circle_border: bool = False,
                     round_digits: int = 4, return_cropped_image: bool = False) -> tuple:
     """
-    Fit provided Zernike polynomials (instances of ZernPol class) to the 2D phase image.
+    Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
+
+    Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
+    over an unit aperture (pupil).
 
     Parameters
     ----------
