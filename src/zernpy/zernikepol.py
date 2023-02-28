@@ -20,13 +20,17 @@ import random
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
-                                               triangular_derivative, radial_derivative)
+                                               triangular_derivative, radial_derivative,
+                                               radial_polynomial_eq, radial_derivative_eq,
+                                               radial_polynomial_coeffs, radial_polynomial_coeffs_dr)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from props.properties import polynomial_names, short_polynomial_names
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
-                                                triangular_derivative, radial_derivative)
+                                                triangular_derivative, radial_derivative,
+                                                radial_polynomial_eq, radial_derivative_eq,
+                                                radial_polynomial_coeffs, radial_polynomial_coeffs_dr)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from .props.properties import polynomial_names, short_polynomial_names
@@ -193,10 +197,6 @@ class ZernPol:
         # Also raise the ValueError if the ZernPol hasn't been initialized by orders / indices
         if not self.__initialized:
             raise ValueError("The initialization parameters for Zernike polynomial hasn't been parsed / recognized")
-        else:
-            if self.__n >= 26 and not self.__n == abs(self.__m) and not self.__n - 2 == abs(self.__m):
-                message = f"Initialized polynomial with orders {self.__m, self.__n} will take long time to compute a value"
-                warnings.warn(message)
 
     def get_indices(self):
         """
@@ -253,12 +253,14 @@ class ZernPol:
         return name
 
     # %% Calculations
-    def polynomial_value(self, r, theta):
+    def polynomial_value(self, r, theta, use_exact_eq: bool = False):
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
         Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-        after - using the recurrence equations taken from the Ref.[1].
+        after - using the recurrence equations taken from the Ref.[1]. \n
+        Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
+        any need to use the recurrence equations. It can be used by providing the flag as the input parameter.
 
         References
         ----------
@@ -274,6 +276,10 @@ class ZernPol:
         theta : float or numpy.ndarray
             Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
+        use_exact_eq : bool, optional
+            Flag for using the exact equation with factorials. The default is False.
+            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+            polynomials could be calculated without using any recursion.
 
         Raises
         ------
@@ -297,15 +303,23 @@ class ZernPol:
         if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
-        # Calculation using imported function
-        return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
+        # Calculation using imported function from submodule depending on radial order, use different eq.
+        if self.__n <= 17:
+            return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
+        else:
+            if not use_exact_eq:
+                return normalization_factor(self)*radial_polynomial_coeffs(self, r)*triangular_function(self, theta)
+            else:
+                return normalization_factor(self)*radial_polynomial_eq(self, r)*triangular_function(self, theta)
 
-    def radial(self, r):
+    def radial(self, r, use_exact_eq: bool = False):
         """
         Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.
 
         Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-        after - using the recurrence equations taken from the Ref.[1].
+        after - using the recurrence equations taken from the Ref.[1]. \n
+        Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
+        any need to use the recurrence equations. It can be used by providing the flag as the input parameter.
 
         References
         ----------
@@ -318,6 +332,10 @@ class ZernPol:
         ----------
         r : float or numpy.ndarray
             Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the function is calculated.
+        use_exact_eq : bool, optional
+            Flag for using the exact equation with factorials. The default is False.
+            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+            polynomials could be calculated without using any recursion.
 
         Raises
         ------
@@ -332,8 +350,14 @@ class ZernPol:
         """
         # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
         r = ZernPol._check_radii(r)
-        # Calculation using imported function
-        return radial_polynomial(self, r)
+        # Calculation using imported function from submodule depending on radial order, use different eq.
+        if self.__n <= 17:
+            return radial_polynomial(self, r)
+        else:
+            if not use_exact_eq:
+                return radial_polynomial_coeffs(self, r)
+            else:
+                return radial_polynomial_eq(self, r)
 
     def triangular(self, theta):
         """
@@ -364,7 +388,7 @@ class ZernPol:
         # Calculation using imported function
         return triangular_function(self, theta)
 
-    def radial_dr(self, r):
+    def radial_dr(self, r, use_exact_eq: bool = False):
         """
         Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.
 
@@ -379,6 +403,10 @@ class ZernPol:
         ----------
         r : float or numpy.ndarray
             Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.
+        use_exact_eq : bool, optional
+            Flag for using the exact equation with factorials. The default is False.
+            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+            polynomials could be calculated without using any recursion.
 
         Raises
         ------
@@ -393,7 +421,14 @@ class ZernPol:
         """
         # Checking input parameters for avoiding errors and unexpectable values
         r = ZernPol._check_radii(r)
-        return radial_derivative(self, r)
+        # Calculation using imported function from submodule depending on radial order, use different eq.
+        if self.__n <= 17:
+            return radial_derivative(self, r)
+        else:
+            if not use_exact_eq:
+                return radial_polynomial_coeffs_dr(self, r)
+            else:
+                return radial_derivative_eq(self, r)
 
     def triangular_dtheta(self, theta):
         """
@@ -1121,7 +1156,7 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
 
     Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
-    over an unit aperture (pupil).
+    over a unit aperture (pupil).
 
     Parameters
     ----------
@@ -1239,24 +1274,32 @@ def check_conformity():
 
 # %% Tests
 if __name__ == "__main__":
+    _test_plots = False  # regulates plots
     check_conformity()  # testing initialization
-    plt.close("all")  # Check plotting functions
-    zp = ZernPol(m=0, n=4); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plotting
-    # Two plots should look similar below, using different methods to call
-    zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(m=-3, n=3); coefficients = [1.0, 1.0]; polynomials = [zp1, zp2]
-    # fig = plt.figure(figsize=(4, 4)); fig = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig)
-    # fig1 = plt.figure(figsize=(4, 4)); zern_surf = ZernPol.gen_zernikes_surface(coefficients, polynomials)
-    # fig1 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig1, show_range=False)
-    # ZernPol._plot_zernikes_half_pyramid()
-    fig3 = plt.figure(figsize=(2, 2)); zp3 = ZernPol(osa=9); polynomials = [zp3]; coefficients = [1.0]
-    fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
-    fig3.subplots_adjust(0, 0, 1, 1)
-    # Check that warning is raised
-    # z = ZernPol(n=26, m=-10); print("Value of radial Zernike pol. with n=26, m=-10 r=0.85:", round(z.radial(0.85), 4))
-    # Tests with generation / restoring Zernike profiles (phases images)
-    phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
-    plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
-    polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
-                                                          strict_circle_border=False, crop_radius=1.0)
-    plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
-    plt.show()  # show all images created by plt.figure() calls
+    if _test_plots:
+        plt.close("all")  # Check plotting functions
+        zp = ZernPol(m=-4, n=4); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plot
+        zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
+        # ZernPol._plot_zernikes_half_pyramid()
+        fig3 = plt.figure(figsize=(2, 2)); zp3 = ZernPol(osa=58); polynomials = [zp3]; coefficients = [1.0]
+        fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
+        fig3.subplots_adjust(0, 0, 1, 1)
+        # Tests with generation / restoring Zernike profiles (phases images)
+        phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
+        plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+        polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
+                                                              strict_circle_border=False, crop_radius=1.0)
+        plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+        plt.show()  # show all images created by plt.figure() calls
+    # Simple test of two concepts of calculations - exact and recursive equations
+    z = ZernPol(n=30, m=-2); print("Diff. between recursive and exact equations:",
+                                   round(z.radial(0.85) - z.radial(0.85, use_exact_eq=True), 9))
+    z = ZernPol(n=32, l=0); print("Diff. between recursive and exact equations:",
+                                  round(z.radial(0.35) - z.radial(0.35, use_exact_eq=True), 9))
+    r = -0.955; theta = np.pi/8; z = ZernPol(osa=55)
+    print("Diff. between recursive and exact equations:",
+          round(z.polynomial_value(r, theta) - z.polynomial_value(r, theta, use_exact_eq=True), 9))
+    z = ZernPol(n=35, l=-1); print("Diff. between recursive & exact eq-s for derivatives:",
+                                   round(z.radial_dr(0.78) - z.radial_dr(0.78, use_exact_eq=True), 9))
+    z = ZernPol(n=38, m=-2); print("Diff. between recursive & exact eq-s for derivatives:",
+                                   round(z.radial_dr(0.9) - z.radial_dr(0.9, use_exact_eq=True), 9))

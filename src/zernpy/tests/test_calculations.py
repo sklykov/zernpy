@@ -10,12 +10,12 @@ For running collected here tests, it's enough to run the command "pytest" from t
 
 """
 import math
-import time
 import numpy as np
 
 # Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
-    from ..calculations.calc_zernike_pol import compare_radial_calculations, compare_radial_derivatives
+    from ..calculations.calc_zernike_pol import (compare_radial_calculations, compare_radial_derivatives,
+                                                 compare_recursive_coeffs_radials, compare_recursive_coeffs_radials_dr)
     from ..zernikepol import ZernPol
 
 
@@ -25,8 +25,11 @@ def test_tabular_orders():
 
 
 # Testing implemented tabular and recursive equations for R(m, n) by comparing with the exact ones (with factorials)
+# Also, testing implemented recursive scheme for finding the polynomials coefficients for each order and comparison
+# with the exact equations (with factorials)
 def test_recursive_orders():
-    compare_radial_calculations(max_order=21)
+    compare_radial_calculations(max_order=17)
+    compare_recursive_coeffs_radials()
 
 
 # Testing derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
@@ -35,8 +38,11 @@ def test_tabular_derivatives():
 
 
 # Testing recursive and derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
+# Also, testing implemented recursive scheme for finding the polynomials coefficients for each order and comparison
+# with the exact equations (with factorials) - derivative cases
 def test_recursive_derivatives():
-    compare_radial_derivatives(max_order=19)
+    compare_radial_derivatives(max_order=17)
+    compare_recursive_coeffs_radials_dr()
 
 
 # Testing sum of Zernike polynomials
@@ -48,10 +54,6 @@ def test_sum_zernikes():
                                                     + f" {zp2.get_polynomial_name()} for r={r}, theta={theta},"
                                                     + f" amplitudes {ampls} calculated with some mistake")
     zern_surface = ZernPol.gen_zernikes_surface(coefficients=ampls, polynomials=[zp1, zp2])
-    try:
-        import numpy as np
-    except ModuleNotFoundError:
-        assert False, "Install numpy for passing the test"
     assert isinstance(zern_surface, tuple) and isinstance(zern_surface.ZernSurf, np.ndarray), ("Check gen_zernikes_surface()"
                                                                                                + " method output (tuple len=3)")
     assert len(zern_surface.ZernSurf.shape) == 2, "Check gen_zernikes_surface() method for output matrix shape"
@@ -89,21 +91,21 @@ def test_pol_values_edge_cases():
     # Combination of lists with different sizes
     r = [0, 0.1, 0.2, 0.5]; theta = [0, 0.1, 0.2, 0.5, 0.8, 1.0]
     try:
-        assert_flag = False; values = zp.polynomial_value(r, theta)
+        assert_flag = False; zp.polynomial_value(r, theta)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of combination list (r) and list (theta) with not equal sizes"
     # Combination 1D and 2D arrays
     r = [0, 0.1, 0.2, 0.5]; theta = [[0, 0.3, 0.6, 0.9]]
     try:
-        assert_flag = False; values = zp.polynomial_value(r, theta)
+        assert_flag = False; zp.polynomial_value(r, theta)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of combination list (r) and list (theta) with not equal dimensions"
     # Out of range value for r
     r = [0, 0.1, 0.2, 1.00000001]; theta = [0, 0.3, 0.6, 0.9]
     try:
-        assert_flag = False; values = zp.polynomial_value(r, theta)
+        assert_flag = False; zp.polynomial_value(r, theta)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of using r > 1.0"
