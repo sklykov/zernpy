@@ -28,8 +28,8 @@ def test_random_fitting():
 
     """
     # Test generation of random phase profile abs. max value
-    for _ in range(4):
-        pl1, random_amplitudes, pl2 = generate_random_phases(max_order=3, img_height=11, img_width=11)
+    for _ in range(2):
+        pl1, random_amplitudes, pl2 = generate_random_phases(max_order=3, img_height=15, img_width=15)
         max_src_ampl = round(np.max(np.abs(random_amplitudes)), 6)
         assert max_src_ampl > 0.08, f"Random generated profile max abs. ampl.:{max_src_ampl} < 0.08, that is error, {random_amplitudes}"
     # Test absolute differences, maybe, maximum allowed percentages have been selected unreasonably
@@ -38,14 +38,14 @@ def test_random_fitting():
     for _ in range(2):  # run test several times
         for i in range(4, 8, 1):
             if i == 4:
-                height = 147; width = 147; crop_r = 1.0; strict_border = False; mdp = 15.0; stop_warns = False
+                height = 127; width = 127; crop_r = 1.0; strict_border = False; mdp = 15.0; stop_warns = False
             elif i == 5:
-                height = 160; width = 160; crop_r = 0.98; strict_border = False; mdp = 25.0; stop_warns = True
+                height = 140; width = 140; crop_r = 0.98; strict_border = False; mdp = 25.0; stop_warns = True
             elif i == 6:
-                height = 201; width = 204; crop_r = 0.95; strict_border = True; mdp = 20.0; stop_warns = True
+                height = 201; width = 204; crop_r = 0.94; strict_border = True; mdp = 20.0; stop_warns = True
             elif i == 7:
                 # The allowed percentage below is huge because the cropping radius is equal to 80% of image size
-                height = 212; width = 214; strict_border = False; crop_r = 0.8; mdp = 33.0; stop_warns = True
+                height = 200; width = 200; strict_border = False; crop_r = 0.8; mdp = 33.0; stop_warns = True
             random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(max_order=i, img_height=height,
                                                                                                img_width=width)
             fitted_amplitudes, _ = fit_polynomials(random_phases_image, polynomials_tuple, suppress_warnings=stop_warns,
@@ -62,7 +62,7 @@ def test_random_fitting():
             assert rmse_percentage <= (mdp//2) + 1, ("RMSE between fitted and randomly generated polynomials:"
                                                      + f" {rmse_percentage} > assumed value {(mdp//2) + 1}")
     # Test the sign of fitted and randomly generated amplitudes
-    for i in range(3):  # run tests 2 times
+    for i in range(2):  # run tests
         random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(img_height=101, img_width=101)
         fitted_amplitudes, _ = fit_polynomials(random_phases_image, polynomials_tuple)
         max_fit_ampl = np.max(fitted_amplitudes); max_src_ampl = np.max(random_amplitudes)

@@ -304,7 +304,7 @@ class ZernPol:
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
         # Calculation using imported function from submodule depending on radial order, use different eq.
-        if self.__n <= 17:
+        if self.__n <= 15:  # after, the direct recursive eq. becomes ineffective
             return normalization_factor(self)*radial_polynomial(self, r)*triangular_function(self, theta)
         else:
             if not use_exact_eq:
@@ -351,7 +351,7 @@ class ZernPol:
         # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
         r = ZernPol._check_radii(r)
         # Calculation using imported function from submodule depending on radial order, use different eq.
-        if self.__n <= 17:
+        if self.__n <= 15:  # after, the direct recursive eq. becomes ineffective
             return radial_polynomial(self, r)
         else:
             if not use_exact_eq:
@@ -422,7 +422,7 @@ class ZernPol:
         # Checking input parameters for avoiding errors and unexpectable values
         r = ZernPol._check_radii(r)
         # Calculation using imported function from submodule depending on radial order, use different eq.
-        if self.__n <= 17:
+        if self.__n <= 15:  # after, the direct recursive eq. becomes ineffective
             return radial_derivative(self, r)
         else:
             if not use_exact_eq:

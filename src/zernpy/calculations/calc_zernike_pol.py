@@ -629,7 +629,7 @@ def compare_recursive_coeffs_radials() -> np.ndarray:
     """
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = []
-    for order in range(14, 26):
+    for order in range(12, 26):
         m = -order; n = order
         orders_list.append((m, n))
         for n_azimuthals in range(0, order):
@@ -667,7 +667,7 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     """
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = []
-    for order in range(14, 26):
+    for order in range(12, 26):
         m = -order; n = order
         orders_list.append((m, n))
         for n_azimuthals in range(0, order):

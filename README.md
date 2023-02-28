@@ -1,8 +1,12 @@
 ### zernpy - package for calculation Zernike polynomials
 
-This project is intended for calculation of Zernike polynomials parameters / values / properties using tabular and recursive equations, that might be the
-faster way to calculate values of high order polynomials in comparison to usage of their exact definition (that used the sum of factorials, 
-see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).    
+This project is intended for calculation of Zernike polynomials parameters / values / properties using tabular and recursive equations, 
+the last ones were supposed to be the faster way to calculate values of high order polynomials in comparison to usage of their exact 
+definition (that used the sum of factorials, see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).     
+However, it's turned out that usage of sum of factorials (calculated from *math.factorial* method) even for high orders provides
+sufficiently fast calculation of radial polynomials. Nevertheless, I hope that usage of recurrence equation might be advantageous (along
+with found way to speed up them by storing the coefficients for each radial order instead of using direct equation from the article).      
+Also, I hope that someone also would find useful some of developed methods for usage in any further project.     
 The recursive and tabular equations are taken from the articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
 [[2]](https://doi.org/10.1080/09500340.2011.554896) and [[3]](https://doi.org/10.1364/OE.26.018878).    
 Several useful transformations (e.g., from OSA / ANSI index to Noll one) are implemented as the methods of the main class.
