@@ -114,7 +114,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.0.7, 2023 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.8, 2023 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -288,7 +288,7 @@ If True, this method returns shortened name. The default is False.</li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">polynomial_value</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span>, </span><span class="param"><span class="n">theta</span></span><span class="return-annotation">):</span></span>
+        <span class="name">polynomial_value</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span>, </span><span class="param"><span class="n">theta</span>, </span><span class="param"><span class="n">use_exact_eq</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -297,7 +297,10 @@ If True, this method returns shortened name. The default is False.</li>
             <div class="docstring"><p>Calculate Zernike polynomial value(-s) within the unit circle.</p>
 
 <p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-after - using the recurrence equations taken from the Ref.[1].</p>
+after - using the recurrence equations taken from the Ref.[1]. </p>
+
+<p>Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
+any need to use the recurrence equations. It can be used by providing the flag as the input parameter.</p>
 
 <h6 id="references">References</h6>
 
@@ -316,6 +319,10 @@ Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for whic
 <li><strong>theta</strong> (float or numpy.ndarray):
 Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
 Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
+<li><strong>use_exact_eq</strong> (bool, optional):
+Flag for using the exact equation with factorials. The default is False.
+Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+polynomials could be calculated without using any recursion.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -338,7 +345,7 @@ Note that the theta counting is counterclockwise, as it is default for the matpl
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">radial</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span></span><span class="return-annotation">):</span></span>
+        <span class="name">radial</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span>, </span><span class="param"><span class="n">use_exact_eq</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -347,7 +354,10 @@ Note that the theta counting is counterclockwise, as it is default for the matpl
             <div class="docstring"><p>Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.</p>
 
 <p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-after - using the recurrence equations taken from the Ref.[1].</p>
+after - using the recurrence equations taken from the Ref.[1]. </p>
+
+<p>Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
+any need to use the recurrence equations. It can be used by providing the flag as the input parameter.</p>
 
 <h6 id="references">References</h6>
 
@@ -363,6 +373,10 @@ circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
 <ul>
 <li><strong>r</strong> (float or numpy.ndarray):
 Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the function is calculated.</li>
+<li><strong>use_exact_eq</strong> (bool, optional):
+Flag for using the exact equation with factorials. The default is False.
+Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+polynomials could be calculated without using any recursion.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -425,7 +439,7 @@ Note that the theta counting is counterclockwise, as it is default for the matpl
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">radial_dr</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span></span><span class="return-annotation">):</span></span>
+        <span class="name">radial_dr</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span>, </span><span class="param"><span class="n">use_exact_eq</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -445,6 +459,10 @@ after - using the recurrence equations.</p>
 <ul>
 <li><strong>r</strong> (float or numpy.ndarray):
 Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.</li>
+<li><strong>use_exact_eq</strong> (bool, optional):
+Flag for using the exact equation with factorials. The default is False.
+Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
+polynomials could be calculated without using any recursion.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -1029,7 +1047,7 @@ Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.</li>
     </div>
     <a class="headerlink" href="#generate_polynomials"></a>
     
-            <div class="docstring"><p>Generate tuple with ZernPol instances - ultimately, tuple with Zernike polynomials.</p>
+            <div class="docstring"><p>Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1047,7 +1065,7 @@ Maximum overall radial order (n) for generated Zernike list (pyramid). The defau
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>tuple</strong>: It composes generated ZernPol instances (Zernike polynomials).</li>
+<li><strong>tuple</strong>: It composes generated ZernPol instances (Zernike polynomials) ordered using OSA indexing scheme.</li>
 </ul>
 </div>
 
@@ -1100,7 +1118,10 @@ tuple with generated Zernike polynomials.</li>
     </div>
     <a class="headerlink" href="#fit_polynomials"></a>
     
-            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) to the 2D phase image.</p>
+            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.</p>
+
+<p>Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
+over a unit aperture (pupil).</p>
 
 <h6 id="parameters">Parameters</h6>
 
