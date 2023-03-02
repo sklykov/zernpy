@@ -27,7 +27,7 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
                                                MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from props.properties import polynomial_names, short_polynomial_names
+    from props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                 triangular_derivative, radial_derivative,
@@ -36,7 +36,7 @@ else:
                                                 MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from .props.properties import polynomial_names, short_polynomial_names
+    from .props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -58,8 +58,8 @@ class ZernPol:
 
         Parameters
         ----------
-        **kwargs : orders or index for Zernike polynomial initialization. \n
-            Acceptable variants for key word arguments: \n
+        **kwargs : orders or index for Zernike polynomial initialization expected as key=value pairs \n
+            Acceptable variants for key=value pairs arguments: \n
             1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m; \n
             2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; \n
             3) noll_index=int with alternative "noll"; \n
@@ -202,22 +202,11 @@ class ZernPol:
             raise ValueError("The initialization parameters for Zernike polynomial hasn't been parsed / recognized")
         # Generate warning messages for possible re-usage
         if self.__n > MAX_RADIAL_ORDER_COEFFS:
-            self.warn_mes_r = (f"Call for radial order {self.__n} is higher than {MAX_RADIAL_ORDER_COEFFS}"
-                               + " - that is the highest empirical order (though I found on tests) guarantees"
-                               + " stable calculation using the exact equation. Instablity emerges because of"
-                               + " high integer values produced by used in the exact eq. factorials. \n"
-                               + "So, the zero array or float will be returned as the result. "
-                               + "Use the call to recursive calculation instead.")
+            self.__warn_mes_r = f"Call for radial order {self.__n} is higher than {MAX_RADIAL_ORDER_COEFFS}"
         else:
             self.warn_mes_r = ""
         if self.__n > MAX_RADIAL_ORDER_COEFFS_dR:
-            self.warn_mes_dr = (f"Call for derivative of radial order {self.__n} is > than {MAX_RADIAL_ORDER_COEFFS_dR}"
-                                + " - that is the highest empirical order (though I found on tests) guarantees"
-                                + " stable calculation using the exact equation for derivatives of radial polynomials."
-                                + " Instablity emerges because of high integer values produced by used in the exact"
-                                + "  eq. factorials multiplied additionally by derivation result. \n"
-                                + "So, the zero array or float will be returned as the result. "
-                                + "Use the call to recursive calculation of dervatives instead.")
+            self.__warn_mes_dr = f"Call for derivative of radial order {self.__n} is > than {MAX_RADIAL_ORDER_COEFFS_dR}"
         else:
             self.warn_mes_dr = ""
 
@@ -284,7 +273,12 @@ class ZernPol:
         after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
         coefficients for each power of radius (coefficient*R^n) \n
         Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-        any need to use the recurrence equations. It can be used by providing the flag as the input parameter.
+        any need to use the recurrence equations. It can be used by providing the flag as the input parameter. \n
+        However, after ~ the 46th radial order due to the high integer values involved in the exact equation
+        (factorials) producing ambiguous results (failed simple check that radial polynomial <= 1.0),
+        only iterative equations (which along with increasing order become time-consuming and slow)
+        could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
+        found increasing after this order discrepancy between results of recursive and factorial formulas.
 
         References
         ----------
@@ -302,8 +296,7 @@ class ZernPol:
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
         use_exact_eq : bool, optional
             Flag for using the exact equation with factorials. The default is False.
-            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
-            polynomials could be calculated without using any recursion.
+            Note about the limit for usage of the exact equation - up to 40th radial order (n).
 
         Raises
         ------
@@ -336,7 +329,7 @@ class ZernPol:
                 return nTr*radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
-                warnings.warn(self.warn_mes_r)
+                warnings.warn(self.__warn_mes_r + warn_mess_r_long)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -352,7 +345,12 @@ class ZernPol:
         after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
         coefficients for each power of radius (coefficient*R^n) \n
         Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-        any need to use the recurrence equations. It can be used by providing the flag as the input parameter.
+        any need to use the recurrence equations. It can be used by providing the flag as the input parameter. \n
+        However, after ~ the 46th radial order due to the high integer values involved in the exact equation
+        (factorials) producing ambiguous results (failed simple check that radial polynomial <= 1.0),
+        only iterative equations (which along with increasing order become time-consuming and slow)
+        could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
+        found increasing after this order discrepancy between results of recursive and factorial formulas.
 
         References
         ----------
@@ -367,8 +365,7 @@ class ZernPol:
             Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the function is calculated.
         use_exact_eq : bool, optional
             Flag for using the exact equation with factorials. The default is False.
-            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
-            polynomials could be calculated without using any recursion.
+            Note about the limit for usage of the exact equation - up to 40th radial order (n).
 
         Raises
         ------
@@ -391,7 +388,7 @@ class ZernPol:
                 return radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
-                warnings.warn(self.warn_mes_r)
+                warnings.warn(self.__warn_mes_r + warn_mess_r_long)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -435,7 +432,14 @@ class ZernPol:
         Calculation up to 10th order of Zernike polynomials performed by exact equations,
         after - using the recurrence equations, using shortcut of storing
         coefficients for each power of radius (coefficient*R^n) \n
-        The input flag use_exact_eq allows to use direct and exact equation with factorials.
+        The input flag use_exact_eq allows using the exact equation with factorials.
+        But note that after 38th radial order the usage of the exact equation is forbidden, because
+        after ~ the 44th radial order due to the high integer values associated with factorials and power
+        values produced by derivatives leading to ambiguous results, only iterative equations
+        (which along with increasing order become time-consuming and slow) could be used. The 38th radial order
+        as the limit for usage of the exact equation is selected due to found increasing after this order
+        discrepancy between results of recursive and factorial formulas.
+
 
         References
         ----------
@@ -447,8 +451,7 @@ class ZernPol:
             Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.
         use_exact_eq : bool, optional
             Flag for using the exact equation with factorials. The default is False.
-            Surprisingly, but even factorials for high numbers are calculated actually pretty fast, so the radial
-            polynomials could be calculated without using any recursion.
+            Note about the limit for usage of the exact equation - up to 38th radial order (n).
 
         Raises
         ------
@@ -471,7 +474,7 @@ class ZernPol:
                 return radial_polynomial_coeffs_dr(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS_dR:
-                warnings.warn(self.warn_mes_r)
+                warnings.warn(self.__warn_mes_dr + warn_mess_dr_long)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -1254,7 +1257,7 @@ def compare_performances(min_order: int, max_order: int) -> tuple:
     Compare performances of radial polynomials calculation by using recursive and exact equations.
 
     Comparison achieved by simple measuring of time in msec needed for calculation of all radial
-    polynomials up to maximum order returned as tuple.
+    polynomials from minimal radial order up to maximum radial order returned as tuple.
 
     Parameters
     ----------
@@ -1295,7 +1298,27 @@ def compare_performances(min_order: int, max_order: int) -> tuple:
         polynomial.radial(test_r, use_exact_eq=True)  # calculate radial polynomials over vector of radii
     t2 = time.perf_counter()
     t_exact_ms = round(1000*(t2-t1), 3)
-    return (t_recursive_ms, t_exact_ms)
+    return (t_recursive_ms, t_exact_ms, f"Used polynomials: {i}", f"Radii: {n_points}")
+
+
+def _estimate_high_order_calc_times():
+    """
+    Estimate slowing down of radial polynomial calculation with increasing of radial order.
+
+    Returns
+    -------
+    None.
+
+    """
+    r = 0.55
+    high_order_pols = [ZernPol(m=-2, n=46), ZernPol(m=1, n=47), ZernPol(m=2, n=48), ZernPol(m=-1, n=49),
+                       ZernPol(m=2, n=50), ZernPol(m=1, n=51), ZernPol(m=-2, n=52)]
+    times = []
+    for pol in high_order_pols:
+        # calculate radial polynomials over vector of radii
+        t1 = time.perf_counter(); pol.radial(r); t2 = time.perf_counter()
+        times.append(f"{pol.get_mn_orders()}: {int(round(1000*(t2-t1), 0))} ms")
+    print(times)
 
 
 # %% Test functions for the external call
@@ -1384,7 +1407,8 @@ if __name__ == "__main__":
         fig3.subplots_adjust(0, 0, 1, 1)
         # Tests with generation / restoring Zernike profiles (phases images)
         phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
-        plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+        plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
+        plt.subplots_adjust(0, 0, 1, 1)
         polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
                                                               strict_circle_border=False, crop_radius=1.0)
         plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
@@ -1404,3 +1428,6 @@ if __name__ == "__main__":
     # Compare performances
     print("Tabular (10th order) / exact calc. times:", compare_performances(1, 10))
     print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
+    # Statement below producing expected warnings
+    # print("Slow Recursive / exact calc. times for high orders:", compare_performances(41, 42))
+    _estimate_high_order_calc_times()

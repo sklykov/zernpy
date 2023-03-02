@@ -15,7 +15,8 @@ import numpy as np
 # Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
     from ..calculations.calc_zernike_pol import (compare_radial_calculations, compare_radial_derivatives,
-                                                 compare_recursive_coeffs_radials, compare_recursive_coeffs_radials_dr)
+                                                 compare_recursive_coeffs_radials, compare_recursive_coeffs_radials_dr,
+                                                 check_high_orders_recursion)
     from ..zernikepol import ZernPol
 
 
@@ -30,6 +31,7 @@ def test_tabular_orders():
 def test_recursive_orders():
     compare_radial_calculations(max_order=17)
     compare_recursive_coeffs_radials()
+    check_high_orders_recursion()
 
 
 # Testing derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)

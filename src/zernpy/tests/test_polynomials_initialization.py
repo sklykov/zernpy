@@ -23,7 +23,7 @@ def test_polynomials_initialization():
 
 # Explicit testing initialization of Zernike polynomials
 def test_explicit_initialization():
-    # Testing the ordinar, normal initialization of polynomials
+    # Testing the ordinary, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
     assert abs(zp.radial_dr(0.25) - 1.0) < 1E-9, f"Radial derivative calculated with error for Z{(m, n)}"
     m = 0; n = 6; zp = ZernPol(n=n, l=m)
@@ -51,7 +51,7 @@ def test_explicit_initialization():
     zernpol = ZernPol(fringe=60); m, n = zernpol.get_mn_orders()
     assert len(zernpol.get_polynomial_name()) == 0, f"Returned some name for Z{(m, n)}, but it's not defined"
 
-    # Testing wrong initialization parameters - for checking that they not passed through
+    # Testing wrong initialization parameters - for checking that they are not passed through
     # OSA
     try:
         ZernPol(osa=-1); assert_flag = False

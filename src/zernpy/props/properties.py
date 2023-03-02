@@ -45,3 +45,17 @@ short_polynomial_names: dict = {
     (-5, 7): "Vert. 2d 5foil", (-3, 7): "Vert. 3d 3foil", (-1, 7): "Vert. 3d coma",
     (1, 7): "Hor. 3d coma", (3, 7): "Obliq.3d 3foil",
     (5, 7): "Obliq.2d 5foil", (7, 7): "Obliq. 7foil"}
+
+# Warning messages for avoiding associating with each instance of a class
+warn_mess_r_long = (" - that is the highest empirical order (though I found on tests) guarantees"
+                    + " stable calculation using the exact equation. Instability emerges because of"
+                    + " high integer values produced by used in the exact eq. factorials. \n"
+                    + "So, the zero array or float will be returned as the result. "
+                    + "Use this method with recursive calculation instead.")
+
+warn_mess_dr_long = (" - that is the highest empirical order (though I found on tests) guarantees"
+                     + " stable calculation using the exact equation for derivatives of radial polynomials."
+                     + " Instability emerges because of high integer values produced by used in the exact"
+                     + "  eq. factorials multiplied additionally by derivation result. \n"
+                     + "So, the zero array or float will be returned as the result. "
+                     + "Use this method with recursive calculation of derivatives instead.")

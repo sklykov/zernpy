@@ -22,7 +22,7 @@ else:
 # %% Module parameters
 __docformat__ = "numpydoc"
 # Below - empirically found max radial order allowing stable calculation using recursive coefficients defining
-# or using exact equation ivolving factorials calculation. Approximately, from 46th order the exact equation start
+# or using exact equation involving factorials calculation. Approximately, from 46th order the exact equation start
 # to violate condition that max of radial polynomial <= 1.0. From 40th order the difference between recurrence eq.
 # the exact one start to be too significant
 MAX_RADIAL_ORDER_COEFFS = 40
@@ -598,7 +598,6 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
     for i in range(n_points):
         test_r[i] = i/(n_points-1)
     test_r = np.round(test_r, 4)
-
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -648,7 +647,6 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
     for i in range(n_points):
         test_r[i] = i/(n_points-1)
     test_r = np.round(test_r, 4)
-
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -688,7 +686,6 @@ def compare_recursive_coeffs_radials() -> np.ndarray:
     for i in range(n_points):
         test_r[i] = i/(n_points-1)
     test_r = np.round(test_r, 4)
-
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -732,7 +729,6 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     for i in range(n_points):
         test_r[i] = i/(n_points-1)
     test_r = np.round(test_r, 4)
-
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -743,6 +739,40 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     assert np.max(np.abs(diff)) < 5E-2, (f"Order {order} has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
     print("Difference between exact equation and pols. coeffs. finding algorithm is negligible, test passed")
+    return diff
+
+
+def check_high_orders_recursion() -> np.ndarray:
+    """
+    Test max of abs value of calculated recursively radial polynomials for orders [41, 45].
+
+    Returns
+    -------
+    diff : numpy.ndarray.
+        Composed radial polynomials values for 51 radii.
+
+    """
+    # Generating Zernike orders in OSA/ANSI indexing scheme
+    orders_list = []
+    for order in range(MAX_RADIAL_ORDER_COEFFS+1, MAX_RADIAL_ORDER_COEFFS+6):
+        m = -order; n = order
+        orders_list.append((m, n))
+        for n_azimuthals in range(0, order):
+            m += 2
+            orders_list.append((m, n))
+    # Generation numpy array with radii
+    n_points = 51
+    test_r = np.zeros(shape=(n_points, ))
+    for i in range(n_points):
+        test_r[i] = i/(n_points-1)
+    test_r = np.round(test_r, 4)
+    # Testing that exact calculation and implementation of tabular / recursive are the same
+    diff = np.ones(shape=(len(orders_list), n_points))
+    for i, order in enumerate(orders_list):
+        diff[i, :] = radial_polynomial_coeffs(order, test_r)
+    diff = np.round(diff, 6)
+    assert np.max(np.abs(diff)) <= 1.0, f"Order {order} has inconsistency in max abs value: {np.max(np.abs(diff))}"
+    print("Abs max in calculated recursively radial polynomials <= 1.0, test passed")
     return diff
 
 
@@ -769,21 +799,21 @@ def time_radial_pols():
         t1 = time.perf_counter()
         radial_polynomial_coeffs(zp, r)
         t2 = time.perf_counter()
-        calc_times_ms.append(int(round(1000*(t2-t1), 0)))
+        calc_times_ms.append(round(1000*(t2-t1), 3))
     print("Timed calc. using finding coeffs. rad. pol.", calc_times_ms)
     calc_times_ms = []  # refresh stored values
     for zp in zpols:
         t1 = time.perf_counter()
         radial_polynomial_eq(zp, r)
         t2 = time.perf_counter()
-        calc_times_ms.append(int(round(1000*(t2-t1), 0)))
+        calc_times_ms.append(round(1000*(t2-t1), 3))
     print("Timed calc. using exact equation rad. pol.", calc_times_ms)
     calc_times_ms = []  # refresh stored values
     for zp in zpols:
         t1 = time.perf_counter()
         radial_polynomial_coeffs_dr(zp, r)
         t2 = time.perf_counter()
-        calc_times_ms.append(int(round(1000*(t2-t1), 0)))
+        calc_times_ms.append(round(1000*(t2-t1), 3))
     print("Timed calc. using finding coeffs. deriv. rad. pol.", calc_times_ms)
     # Separate test of exact equation performance
     zp1 = (-14, 18); zp2 = (0, 26); zp3 = (3, 29); zp4 = (0, 31); zp5 = (-2, 36); zp6 = (1, 39); r = 0.425
@@ -811,3 +841,4 @@ if __name__ == '__main__':
     time_radial_pols()  # initial estimation of performance of calculations
     diff_coeffs = compare_recursive_coeffs_radials()
     diff_deriv_coeffs = compare_recursive_coeffs_radials_dr()
+    high_R = check_high_orders_recursion()

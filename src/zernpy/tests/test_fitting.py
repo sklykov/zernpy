@@ -45,7 +45,7 @@ def test_random_fitting():
                 height = 201; width = 204; crop_r = 0.94; strict_border = True; mdp = 20.0; stop_warns = True
             elif i == 7:
                 # The allowed percentage below is huge because the cropping radius is equal to 80% of image size
-                height = 200; width = 200; strict_border = False; crop_r = 0.8; mdp = 33.0; stop_warns = True
+                height = 150; width = 150; strict_border = False; crop_r = 0.8; mdp = 33.0; stop_warns = True
             random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(max_order=i, img_height=height,
                                                                                                img_width=width)
             fitted_amplitudes, _ = fit_polynomials(random_phases_image, polynomials_tuple, suppress_warnings=stop_warns,
