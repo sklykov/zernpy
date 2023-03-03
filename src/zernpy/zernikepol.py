@@ -82,6 +82,7 @@ class ZernPol:
 
         """
         key = ""
+        # TODO: limit maximum order input to 80th order as the estimation! Also, calculate corresponding OSA, Noll, Fringe
         # Zernike polynomial specified with key arguments m, n - check firstly for these parameters
         if len(kwargs.keys()) == 2:
             if "n" in kwargs.keys() or "radial_order" in kwargs.keys():
@@ -633,9 +634,9 @@ class ZernPol:
             noll_index = kwargs.get("noll_index")
         elif "fringe_index" in kwargs.keys():
             fringe_index = kwargs.get("fringe_index")
-        # Define m, n orders up to 50th order (assuming it as maximum)
+        # Define m, n orders up to 80th, that should be specified as the maximum order
         stop_search = False
-        for order in range(0, 51):
+        for order in range(0, 81):
             m = -order  # azimuthal order
             n = order  # radial order
             for polynomial in range(0, order+1):
