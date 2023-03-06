@@ -21,7 +21,7 @@ __docformat__ = "numpydoc"
 def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress_warns: bool = False,
                     strict_border: bool = False) -> tuple:
     """
-    Cropping the circle from input 2D image containing phases.
+    Cropping the circle from input 2D image containing phases with cartesian coordinates.
 
     This function also calculates polar coordinates, normalizing them to the range [0, 1.0] for radii
     and to the range [0.0, 2.0*pi] for theta angles. The polar coordinates are returned by this function.
@@ -49,8 +49,9 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     -------
     tuple
         Consisting of:
-        Cropped 2D logic mask with values: 0 - laying outside cropped circle pixels, 1 - laying inside,
-        tuple with radii, thetas - polar coordinates of each pixel of an input phases image.
+        0th el.: cropped 2D logic mask with values: 0 - laying outside cropped circle pixels, 1 - laying inside,
+        1st el.: tuple with cropped phases composed in 1D vector, corresponding polar coordinates,
+        calculated radii and angles (thetas).
 
     """
     __warn_message = ""  # holder for warning message below
@@ -66,9 +67,11 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
         raise ValueError("Please provide the phases image as the numpy ndarray for proper method calls")
     else:
         if phases_image.ndim == 2:
+            # Initialize returning values with default shapes
+            rows, cols = phases_image.shape; cropped_logic_mask = np.zeros(shape=phases_image.shape, dtype="uint8")
+            cropped_phases_vector = np.zeros(shape=(rows*cols,), dtype=phases_image.dtype)
+            cropped_radii_vector = np.zeros(shape=(rows*cols,)); cropped_thetas_vector = np.zeros(shape=(rows*cols,))
             # Check input image shape
-            rows, cols = phases_image.shape
-            cropped_logic_mask = np.zeros(shape=phases_image.shape, dtype=phases_image.dtype)
             if rows != cols:
                 __warn_message = "Phases image isn't square, results of fitting could be ambiguous"
                 img_min_size = min(rows, cols); img_max_size = max(rows, cols)
@@ -105,7 +108,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
             # Definition of accepted for cropping difference between radius and distance to the pixel
             radius_epsilon = 0.001
             if not strict_border and ((rows % 2 == 0 and cols % 2 == 0) or (abs(rows - cols) == 1)):
-                radius_epsilon = 0.055  # defined for matrix(4, 4) for including border pixels
+                radius_epsilon = 0.055  # defined for matrix(4, 4) for including border pixels for not strict cropping
                 __warn_message = ("\n Function called with flag that makes not strict cropping border of circle. \n"
                                   + "Phases image provided with even rows and columns"
                                   + " or with 1 pixel difference between them. \n"
@@ -113,44 +116,50 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
                 if not suppress_warns:
                     warnings.warn(__warn_message)
             # Calculate polar coordinates of pixels
-            radii = np.zeros(shape=phases_image.shape); thetas = np.zeros(shape=phases_image.shape)
-            recalibrate_radii = False; recalibration_coeff = 1.0
+            recalibrate_radii = False; recalibration_coeff = 1.0; vector_index = 0
+            # Cropping phases, collecting data on cropping process
             for i in range(rows):
                 for j in range(cols):
-                    radii[i, j] = np.round(np.sqrt(np.power((i - center_row), 2) + np.power((j - center_col), 2))/r, 4)
-                    thetas[i, j] = np.arctan2(center_row - i, j - center_col)  # making it counterclockwise
-                    if radii[i, j] - crop_radius < radius_epsilon:
-                        cropped_logic_mask[i, j] += 1  # should convert to the actual type of image, for it add 1 as integer
+                    radius = np.round(np.sqrt(np.power((i - center_row), 2) + np.power((j - center_col), 2))/r, 4)
+                    theta = np.arctan2(center_row - i, j - center_col)  # making it counterclockwise
+                    if radius - crop_radius < radius_epsilon:
+                        cropped_logic_mask[i, j] += 1  # should be converted to the actual type of image on multiplication
+                        cropped_phases_vector[vector_index] = phases_image[i, j]
+                        cropped_radii_vector[vector_index] = radius
+                        if theta < 0.0:
+                            theta += 2.0*np.pi  # transforms it from -np.pi min to 2*np.pi max, makes angles continuous
+                        cropped_thetas_vector[vector_index] = theta
+                        vector_index += 1
                         # Checking that recalibration needed - for cropping only pixels formally from unit radius circle
-                        if not strict_border and radii[i, j] - crop_radius > 0.001:
+                        if not strict_border and radius - crop_radius > 0.001:
                             recalibrate_radii = True
-                            if recalibration_coeff < radii[i, j]:
-                                recalibration_coeff = radii[i, j]
-                    # else:
-                    #     print(i, j, radii[i, j])  # for debugging
-                    if thetas[i, j] < 0.0:
-                        thetas[i, j] += 2.0*np.pi  # transforms it from -np.pi min to 2*np.pi max, makes angles continuous
+                            if recalibration_coeff < radius:
+                                recalibration_coeff = radius
+            # Cut out all not transformed phases and their coordinates
+            cropped_phases_vector = cropped_phases_vector[0:vector_index]
+            cropped_radii_vector = cropped_radii_vector[0:vector_index]
+            cropped_thetas_vector = cropped_thetas_vector[0:vector_index]
             # Recalibration of special cropping cases to preserve counting of radii from range [0, 1] - unit circle
             if recalibrate_radii:
-                radii /= recalibration_coeff
+                cropped_radii_vector /= recalibration_coeff; cropped_radii_vector = np.round(cropped_radii_vector, 4)
+            # Additional check of border condition for a unit circle: the pixel has radius 1.001 but passed by cropping procedure
+            if 1.0 < np.max(cropped_radii_vector) < 1.002:
+                cropped_radii_vector /= np.max(cropped_radii_vector)
+                cropped_radii_vector = np.round(cropped_radii_vector, 4)
         else:
             raise ValueError("Dimensions of provided image not equal to 2")
-    return cropped_logic_mask, (radii, thetas)
+    return cropped_logic_mask, (cropped_phases_vector, cropped_radii_vector, cropped_thetas_vector)
 
 
-def fit_zernikes(phases_image: np.ndarray, cropped_deformations_mask: np.ndarray,
-                 polar_coordinates: tuple, polynomials: tuple) -> np.ndarray:
+def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.ndarray:
     """
     Fit provided tuple with polynomials (instances of ZernPol class) to the 2D image with phases.
 
     Parameters
     ----------
-    phases_image : numpy.ndarray
-        2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
-    cropped_deformations_mask : numpy.ndarray
-        Result of applying function crop_phases_img(...) from this module on an image with phases.
-    polar_coordinates : tuple
-        Result of calculation by using function crop_phases_img(...) from this module.
+    phases_coordinates_vectors : tuple
+        Results provided by crop_phases_img(...) function composing the cropped phases along with polar coordinates.
+        In general, this tuple contains 3 numpy arrays (vectors = 1D arrays) with phases and corresponding polar coordinates.
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
 
@@ -159,7 +168,7 @@ def fit_zernikes(phases_image: np.ndarray, cropped_deformations_mask: np.ndarray
     AttributeError
         If the input tuple with polynomials composed not from instances of ZernPol class.
     ValueError
-        If one of input parameters is inconsistent.
+        If the length of the tuple with polynomials not enough for fitting or provided only piston (single polynomial).
     numpy.linalg.LinAlgError
         If the fit procedure doesn't converge (namely, np.linalg.lstsq(...) function doesn't converge).
 
@@ -169,34 +178,12 @@ def fit_zernikes(phases_image: np.ndarray, cropped_deformations_mask: np.ndarray
         1D array with the amplitudes of fitted Zernike polynomials specified by the input tuple.
 
     """
-    # Preparing fitting values - convert 2D images to 1D vectors
-    rows, cols = cropped_deformations_mask.shape
-    cropped_deformations_vector = np.zeros(shape=(rows*cols,), dtype=phases_image.dtype)
-    cropped_radii_vector = np.zeros(shape=(rows*cols,)); cropped_thetas_vector = np.zeros(shape=(rows*cols,))
-    vector_index = 0; zernike_coefficients = None
-    # Transform cropped deformations from input parameters in vectors
-    for i in range(rows):
-        for j in range(cols):
-            if cropped_deformations_mask[i, j] - 1 >= 0:
-                cropped_deformations_vector[vector_index] = phases_image[i, j]
-                cropped_radii_vector[vector_index] = polar_coordinates[0][i, j]
-                cropped_thetas_vector[vector_index] = polar_coordinates[1][i, j]
-                vector_index += 1
-    # Cut out all not transformed deformations and their coordinates
-    cropped_deformations_vector = cropped_deformations_vector[0:vector_index]
-    cropped_radii_vector = cropped_radii_vector[0:vector_index]
-    cropped_thetas_vector = cropped_thetas_vector[0:vector_index]
-    # Additional check of border condition for a unit circle: the pixel has radius 1.001 but passed by cropping procedure
-    if 1.0 < np.max(cropped_radii_vector) < 1.002:
-        cropped_radii_vector /= np.max(cropped_radii_vector)
-        cropped_radii_vector = np.round(cropped_radii_vector, 3)
+    # Unpacking provided vectors
+    cropped_phases_vector = phases_coordinates_vectors[0]; cropped_radii_vector = phases_coordinates_vectors[1]
+    cropped_thetas_vector = phases_coordinates_vectors[2]
+    vector_length, = cropped_phases_vector.shape; zernike_coefficients = None
     # Calculate polynomials values in the unit circle defined by polar coordinates
-    zernike_values = np.zeros(shape=(vector_index, len(polynomials)))
-    # Simple check of input class type - by checking the 1st element, also for documentation
-    try:
-        polynomials[0].polynomial_value(0.1, np.pi/4)
-    except AttributeError:
-        raise AttributeError("1st provided polynomial in polynomials input parameter isn't instance of ZernPol class")
+    zernike_values = np.zeros(shape=(vector_length, len(polynomials)))
     # Checking below in if condition that polynomials contain not only piston as polynomial for fitting
     m1 = polynomials[0].get_mn_orders()[0]; n1 = polynomials[0].get_mn_orders()[1]
     if len(polynomials) > 1 or (len(polynomials) == 1 and m1 == 0 and n1 == 0):
@@ -207,7 +194,7 @@ def fit_zernikes(phases_image: np.ndarray, cropped_deformations_mask: np.ndarray
             else:
                 zernike_values[:, j] = polynomials[j].polynomial_value(cropped_radii_vector, cropped_thetas_vector)
         # Fitting procedure of calculated polynomials values to the provided phases (deformations)
-        zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_deformations_vector, rcond=None)
+        zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_phases_vector, rcond=None)
         zernike_coefficients = zernike_coefficients[0]  # unpacking fitting results
     else:
         raise ValueError("Length of polynomials not enough for fitting or provided only piston")

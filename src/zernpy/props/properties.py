@@ -46,7 +46,7 @@ short_polynomial_names: dict = {
     (1, 7): "Hor. 3d coma", (3, 7): "Obliq.3d 3foil",
     (5, 7): "Obliq.2d 5foil", (7, 7): "Obliq. 7foil"}
 
-# Warning messages for avoiding associating with each instance of a class
+# Warning messages for special cases - usage of exact eq-s with orders higher than 40 (pol. value) or 38 (derivatives)
 warn_mess_r_long = (" - that is the highest empirical order (though I found on tests) guarantees"
                     + " stable calculation using the exact equation. Instability emerges because of"
                     + " high integer values produced by used in the exact eq. factorials. \n"
@@ -59,3 +59,6 @@ warn_mess_dr_long = (" - that is the highest empirical order (though I found on 
                      + "  eq. factorials multiplied additionally by derivation result. \n"
                      + "So, the zero array or float will be returned as the result. "
                      + "Use this method with recursive calculation of derivatives instead.")
+
+# Warning about usage of recursive calculations for high order polynomials
+warn_mess_slow_calc = " has actually high radial order, recursive calculations will be slow"

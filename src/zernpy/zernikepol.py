@@ -27,7 +27,8 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
                                                MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long
+    from props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
+                                  warn_mess_slow_calc)
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                 triangular_derivative, radial_derivative,
@@ -36,7 +37,8 @@ else:
                                                 MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from .props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long
+    from .props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
+                                   warn_mess_slow_calc)
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -51,6 +53,7 @@ class ZernPol:
     # Pre-initialized class variables
     __initialized: bool = False  # will be set to true after successful construction
     __n: int = 0; __m: int = 0; __osa_index: int = 0; __noll_index: int = 0; __fringe_index: int = 0
+    __show_slow_calc_warn: bool = False
 
     def __init__(self, **kwargs):
         """
@@ -68,7 +71,11 @@ class ZernPol:
         Raises
         ------
         ValueError
-            Raised if the specified orders (m, n) or index (OSA, Noll...) have some inconsistencies.
+            Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like: \n
+            for specified orders:
+            1) m < 0 or n < 0; 2) m or n is not int; 3) (self.__n - abs(self.__m)) % 2 == 0; \n
+            4) if n > 54 - because the polynomials with higher orders are meaningless due to very slow calculations; \n
+            for indicies - see the raised error message.
 
         References
         ----------
@@ -78,11 +85,10 @@ class ZernPol:
 
         Returns
         -------
-        ZernPol class' instance.
+        ZernPol class instance.
 
         """
         key = ""
-        # TODO: limit maximum order input to 80th order as the estimation! Also, calculate corresponding OSA, Noll, Fringe
         # Zernike polynomial specified with key arguments m, n - check firstly for these parameters
         if len(kwargs.keys()) == 2:
             if "n" in kwargs.keys() or "radial_order" in kwargs.keys():
@@ -116,6 +122,11 @@ class ZernPol:
                                     raise ValueError("Failed sanity check: order n less than 0")
                                 elif self.__n == 0 and self.__m != 0:
                                     raise ValueError("Failed sanity check: when n == 0, m should be also == 0")
+                                elif self.__n < 0:
+                                    raise ValueError("Failed sanity check: order n less than 0")
+                                elif self.__n > 54:
+                                    raise ValueError("Initialization of Zernike with radial order higher than 54"
+                                                     + " is meaningless because of very slow calculation performance")
                                 # m and n specified correctly, calculate other properties - various indices
                                 else:
                                     self.__initialized = True  # set the flag to True, polynomial class initialized
@@ -149,6 +160,9 @@ class ZernPol:
                         osa_i = kwargs.get(key)
                         if osa_i < 0:
                             raise ValueError("OSA / ANSI index should be non-negative integer")
+                        elif osa_i > 1539:
+                            ValueError("Initialization of Zernike with OSA index higher than 1539"
+                                       + " is meaningless because of very slow calculation performance")
                         else:
                             self.__osa_index = osa_i; self.__initialized = True
                             self.__m, self.__n = ZernPol.index2orders(osa_index=self.__osa_index)
@@ -169,6 +183,9 @@ class ZernPol:
                         noll_i = kwargs.get(key)
                         if noll_i < 1:
                             raise ValueError("Noll index should be not less than 1 integer")
+                        elif noll_i > 1540:
+                            ValueError("Initialization of Zernike with Noll index higher than 1540"
+                                       + " is meaningless because of very slow calculation performance")
                         else:
                             self.__noll_index = noll_i; self.__initialized = True
                             self.__m, self.__n = ZernPol.index2orders(noll_index=self.__noll_index)
@@ -192,6 +209,9 @@ class ZernPol:
                         else:
                             self.__fringe_index = fringe_i; self.__initialized = True
                             self.__m, self.__n = ZernPol.index2orders(fringe_index=self.__fringe_index)
+                            if self.__n > 54:
+                                raise ValueError("Initialization of Zernike with radial order higher than 54"
+                                                 + " is meaningless because of very slow calculation performance")
                             self.__osa_index = ZernPol.get_osa_index(self.__m, self.__n)
                             self.__noll_index = ZernPol.get_noll_index(self.__m, self.__n)
                     else:
@@ -327,6 +347,12 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return nTr*radial_polynomial(self, r)
             else:
+                # Raise warning about slow calculations for orders more than 50, only once
+                if self.__n > 50 and not self.__show_slow_calc_warn:
+                    warn_mess = f"ZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
+                    warnings.warn(warn_mess)
+                    self.__show_slow_calc_warn = True
+                # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return nTr*radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
@@ -386,6 +412,12 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return radial_polynomial(self, r)
             else:
+                # Raise warning about slow calculations for orders more than 50, only once
+                if self.__n > 50 and not self.__show_slow_calc_warn:
+                    warn_mess = f"ZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
+                    warnings.warn(warn_mess)
+                    self.__show_slow_calc_warn = True
+                # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
@@ -472,6 +504,12 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return radial_derivative(self, r)
             else:
+                # Raise warning about slow calculations for orders more than 50, only once
+                if self.__n > 48 and not self.__show_slow_calc_warn:
+                    warn_mess = f"ZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
+                    warnings.warn(warn_mess)
+                    self.__show_slow_calc_warn = True
+                # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return radial_polynomial_coeffs_dr(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS_dR:
@@ -628,15 +666,17 @@ class ZernPol:
 
         """
         osa_index = -1; noll_index = -1; fringe_index = -1; m = -1; n = -1
+        highest_order = 56  # default value, limited by the allowed maximal radial order + 2
         if "osa_index" in kwargs.keys():
             osa_index = kwargs.get("osa_index")
         elif "noll_index" in kwargs.keys():
             noll_index = kwargs.get("noll_index")
         elif "fringe_index" in kwargs.keys():
             fringe_index = kwargs.get("fringe_index")
-        # Define m, n orders up to 80th, that should be specified as the maximum order
+            highest_order = 250  # to guarantee that right Fringe index found
+        # Define m, n orders up to the specified above highest order (radial)
         stop_search = False
-        for order in range(0, 81):
+        for order in range(0, highest_order):
             m = -order  # azimuthal order
             n = order  # radial order
             for polynomial in range(0, order+1):
@@ -1215,10 +1255,12 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     ----------
     phases_image : numpy.ndarray
         2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
+        Note that image is assumed as the recorded phases on the cartesian coordinates. The circle
+        (aperture) containing phases is cropped from the input image during the fitting procedure.
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
     crop_radius : float, optional
-        Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of circle = min image size.
+        Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of the cropped circle = min image size.
         The default is 1.0.
     suppress_warnings : bool, optional
         Flag for suppress warnings about the provided 2D image sizes. The default is False.
@@ -1241,11 +1283,11 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         meaning and type as explained before.
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), ))
-    logic_mask, polar_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings,
-                                                    strict_circle_border)
+    logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings,
+                                                             strict_circle_border)
     if return_cropped_image:
         cropped_image = logic_mask*phases_image  # for debugging
-    zernike_coefficients = fit_zernikes(phases_image, logic_mask, polar_coordinates, polynomials)
+    zernike_coefficients = fit_zernikes(cropped_phases_coordinates, polynomials)
     zernike_coefficients = np.round(zernike_coefficients, round_digits)
     if return_cropped_image:
         return zernike_coefficients, cropped_image
@@ -1315,10 +1357,20 @@ def _estimate_high_order_calc_times():
     high_order_pols = [ZernPol(m=-2, n=46), ZernPol(m=1, n=47), ZernPol(m=2, n=48), ZernPol(m=-1, n=49),
                        ZernPol(m=2, n=50), ZernPol(m=1, n=51), ZernPol(m=-2, n=52)]
     times = []
+    # Single polynomials values
     for pol in high_order_pols:
         # calculate radial polynomials over vector of radii
         t1 = time.perf_counter(); pol.radial(r); t2 = time.perf_counter()
         times.append(f"{pol.get_mn_orders()}: {int(round(1000*(t2-t1), 0))} ms")
+    # Delete polynomials with too high orders for derivatives calculates
+    high_order_pols.pop(len(high_order_pols)-1); high_order_pols.pop(len(high_order_pols)-1)
+    high_order_pols.pop(len(high_order_pols)-1)
+    print(times); times = []
+    # Single derivative polynomials values
+    for pol in high_order_pols:
+        # calculate derivatives of radial polynomials over vector of radii
+        t1 = time.perf_counter(); pol.radial_dr(r); t2 = time.perf_counter()
+        times.append(f"Deriv. {pol.get_mn_orders()}: {int(round(1000*(t2-t1), 0))} ms")
     print(times)
 
 
@@ -1430,5 +1482,4 @@ if __name__ == "__main__":
     print("Tabular (10th order) / exact calc. times:", compare_performances(1, 10))
     print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
     # Statement below producing expected warnings
-    # print("Slow Recursive / exact calc. times for high orders:", compare_performances(41, 42))
     _estimate_high_order_calc_times()

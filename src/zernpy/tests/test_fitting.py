@@ -38,7 +38,7 @@ def test_random_fitting():
     for _ in range(2):  # run test several times
         for i in range(4, 8, 1):
             if i == 4:
-                height = 127; width = 127; crop_r = 1.0; strict_border = False; mdp = 15.0; stop_warns = False
+                height = 147; width = 147; crop_r = 1.0; strict_border = False; mdp = 15.0; stop_warns = False
             elif i == 5:
                 height = 140; width = 140; crop_r = 0.98; strict_border = False; mdp = 25.0; stop_warns = True
             elif i == 6:

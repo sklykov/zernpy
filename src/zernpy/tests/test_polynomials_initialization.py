@@ -58,6 +58,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(osa=-1)"
+    try:
+        ZernPol(osa=1600); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(osa=1600)"
 
     # Noll
     try:
@@ -70,6 +75,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(noll=-2)"
+    try:
+        ZernPol(noll=1580); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(noll=1580)"
 
     # Fringe
     try:
@@ -82,6 +92,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=0.4)"
+    try:
+        ZernPol(fringe=2981); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe=2981)"
 
     # Orders radial, azimuthal
     try:
@@ -99,6 +114,11 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(n=-2, l=2)"
+    try:
+        ZernPol(n=55, l=-3); assert_flag = False
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong initialization parameter passed: ZernPol(n=55, l=-3)"
 
     # Wrong mix of orders
     try:
