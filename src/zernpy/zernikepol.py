@@ -843,9 +843,10 @@ class ZernPol:
                     if not isinstance(polynomials[i], ZernPol):
                         raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
                     if i == 0:
-                        S = coefficient*polynomials[i].polynomial_value(r, theta)
+                        S = coefficient*polynomials[i].polynomial_value(r, theta)  # if even coefficient = 0, gives initial array
                     else:
-                        S += coefficient*polynomials[i].polynomial_value(r, theta)
+                        if abs(coefficient) > 0.0:
+                            S += coefficient*polynomials[i].polynomial_value(r, theta)
             elif get_surface:
                 if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                     warnings.warn("Requested calculation of surface (mesh) values with"
@@ -859,14 +860,16 @@ class ZernPol:
                             raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
                         if theta_size > r_size:
                             for j in range(r_size):
-                                S[j, :] += coefficient*polynomials[i].polynomial_value(r[j], theta)[:]
+                                if abs(coefficient) > 0.0:
+                                    S[j, :] += coefficient*polynomials[i].polynomial_value(r[j], theta)[:]
                         else:
                             for j in range(theta_size):
-                                S[:, j] += coefficient*polynomials[i].polynomial_value(r, theta[j])[:]
+                                if abs(coefficient) > 0.0:
+                                    S[:, j] += coefficient*polynomials[i].polynomial_value(r, theta[j])[:]
         return S
 
     @staticmethod
-    def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = (np.pi/180)) -> polar_vectors:
+    def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = round(np.pi/240, 7)) -> polar_vectors:
         """
         Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
@@ -878,7 +881,7 @@ class ZernPol:
         r_step : float, optional
             Step for generation the vector with radiuses for an entire unit circle. The default is 0.01.
         theta_rad_step : float, optional
-            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90).
+            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/240).
 
         Raises
         ------
@@ -896,8 +899,13 @@ class ZernPol:
             raise ValueError("Provided step on radiuses less than 0.0 or more than 0.5")
         if 0.0 >= theta_rad_step > np.pi:
             raise ValueError("Provided step on theta angles less than 0.0 or more than pi")
-        R = np.arange(0.0, 1.0+r_step, r_step); Theta = np.arange(0.0, 2*np.pi+theta_rad_step, theta_rad_step)
-        return polar_vectors(R, Theta)
+        Rs = np.arange(0.0, 1.0+r_step, r_step); Thetas = np.arange(0.0, 2.0*np.pi+theta_rad_step, theta_rad_step)
+        # Check that the last values on the generated ranges appeared not outside of ranges
+        if Rs[Rs.shape[0]-1] > 1.0:
+            Rs[Rs.shape[0]-1] = 1.0
+        if Thetas[Thetas.shape[0]-1] > 2.0*np.pi:
+            Thetas[Thetas.shape[0]-1] = 2.0*np.pi
+        return polar_vectors(Rs, Thetas)
 
     @staticmethod
     def plot_zernike_polynomial(polynomial, color_map: str = "coolwarm", show_title: bool = True):
@@ -932,7 +940,7 @@ class ZernPol:
 
     @staticmethod
     def gen_zernikes_surface(coefficients: list, polynomials: list, r_step: float = 0.01,
-                             theta_rad_step: float = (np.pi/180)) -> zernikes_surface:
+                             theta_rad_step: float = round(np.pi/180, 7)) -> zernikes_surface:
         """
         Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.
 
@@ -946,7 +954,7 @@ class ZernPol:
             Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. \n
             See also the documentation for the method gen_polar_coordinates().
         theta_rad_step : float, optional
-            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90). \n
+            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). \n
             See also the documentation for the method gen_polar_coordinates().
 
         Returns
@@ -1008,8 +1016,8 @@ class ZernPol:
             raise ValueError("Zernike surface isn't specified as tuple with values Sum surface, R, Theta")
         if use_defaults:
             polar_vectors = ZernPol.gen_polar_coordinates()
-            zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta,
-                                                get_surface=True)
+            zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R,
+                                                polar_vectors.Theta, get_surface=True)
             figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
                                         show_range_colorbar=show_range, color_map=color_map)
         else:
@@ -1493,15 +1501,24 @@ def check_conformity():
 # %% Tests
 if __name__ == "__main__":
     _test_plots = False  # regulates plots
+    _test_calculations = True  # regulates tests below concerning calculations
     check_conformity()  # testing initialization
     if _test_plots:
         plt.close("all")  # Check plotting functions
+        t1 = time.perf_counter()
         zp = ZernPol(m=-4, n=4); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plot
+        t2 = time.perf_counter(); print("Plotting of 1 non-zero takes ms: ", int(round(1000*(t2-t1), 0)))
         zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
         # ZernPol._plot_zernikes_half_pyramid()
-        fig3 = plt.figure(figsize=(2, 2)); zp3 = ZernPol(osa=58); polynomials = [zp3]; coefficients = [1.0]
+        # Testing accelerated poltting / sum calculation
+        fig3 = plt.figure(figsize=(3, 3))
+        t1 = time.perf_counter(); n_pols = 31; polynomials = []; coefficients = [0.0]*n_pols
+        for i in range(n_pols):
+            polynomials.append(ZernPol(osa=58+i))
+        coefficients[0] = 1.0  # only 1st polynomial will be plotted
         fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
         fig3.subplots_adjust(0, 0, 1, 1)
+        t2 = time.perf_counter(); print("Plotting of 1 non-zero and 30 zero pol-s takes ms: ", int(round(1000*(t2-t1), 0)))
         # Tests with generation / restoring Zernike profiles (phases images)
         phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
         plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
@@ -1510,20 +1527,21 @@ if __name__ == "__main__":
                                                               strict_circle_border=False, crop_radius=1.0)
         plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
         plt.show()  # show all images created by plt.figure() calls
-    # Simple test of two concepts of calculations - exact and recursive equations
-    z = ZernPol(n=30, m=-2); print("Diff. between recursive and exact equations:",
-                                   round(z.radial(0.85) - z.radial(0.85, use_exact_eq=True), 9))
-    z = ZernPol(n=32, l=0); print("Diff. between recursive and exact equations:",
-                                  round(z.radial(0.35) - z.radial(0.35, use_exact_eq=True), 9))
-    r = -0.955; theta = np.pi/8; z = ZernPol(osa=55)
-    print("Diff. between recursive and exact equations:",
-          round(z.polynomial_value(r, theta) - z.polynomial_value(r, theta, use_exact_eq=True), 9))
-    z = ZernPol(n=35, l=-1); print("Diff. between recursive & exact eq-s for derivatives:",
-                                   round(z.radial_dr(0.78) - z.radial_dr(0.78, use_exact_eq=True), 9))
-    z = ZernPol(n=38, m=-2); print("Diff. between recursive & exact eq-s for derivatives:",
-                                   round(z.radial_dr(0.9) - z.radial_dr(0.9, use_exact_eq=True), 9))
-    # Compare performances
-    print("Tabular (10th order) / exact calc. times:", compare_performances(1, 10))
-    print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
-    # Statement below producing expected warnings, it's used for performance estimation
-    _estimate_high_order_calc_times()
+    if _test_calculations:
+        # Simple test of two concepts of calculations - exact and recursive equations
+        z = ZernPol(n=30, m=-2); print("Diff. between recursive and exact equations:",
+                                       round(z.radial(0.85) - z.radial(0.85, use_exact_eq=True), 9))
+        z = ZernPol(n=32, l=0); print("Diff. between recursive and exact equations:",
+                                      round(z.radial(0.35) - z.radial(0.35, use_exact_eq=True), 9))
+        r = -0.955; theta = np.pi/8; z = ZernPol(osa=55)
+        print("Diff. between recursive and exact equations:",
+              round(z.polynomial_value(r, theta) - z.polynomial_value(r, theta, use_exact_eq=True), 9))
+        z = ZernPol(n=35, l=-1); print("Diff. between recursive & exact eq-s for derivatives:",
+                                       round(z.radial_dr(0.78) - z.radial_dr(0.78, use_exact_eq=True), 9))
+        z = ZernPol(n=38, m=-2); print("Diff. between recursive & exact eq-s for derivatives:",
+                                       round(z.radial_dr(0.9) - z.radial_dr(0.9, use_exact_eq=True), 9))
+        # Compare performances
+        print("Tabular (10th order) / exact calc. times:", compare_performances(1, 10))
+        print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
+        # Statement below producing expected warnings, it's used for performance estimation
+        _estimate_high_order_calc_times()

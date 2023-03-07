@@ -109,6 +109,9 @@
                     <a class="function" href="#fit_polynomials">fit_polynomials</a>
             </li>
             <li>
+                    <a class="function" href="#fit_polynomials_vectors">fit_polynomials_vectors</a>
+            </li>
+            <li>
                     <a class="function" href="#compare_performances">compare_performances</a>
             </li>
             <li>
@@ -117,7 +120,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.0.9, 2023 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.10, 2023 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -187,8 +190,15 @@ Acceptable variants for key=value pairs arguments: </p>
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Raised if the specified orders (m, n) or index (OSA, Noll...) have some inconsistencies.</li>
+<li><strong>ValueError</strong>: Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like: </li>
 </ul>
+
+<p>for specified orders:
+1) m &lt; 0 or n &lt; 0; 2) m or n is not int; 3) (self.__n - abs(self.__m)) % 2 == 0; </p>
+
+<p>4) if n &gt; 54 - because the polynomials with higher orders are meaningless due to very slow calculations; </p>
+
+<p>for indices - see the raised error message.</p>
 
 <h6 id="references">References</h6>
 
@@ -201,7 +211,7 @@ Acceptable variants for key=value pairs arguments: </p>
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>ZernPol class' instance.</strong></li>
+<li><strong>ZernPol class instance.</strong></li>
 </ul>
 </div>
 
@@ -894,7 +904,7 @@ If True, it forces to calculate 2D sum of polynomials based on r and theta (as a
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">gen_polar_coordinates</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.017453292519943295</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">PolarVectors</span>:</span></span>
+        <span class="name">gen_polar_coordinates</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01309</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">PolarVectors</span>:</span></span>
 
         
     </div>
@@ -911,7 +921,7 @@ defined by the specification of r_step and theta_rad_step parameters.</p>
 <li><strong>r_step</strong> (float, optional):
 Step for generation the vector with radiuses for an entire unit circle. The default is 0.01.</li>
 <li><strong>theta_rad_step</strong> (float, optional):
-Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90).</li>
+Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/240).</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -970,7 +980,7 @@ Toggle for showing the name of polynomial on the plot or not.</li>
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">gen_zernikes_surface</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.017453292519943295</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span>:</span></span>
+        <span class="name">gen_zernikes_surface</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">list</span>,</span><span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0174533</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span>:</span></span>
 
         
     </div>
@@ -990,7 +1000,7 @@ Step for generation the vector with radiuses for an entire unit circle. The defa
 
 <p>See also the documentation for the method gen_polar_coordinates().</p></li>
 <li><p><strong>theta_rad_step</strong> (float, optional):
-Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/90). </p>
+Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). </p>
 
 <p>See also the documentation for the method gen_polar_coordinates().</p></li>
 </ul>
@@ -1144,17 +1154,22 @@ tuple with generated Zernike polynomials.</li>
             <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.</p>
 
 <p>Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
-over a unit aperture (pupil).</p>
+over a unit aperture (pupil).
+Also, 2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
+out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
+True and plotting the second item from the returned tuple.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>phases_image</strong> (numpy.ndarray):
-2D image with recorded phases which should be approximated by the sum of Zernike polynomials.</li>
+2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
+Note that image is assumed as the recorded phases on the cartesian coordinates. The circle
+(aperture) containing phases is cropped from the input image during the fitting procedure.</li>
 <li><strong>polynomials</strong> (tuple):
 Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.</li>
 <li><strong>crop_radius</strong> (float, optional):
-Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of circle = min image size.
+Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of the cropped circle = min image size.
 The default is 1.0.</li>
 <li><strong>suppress_warnings</strong> (bool, optional):
 Flag for suppress warnings about the provided 2D image sizes. The default is False.</li>
@@ -1176,6 +1191,52 @@ with the fitted coefficients of Zernike polynomials, and cropped_image - the cro
 input image with phases that is used for fitting procedure (useful for debugging purposes);
 if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
 meaning and type as explained before.</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="fit_polynomials_vectors">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">fit_polynomials_vectors</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span>,</span><span class="param">	<span class="n">phases_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">radii_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">thetas_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#fit_polynomials_vectors"></a>
+    
+            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.</p>
+
+<p>1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
+of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>polynomials</strong> (tuple):
+Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.</li>
+<li><strong>phases_vector</strong> (numpy.ndarray):
+Recorded phases.</li>
+<li><strong>radii_vector</strong> (numpy.ndarray):
+Related radii - 1st polar coordinates for the recorded phases.</li>
+<li><strong>thetas_vector</strong> (numpy.ndarray):
+Related angles (thetas) - 2nd polar coordinates for the recorded phases.</li>
+<li><strong>round_digits</strong> (int, optional):
+Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>AttributeError</strong>: The any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1).</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>zernike_coefficients</strong> (numpy.ndarray):
+1D numpy.ndarray with the fitted coefficients of Zernike polynomials.</li>
 </ul>
 </div>
 
