@@ -75,7 +75,7 @@ class ZernPol:
             for specified orders:
             1) m < 0 or n < 0; 2) m or n is not int; 3) (self.__n - abs(self.__m)) % 2 == 0; \n
             4) if n > 54 - because the polynomials with higher orders are meaningless due to very slow calculations; \n
-            for indicies - see the raised error message.
+            for indices - see the raised error message.
 
         References
         ----------
@@ -1250,6 +1250,9 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
 
     Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
     over a unit aperture (pupil).
+    Also, 2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
+    out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
+    True and plotting the second item from the returned tuple.
 
     Parameters
     ----------
@@ -1293,6 +1296,47 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         return zernike_coefficients, cropped_image
     else:
         return zernike_coefficients, None
+
+
+def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii_vector: np.ndarray,
+                            thetas_vector: np.ndarray, round_digits: int = 4) -> np.ndarray:
+    """
+    Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.
+
+    1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
+    of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.
+
+    Parameters
+    ----------
+    polynomials : tuple
+        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
+    phases_vector : numpy.ndarray
+        Recorded phases.
+    radii_vector : numpy.ndarray
+        Related radii - 1st polar coordinates for the recorded phases.
+    thetas_vector : numpy.ndarray
+        Related angles (thetas) - 2nd polar coordinates for the recorded phases.
+    round_digits : int, optional
+        Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.
+
+    Raises
+    ------
+    AttributeError
+        The any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape > 1).
+
+    Returns
+    -------
+    zernike_coefficients : numpy.ndarray
+        1D numpy.ndarray with the fitted coefficients of Zernike polynomials.
+
+    """
+    # Checking input data consistency
+    if len(phases_vector.shape) > 1 or len(radii_vector.shape) > 1 or len(thetas_vector.shape) > 1:
+        raise TypeError("Some of provided vector is not 1D, check the call len(...shape)")
+    # Call to fitting procedure
+    zernike_coefficients = fit_zernikes((phases_vector, radii_vector, thetas_vector), polynomials)
+    zernike_coefficients = np.round(zernike_coefficients, round_digits)
+    return zernike_coefficients
 
 
 def compare_performances(min_order: int, max_order: int) -> tuple:
@@ -1481,5 +1525,5 @@ if __name__ == "__main__":
     # Compare performances
     print("Tabular (10th order) / exact calc. times:", compare_performances(1, 10))
     print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
-    # Statement below producing expected warnings
+    # Statement below producing expected warnings, it's used for performance estimation
     _estimate_high_order_calc_times()

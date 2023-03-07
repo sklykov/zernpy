@@ -11,10 +11,11 @@ For running collected here tests, it's enough to run the command "pytest" from t
 """
 # %% Global imports
 import numpy as np
+import random
 
 # %% Imports from modules
 if __name__ != "__main__":
-    from ..zernikepol import generate_random_phases, fit_polynomials
+    from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors
 
 
 # %% Test functions
@@ -79,3 +80,18 @@ def test_random_fitting():
                 same_sign = True
             assert same_sign, ("\n Fitted and source amplitudes have abs. maximum values with different"
                                + f" signs: source ampl.: {src_ampl}, fitted ampl.: {fit_ampl}")
+    # Test 1D fitting procedure for vectors
+    z1 = ZernPol(m=0, n=2); z2 = ZernPol(m=-1, n=3); z3 = ZernPol(m=3, n=5); step_r = 0.02; step_theta = np.pi/40
+    z1_coeff = 1.2; z2_coeff = -0.75; z3_coeff = 0.14
+    radii = np.arange(start=0.0, stop=1.0+step_r, step=step_r)
+    thetas = np.arange(start=0.0, stop=2.0*np.pi+step_theta, step=step_theta)
+    phases = np.zeros(shape=(radii.shape[0]*thetas.shape[0],))
+    thetas_length = thetas.shape[0]; c_noise = [0.0, 0.0, 0.0, -0.005, 0.005]
+    for i in range(radii.shape[0]):
+        phases[i*thetas_length:(i+1)*thetas_length] = ((z1_coeff + random.choice(c_noise))*z1.polynomial_value(radii[i], thetas)
+                                                       + (z2_coeff + random.choice(c_noise))*z2.polynomial_value(radii[i], thetas)
+                                                       + (z3_coeff + random.choice(c_noise))*z3.polynomial_value(radii[i], thetas))
+    fit_coeffs = fit_polynomials_vectors((z1, z2, z3), phases, radii, thetas, round_digits=4)
+    diff1 = round(abs(z1_coeff - fit_coeffs[0]), 4); diff2 = round(abs(z2_coeff - fit_coeffs[1]), 4); eps = 0.0075
+    diff3 = round(abs(z3_coeff - fit_coeffs[2]), 4)
+    assert diff1 <= eps and diff2 <= eps and diff3 <= eps, f"Simple fitting not successful, diff-s:{diff1, diff2}"

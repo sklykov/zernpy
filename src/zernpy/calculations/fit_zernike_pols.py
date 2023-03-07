@@ -169,6 +169,7 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
         If the input tuple with polynomials composed not from instances of ZernPol class.
     ValueError
         If the length of the tuple with polynomials not enough for fitting or provided only piston (single polynomial).
+        Also, if the tuple contains repeated polynomials.
     numpy.linalg.LinAlgError
         If the fit procedure doesn't converge (namely, np.linalg.lstsq(...) function doesn't converge).
 
@@ -184,6 +185,17 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
     vector_length, = cropped_phases_vector.shape; zernike_coefficients = None
     # Calculate polynomials values in the unit circle defined by polar coordinates
     zernike_values = np.zeros(shape=(vector_length, len(polynomials)))
+    # Checking that all polynomials are unique
+    if not len(polynomials) == 0:
+        provided_orders = []
+        for polynomial in polynomials:
+            provided_orders.append(polynomial.get_mn_orders())
+        set_provided_orders = set(provided_orders)  # filter out if there is any repeated polynomials provided
+        if len(set_provided_orders) != len(provided_orders):
+            print(set_provided_orders, provided_orders)
+            raise ValueError("Provided repeated polynomials")
+    else:
+        raise ValueError("Provided zero length tuple with polynomials")
     # Checking below in if condition that polynomials contain not only piston as polynomial for fitting
     m1 = polynomials[0].get_mn_orders()[0]; n1 = polynomials[0].get_mn_orders()[1]
     if len(polynomials) > 1 or (len(polynomials) == 1 and m1 == 0 and n1 == 0):
@@ -192,7 +204,13 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
             if polynomials[j].get_mn_orders()[0] == 0 and polynomials[j].get_mn_orders()[1] == 0:
                 continue  # do not calculate piston value, it's useless to fit this polynomial (constant value over aperture)
             else:
-                zernike_values[:, j] = polynomials[j].polynomial_value(cropped_radii_vector, cropped_thetas_vector)
+                if cropped_radii_vector.shape[0] == cropped_thetas_vector.shape[0]:
+                    zernike_values[:, j] = polynomials[j].polynomial_value(cropped_radii_vector, cropped_thetas_vector)
+                else:
+                    thetas_length = cropped_thetas_vector.shape[0]
+                    for i in range(cropped_radii_vector.shape[0]):
+                        zernike_values[i*thetas_length:(i+1)*thetas_length, j] = polynomials[j].polynomial_value(cropped_radii_vector[i],
+                                                                                                                 cropped_thetas_vector)
         # Fitting procedure of calculated polynomials values to the provided phases (deformations)
         zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_phases_vector, rcond=None)
         zernike_coefficients = zernike_coefficients[0]  # unpacking fitting results
