@@ -1085,7 +1085,7 @@ class ZernPol:
             if np.min(radii) < 0.0 or np.max(radii) > 1.0:
                 raise ValueError("Minimal or maximal value of radii laying outside unit circle [0.0, 1.0]")
         elif isinstance(radii, float):
-            if 0.0 > radii > 1.0:
+            if radii > 1.0 or radii < 0.0:
                 raise ValueError("Radius laying outside unit circle [0.0, 1.0]")
         return radii
 
@@ -1510,7 +1510,7 @@ if __name__ == "__main__":
         t2 = time.perf_counter(); print("Plotting of 1 non-zero takes ms: ", int(round(1000*(t2-t1), 0)))
         zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
         # ZernPol._plot_zernikes_half_pyramid()
-        # Testing accelerated poltting / sum calculation
+        # Testing accelerated plotting / sum calculation
         fig3 = plt.figure(figsize=(3, 3))
         t1 = time.perf_counter(); n_pols = 31; polynomials = []; coefficients = [0.0]*n_pols
         for i in range(n_pols):

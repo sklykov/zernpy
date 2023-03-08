@@ -786,7 +786,7 @@ def time_radial_pols():
 
     """
     calc_times_ms = []  # for storing calculation times
-    zp1 = (2, 16); zp2 = (0, 18); zp3 = (-2, 20); zp4 = (6, 22); zp5 = (-4, 24); zp6 = (-3, 25); r = 0.425
+    zp1 = (2, 16); zp2 = (0, 18); zp3 = (-2, 20); zp4 = (6, 22); zp5 = (-4, 24); r = 0.425
     zpols = [zp1, zp2, zp3, zp4, zp5]
     for zp in zpols:
         t1 = time.perf_counter()

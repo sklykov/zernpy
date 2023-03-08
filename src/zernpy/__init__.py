@@ -14,6 +14,6 @@ elif __name__ == "zernpy":
 # Automatically bring the main class and some methods to the name space when one of import command is used commands:
 # 1) from zernpy import ZernPol, ... functions; 2) from zernpy import *
 if __name__ != "__main__" and __name__ != "__mp_main__":
-    from .zernikepol import ZernPol  # main class auto import
+    from .zernikepol import ZernPol  # main class auto export on the import call of the package
     # functions auto export - when everything imported from the module
     from .zernikepol import generate_polynomials, fit_polynomials, generate_random_phases, fit_polynomials_vectors

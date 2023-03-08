@@ -104,10 +104,16 @@ def test_pol_values_edge_cases():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of combination list (r) and list (theta) with not equal dimensions"
-    # Out of range value for r
+    # Tests for out of range r value
     r = [0, 0.1, 0.2, 1.00000001]; theta = [0, 0.3, 0.6, 0.9]
     try:
         assert_flag = False; zp.polynomial_value(r, theta)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of using r > 1.0"
+    r = -0.2
+    try:
+        assert_flag = False; zp.polynomial_value(r, theta)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Wrong calculation of using r < 0.0"
