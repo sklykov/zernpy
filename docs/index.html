@@ -45,18 +45,54 @@
         }
         /* Style for each text string */
         .textString{
-            margin: 4px;
+            margin: 0.22em;
         }
         #page_footer{
             font-size: 0.9em; font-family: 'Courier New', Courier, monospace; padding-top: 4em;
         }
-        /* Inline elements means various elements (labels, inputs) specified on the single line */
-        .inline-element{
-            margin-left: 0.2em; margin-right: 0.2em; font-size: 0.91em;
+        /* Inline elements means various elements (inputs, buttons, selector) placed on the single line on the page */
+        .input-element{
+            margin-left: 0.2em; margin-right: 0.2em; font-size: 0.95em;
+        }
+        /* Labels placed on the single line on the page */
+        .label-element{
+            margin-left: 0.22em; margin-right: 0.15em;
         }
         /* Specific style for placeholder for conversions */
         #conversionString{
             margin-left: 0.25em; border: 1px solid blue; padding: 0.32em; border-radius: 1em; background-color: whitesmoke;
+            font-size: 0.98em;
+        }
+        /* Initial style for some div-s */
+        #selectorElement, #getIndicesBtn, #ordersElement{
+                display: inline-block;
+            }
+        /* Rearrange elements for opening website on screens 750px <= width <= 1220px */
+        @media screen and (max-width: 1220px) and (min-width: 750px){
+            .inputsOrdersConversion{
+                display: flex; flex-direction: row;
+            }
+            #selectorElement, #getIndicesBtn, #ordersElement{
+                display: inline-block;
+            }
+            .label-element, .input-element{
+                margin-top: 0.25em; margin-bottom: 0.25em;
+            }
+            #conversionString{
+                display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.96em;
+            }
+        }
+        /* Rearrange elements for opening website on mobile phones */
+        @media screen and (max-width: 749px){
+            #selectorElement, #getIndicesBtn, #ordersElement{
+                display: block;
+            }
+            #conversionString{
+                display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.94em;
+            }
+            .label-element, .input-element{
+                margin: 0.25em 0.05em;
+            }
         }
     </style>
 </head>
@@ -129,20 +165,26 @@
                                 Specify below the index (indices) for Zernike polynomial specification
                                 (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
                             </div>
-                            <label class="inline-element"> Select the indexing type: </label>
-                            <select class="inline-element" name="Index type">
-                                <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
-                                <option value="osa">OSA/ANSI</option>
-                                <option value="noll">Noll</option>
-                                <option value="fringe">Fringe</option>
-                            </select>
-                            <span class="inline-element" id="ordersLabel"> orders: </span>
-                            <label class="inline-element" tag="n_order_label" id="firstOrderLabel"> n = </label>
-                            <input class="inline-element" type="number" tag="n_order" name="n" min="0" max="50" size="4" minlength="1" maxlength="3" value="0" id="firstInputOrder">
-                            <label class="inline-element" tag="m_order_label" id="secondOrderLabel"> m = </label>
-                            <input class="inline-element" type="number" tag="m_order" name="m" min="-50" max="50" size="4" minlength="1" maxlength="3" value="0" id="secondInputOrder">
-                            <input class="inline-element" type="button" value="Get Indices/Orders" id="getIndicesBtn">
-                            <span id="conversionString"> Click button on the left to get here conversions </span>
+                            <div id="inputsOrdersConversion">
+                                <div id="selectorElement"> 
+                                    <label class="label-element"> Select the indexing type: </label>
+                                    <select class="input-element" name="Index type">
+                                        <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
+                                        <option value="osa">OSA/ANSI</option>
+                                        <option value="noll">Noll</option>
+                                        <option value="fringe">Fringe</option>
+                                    </select>
+                                </div>
+                                <div id="ordersElement">
+                                    <span class="label-element" id="ordersLabel"> orders: </span>
+                                    <label class="label-element" tag="n_order_label" id="firstOrderLabel"> n = </label>
+                                    <input class="input-element" type="number" tag="n_order" name="n" min="0" max="50" size="4" minlength="1" maxlength="3" value="0" id="firstInputOrder">
+                                    <label class="label-element" tag="m_order_label" id="secondOrderLabel"> m = </label>
+                                    <input class="input-element" type="number" tag="m_order" name="m" min="-50" max="50" size="4" minlength="1" maxlength="3" value="0" id="secondInputOrder">
+                                </div>
+                                <input class="input-element" type="button" value="Get Indices/Orders" id="getIndicesBtn">
+                                <span id="conversionString"> Click "Get Indices/Orders" to get here conversion </span>
+                            </div>
                         </div>
                     </p>
                 </section>
