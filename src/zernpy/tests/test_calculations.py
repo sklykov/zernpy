@@ -67,6 +67,16 @@ def test_sum_zernikes():
         assert isinstance(plotted_fig, Figure) and plotted_fig.tight_layout, "Something wrong with the plotting function"
     except ModuleNotFoundError:
         assert False, "Install matplotlib for passing the test"
+    # Test difference between direct (naive) implementation and using meshgrids implementation of sum of Zernikes
+    pols = [ZernPol(osa=2), ZernPol(osa=4), ZernPol(osa=7), ZernPol(osa=10), ZernPol(osa=15)]
+    ampls = [-0.85, 0.85, 0.24, -0.37, 1.0]; radii = np.arange(start=0.0, stop=1.0 + 0.05, step=0.05)
+    thetas = np.arange(start=0.0, stop=2.0*np.pi + np.pi/10, step=np.pi/10)
+    sum_pols_d = ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
+    sum_pols = ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas, get_surface=True)
+    assert abs(np.max(sum_pols_d - sum_pols)) < 1E-6, ("Sum of Zernikes are different between implementations "
+                                                       + f" and have abs(max) = {abs(np.max(sum_pols_d - sum_pols))}")
+    assert abs(np.min(sum_pols_d - sum_pols)) < 1E-6, ("Sum of Zernikes are different between implementations "
+                                                       + f" and have abs(min) = {abs(np.min(sum_pols_d - sum_pols))}")
 
 
 # Testing the calculation of polynomial values for edge cases
