@@ -25,7 +25,7 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
                                                radial_polynomial_eq, radial_derivative_eq,
                                                radial_polynomial_coeffs, radial_polynomial_coeffs_dr,
                                                MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
-    from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
+    from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
                                   warn_mess_slow_calc)
@@ -35,7 +35,7 @@ else:
                                                 radial_polynomial_eq, radial_derivative_eq,
                                                 radial_polynomial_coeffs, radial_polynomial_coeffs_dr,
                                                 MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
-    from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig
+    from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from .props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
                                    warn_mess_slow_calc)
@@ -284,6 +284,74 @@ class ZernPol:
             if (self.__m, self.__n) in polynomial_names.keys():
                 name = polynomial_names[(self.__m, self.__n)]
         return name
+
+    def __str__(self) -> str:
+        """
+        Provide string information about the initialized class.
+
+        Returns
+        -------
+        str
+            String composed from polynomial name (if specified) and orders and indices.
+
+        """
+        name = self.get_polynomial_name()
+        pol_signature = f": n={self.__n}, m={self.__m}, OSA={self.__osa_index}, Noll={self.__noll_index}, Fringe={self.__fringe_index}"
+        if len(name) > 0:
+            return name + pol_signature
+        else:
+            return "Zernike polynomial"
+
+    def __gt__(self, other) -> bool:
+        """
+        Implement the method '>' for comparing two Zernike polynomials based on their OSA indices (!).
+
+        Parameters
+        ----------
+        other : ZernPol
+            Instance of ZernPol class.
+
+        Raises
+        ------
+        ValueError
+            If provided object for comparison isn't instance of the class ZernPol.
+
+        Returns
+        -------
+        bool
+            Result of comparison.
+
+        """
+        if isinstance(other, ZernPol):
+            return self.__osa_index > other.__osa_index
+        else:
+            raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
+
+    def __eq__(self, other) -> bool:
+        """
+        Implement the method '==' for comparing two Zernike polynomials based on all their indices and orders equality.
+
+        Parameters
+        ----------
+        other : ZernPol
+            Instance of ZernPol class.
+
+        Raises
+        ------
+        ValueError
+            If provided object for comparison isn't instance of the class ZernPol.
+
+        Returns
+        -------
+        bool
+            Result of comparison.
+
+        """
+        if isinstance(other, ZernPol):
+            return (self.__osa_index == other.__osa_index and self.__m == other.__m and self.__n == other.__n
+                    and self.__noll_index == other.__noll_index and self.__fringe_index == other.__fringe_index)
+        else:
+            raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
 
     # %% Calculations
     def polynomial_value(self, r, theta, use_exact_eq: bool = False):
@@ -803,12 +871,13 @@ class ZernPol:
             raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
 
     @staticmethod
-    def _sum_zernikes_meshgrid(coefficients: list, polynomials: list, r, theta, get_surface: bool = False):
+    def _sum_zernikes_meshgrid(coefficients: list, polynomials: list, r: np.ndarray, theta: np.ndarray):
         """
-        Calculate sum of Zernike polynomials along with their coefficients (e.g., for plotting over a unit circle).
+        Calculate sum of Zernike polynomials only for the numpy arrays with r and theta.
 
+        For getting the sum of polynomials for float and array or floats of polar coordinates, use the sum_zernikes method.
         This implementation uses the meshgrid for calculation of sums on polar coordinates (see the code).
-        It turns out that for large number of points usage of for loops for summation if more effective.
+        It turns out that for large number of points usage of for loops for summation is more effective.
 
         Parameters
         ----------
@@ -816,55 +885,38 @@ class ZernPol:
             Coefficients of Zernike polynomials for summing.
         polynomials : list
             Initialized polynomials as class instances of ZernPol class specified in this module.
-        r : float or numpy.ndarray
+        r : numpy.ndarray
             Radius(-s) from a unit circle.
-        theta : float or numpy.ndarray
+        theta : numpy.ndarray
             Polar angle(-s) from a unit circle.
-        get_surface : bool, optional
-            If True, it forces to calculate 2D sum of polynomials based on r and theta (as a mesh). The default is False.
-            Note that if r and theta provided as the numpy ndarrays with different shapes and this flag is False, then
-            the result of this method will raise ValueError (because r and theta shapes will be checked for equality).
 
         Raises
         ------
-        TypeError
-            If the input parameters aren't iterable (doesn't support len() function), this error will be raised.
         ValueError
-            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials. \n
-            Or if the list (tuple, numpy.ndarray vector, ...) with Zernike polynomials instances (ZernPol()).
+            If the "polynomials" list doesn't contain the ZernPol() class instances.
 
         Returns
         -------
         Sum of Zernike polynomials
-            Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.
+            2D numpy.ndarray of polynomials sum over the provided polar coordinates.
 
         """
         S = 0.0  # default value - sum
         if len(coefficients) != len(polynomials):
             raise ValueError("Lengths of coefficients and polynomials aren't equal")
         else:
-            if not get_surface or not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
+            if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
+                warnings.warn("Requested calculation of surface (mesh) values with"
+                              + " provided r or theta as not numpy.ndarray.\n"
+                              + "The surface will be generated automatically.")
+            else:
+                r_size = np.size(r, 0); theta_size = np.size(theta, 0)
+                theta_grid, r_grid = np.meshgrid(theta, r); S = np.zeros(shape=(r_size, theta_size))
                 for i, coefficient in enumerate(coefficients):
                     if not isinstance(polynomials[i], ZernPol):
                         raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
-                    if i == 0:
-                        S = coefficient*polynomials[i].polynomial_value(r, theta)  # if even coefficient = 0, gives initial array
-                    else:
-                        if abs(coefficient) > 0.0:
-                            S += coefficient*polynomials[i].polynomial_value(r, theta)
-            elif get_surface:
-                if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
-                    warnings.warn("Requested calculation of surface (mesh) values with"
-                                  + " provided r or theta as not numpy.ndarray.\n"
-                                  + "The surface will be generated automatically.")
-                else:
-                    r_size = np.size(r, 0); theta_size = np.size(theta, 0)
-                    theta_grid, r_grid = np.meshgrid(theta, r); S = np.zeros(shape=(r_size, theta_size))
-                    for i, coefficient in enumerate(coefficients):
-                        if not isinstance(polynomials[i], ZernPol):
-                            raise ValueError(f"Variable {polynomials[i]} isn't an instance of ZernPol class")
-                        if abs(coefficient) > 0.0:
-                            S += coefficient*polynomials[i].polynomial_value(r_grid, theta_grid)
+                    if abs(coefficient) > 0.0:
+                        S += coefficient*polynomials[i].polynomial_value(r_grid, theta_grid)
         return S
 
     @staticmethod
@@ -972,6 +1024,31 @@ class ZernPol:
             Rs[Rs.shape[0]-1] = 1.0
         if Thetas[Thetas.shape[0]-1] > 2.0*np.pi:
             Thetas[Thetas.shape[0]-1] = 2.0*np.pi
+        return polar_vectors(Rs, Thetas)
+
+    @staticmethod
+    def gen_equal_polar_mesh(n_points: int = 200) -> polar_vectors:
+        """
+        Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+
+        Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
+        equal and defined by the parameter n_points.
+
+        Parameters
+        ----------
+        n_points : int, optional
+            Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 200.
+
+        Returns
+        -------
+        polar_vectors
+            namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+            Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
+
+        """
+        if n_points < 4:
+            n_points = 4
+        Rs = np.linspace(0.0, 1.0, n_points); Thetas = np.linspace(0.0, 2*np.pi, n_points)
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
@@ -1571,7 +1648,7 @@ def check_conformity():
     t1 = time.perf_counter()
     ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
     t_direct = int(round(1000*(time.perf_counter() - t1), 0)); t1 = time.perf_counter()
-    ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas, get_surface=True)
+    ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas)
     t_meshgr = int(round(1000*(time.perf_counter() - t1), 0))
     print(f"Diff. calc. time b/t direct ({t_direct} ms) and meshgrid ({t_meshgr} ms) sums: {t_direct - t_meshgr} ms")
     print("ALL TEST PASSED")
@@ -1579,17 +1656,29 @@ def check_conformity():
 
 # %% Tests
 if __name__ == "__main__":
-    _test_plots = True  # regulates plots
-    _test_calculations = True  # regulates tests below concerning calculations
+    _test_plots = False  # regulates testing of plotting various plots
+    _test_calculations = False  # regulates tests below concerning calculations
     check_conformity()  # testing initialization
+
     # Testing plotting, the plots will be opened in the additional pop-up windows
     if _test_plots:
-        plt.close("all")  # Check plotting functions
+        plt.close("all")  # close all previously opened plots
         t1 = time.perf_counter()
-        zp = ZernPol(m=-4, n=4); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plot
+        zp = ZernPol(m=0, n=2); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plot
         t2 = time.perf_counter(); print("Plotting of 1 non-zero takes ms: ", int(round(1000*(t2-t1), 0)))
-        zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
-        # ZernPol._plot_zernikes_half_pyramid()
+        # zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
+
+        # Testing 3D surface plotting
+        r, theta = ZernPol.gen_equal_polar_mesh(n_points=400)
+        amplitudes = [1.0]; zernikes = [ZernPol(m=0, n=2)]  # for reusing the sum function of polynomials
+        zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
+        # zern_surface = ZernPol._sum_zernikes_meshgrid(amplitudes, zernikes, r, theta)  # also works!
+        plot_sum_fig_3d(zern_surface, r, theta, color_map="viridis")
+
+        # Testing 3D figure plotting on the externally initialized Figure class
+        fig3d = plt.figure(figsize=(6.8, 6.8))
+        fig3d = subplot_sum_on_fig_3d(fig3d, zern_surface, r, theta, show_range_colorbar=True, color_map="magma")
+
         # Testing accelerated plotting / sum calculation
         fig3 = plt.figure(figsize=(3, 3))
         t1 = time.perf_counter(); n_pols = 31; polynomials = []; coefficients = [0.0]*n_pols
@@ -1599,6 +1688,7 @@ if __name__ == "__main__":
         fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
         fig3.subplots_adjust(0, 0, 1, 1)
         t2 = time.perf_counter(); print("Plotting of 1 non-zero and 30 zero pol-s takes ms: ", int(round(1000*(t2-t1), 0)))
+
         # Tests with generation / restoring Zernike profiles (phases images)
         phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
         plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
@@ -1608,6 +1698,7 @@ if __name__ == "__main__":
         plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet")
         plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
         plt.show()  # show all images created by plt.figure() calls
+
     # Testing calculations and their performance comparison
     if _test_calculations:
         # Simple test of two concepts of calculations - exact and recursive equations

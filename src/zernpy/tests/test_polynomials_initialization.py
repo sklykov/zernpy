@@ -158,3 +158,16 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(fringe='1')"
+
+    # Testing some implemented methods for the ZernPol class
+    zp1 = ZernPol(osa=4); zp2 = ZernPol(osa=5)
+    assert zp2 > zp1, "Implemented method '>' isn't correct"
+
+    zp1 = ZernPol(m=0, n=2); zp2 = ZernPol(osa=4)
+    assert zp1 == zp2, "Implemented method '==' isn't correct"
+
+    zp1 = ZernPol(fringe=21); zp2 = ZernPol(noll=8)
+    assert not zp1 == zp2, "Implemented method '==' isn't correct"
+
+    zp1 = ZernPol(fringe=17); zp2 = ZernPol(osa=14)
+    assert zp1 == zp2, "Implemented method '==' isn't correct"

@@ -72,7 +72,7 @@ def test_sum_zernikes():
     ampls = [-0.85, 0.85, 0.24, -0.37, 1.0]; radii = np.arange(start=0.0, stop=1.0 + 0.05, step=0.05)
     thetas = np.arange(start=0.0, stop=2.0*np.pi + np.pi/10, step=np.pi/10)
     sum_pols_d = ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
-    sum_pols = ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas, get_surface=True)
+    sum_pols = ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas)
     assert abs(np.max(sum_pols_d - sum_pols)) < 1E-6, ("Sum of Zernikes are different between implementations "
                                                        + f" and have abs(max) = {abs(np.max(sum_pols_d - sum_pols))}")
     assert abs(np.min(sum_pols_d - sum_pols)) < 1E-6, ("Sum of Zernikes are different between implementations "
