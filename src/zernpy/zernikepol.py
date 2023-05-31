@@ -1027,7 +1027,7 @@ class ZernPol:
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
-    def gen_equal_polar_mesh(n_points: int = 200) -> polar_vectors:
+    def gen_equal_polar_mesh(n_points: int = 250) -> polar_vectors:
         """
         Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
@@ -1052,7 +1052,9 @@ class ZernPol:
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
-    def plot_zernike_polynomial(polynomial, color_map: str = "coolwarm", show_title: bool = True):
+    def plot_profile(polynomial, color_map: str = "coolwarm", show_title: bool = True,
+                     use_defaults: bool = True, projection: str = "2d",
+                     polar_coordinates: polar_vectors = ()):
         """
         Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
 
@@ -1063,9 +1065,23 @@ class ZernPol:
         polynomial : ZernPol
             Instance of ZernPol class.
         color_map : str, optional
-            Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".
+            Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
+            As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
+            Note that rainbow, jet, turbo - not perceptually equal color maps.
         show_title : bool, optional
-            Toggle for showing the name of polynomial on the plot or not.
+            Toggle for showing the name of polynomial on the plot or not (only works for 2D case).
+        use_defaults : bool, optional
+            Use default parameters for polar coordinates generation. The default is True.
+        projection : str, optional
+            Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
+        polar_coordinates : polar_vectors, optional
+            If use_defaults is False, this named tuple is used for accessing polar coordinates for plotting.
+            The default is ().
+
+        Raises
+        ------
+        ValueError
+            If use_defaults is False and polar_coordinates is not provided.
 
         Returns
         -------
@@ -1073,18 +1089,33 @@ class ZernPol:
 
         """
         if isinstance(polynomial, ZernPol):
-            r, theta = ZernPol.gen_polar_coordinates()
+            if not use_defaults and len(polar_coordinates) != 2:
+                raise ValueError("Polar coordinates isn't provided as a tuple with values R, Theta")
+            # Get polar coordinates
+            if use_defaults:
+                if projection == "3d" or projection == "3D":
+                    r, theta = ZernPol.gen_equal_polar_mesh()
+                else:
+                    r, theta = ZernPol.gen_polar_coordinates()
+            else:
+                r, theta = polar_coordinates.R, polar_coordinates.Theta
+            # Get profile or surface to plot
             amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
             zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
-            if show_title:
-                plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name(),
-                             color_map=color_map)
+            # Select plotting function between 2D and 3D plotting functions
+            if projection == "3d" or projection == "3D":
+                plot_sum_fig_3d(zern_surface, r, theta, color_map)
             else:
-                plot_sum_fig(zern_surface, r, theta, "", color_map)
+                if show_title:
+                    plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name(),
+                                 color_map=color_map)
+                else:
+                    plot_sum_fig(zern_surface, r, theta, "", color_map)
 
     @staticmethod
     def gen_zernikes_surface(coefficients: list, polynomials: list, r_step: float = 0.01,
-                             theta_rad_step: float = round(np.pi/180, 7)) -> zernikes_surface:
+                             theta_rad_step: float = round(np.pi/180, 7),
+                             equal_n_coordinates: bool = False, n_points: int = 250) -> zernikes_surface:
         """
         Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.
 
@@ -1100,6 +1131,11 @@ class ZernPol:
         theta_rad_step : float, optional
             Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). \n
             See also the documentation for the method gen_polar_coordinates().
+        equal_n_coordinates: bool, optional
+            Switch between generation polar coordinates based on individual steps or on equal number of points.
+            The default is False.
+        n_points: int, optional
+            Number of points used for generation of equal sized polar coordinates r, theta.
 
         Returns
         -------
@@ -1108,15 +1144,19 @@ class ZernPol:
             ZernSurf variable is 2D matrix with the sum of the input polynomials on generated polar coordinates (R, Theta).
 
         """
-        polar_vectors = ZernPol.gen_polar_coordinates(r_step, theta_rad_step)
+        if not equal_n_coordinates:
+            polar_vectors = ZernPol.gen_polar_coordinates(r_step, theta_rad_step)
+        else:
+            polar_vectors = ZernPol.gen_equal_polar_mesh(n_points)
         zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R,
                                             polar_vectors.Theta, get_surface=True)
         return zernikes_surface(zernikes_sum, polar_vectors.R, polar_vectors.Theta)
 
     @staticmethod
-    def plot_sum_zernikes_on_fig(coefficients: list, polynomials: list, figure: plt.Figure,
+    def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: list = (), polynomials: list = (),
                                  use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
-                                 show_range: bool = True, color_map: str = "coolwarm") -> plt.Figure:
+                                 show_range: bool = True, color_map: str = "coolwarm",
+                                 projection: str = "2d") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
 
@@ -1125,15 +1165,15 @@ class ZernPol:
 
         Parameters
         ----------
-        coefficients : list
-            Coefficients of Zernike polynomials for summing.
-        polynomials : list
-            Initialized polynomials as class instances of ZernPol class specified in this module.
         figure : plt.Figure
             Figure() class there the plotting will be done, previous plot will be cleared.
         use_defaults : bool, optional
             Use for plotting default values for generation of a mesh of polar coordinates and calculation
-            of Zernike polynomials sum. The default is True.
+            of Zernike polynomials sum or Use for plotting provided calculated beforehand surface. The default is True.
+        coefficients : list, optional
+            Coefficients of Zernike polynomials for summing. The default is ().
+        polynomials : list, optional
+            Initialized polynomials as class instances of ZernPol class specified in this module. The default is ().
         zernikes_sum_surface : namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional
             This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
             This tuple could be generated by the call of the static method gen_zernikes_surface().
@@ -1141,7 +1181,11 @@ class ZernPol:
         show_range : bool, optional
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
         color_map : str, optional
-            Color map of the polar plot, recommended values: coolwarm, jet, turbo, rainbow. The default is "coolwarm".
+            Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
+            As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
+            Note that rainbow, jet, turbo - not perceptually equal color maps.
+        projection : str, optional
+            Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
 
         Raises
         ------
@@ -1154,20 +1198,32 @@ class ZernPol:
             Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.
 
         """
-        if len(coefficients) == 0:
-            raise ValueError("Input list with coefficients is empty")
+        if use_defaults and len(coefficients) == 0 and len(polynomials) == 0:
+            raise ValueError("Input list with coefficients or with polynomials is empty")
         if not use_defaults and len(zernikes_sum_surface) != 3:
-            raise ValueError("Zernike surface isn't specified as tuple with values Sum surface, R, Theta")
+            raise ValueError("Zernike surface isn't provided as a tuple with values Sum surface, R, Theta")
         if use_defaults:
-            polar_vectors = ZernPol.gen_polar_coordinates()
+            if projection == "3d" or projection == "3D":
+                polar_vectors = ZernPol.gen_equal_polar_mesh()
+            else:
+                polar_vectors = ZernPol.gen_polar_coordinates()
             zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R,
                                                 polar_vectors.Theta, get_surface=True)
-            figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
-                                        show_range_colorbar=show_range, color_map=color_map)
+            if projection == "3d" or projection == "3D":
+                figure = subplot_sum_on_fig_3d(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
+                                               show_range_colorbar=show_range, color_map=color_map)
+            else:
+                figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
+                                            show_range_colorbar=show_range, color_map=color_map)
         else:
-            figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
-                                        zernikes_sum_surface.Theta, show_range_colorbar=show_range,
-                                        color_map=color_map)
+            if projection == "3d" or projection == "3D":
+                figure = subplot_sum_on_fig_3d(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
+                                               zernikes_sum_surface.Theta, show_range_colorbar=show_range,
+                                               color_map=color_map)
+            else:
+                figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
+                                            zernikes_sum_surface.Theta, show_range_colorbar=show_range,
+                                            color_map=color_map)
         return figure
 
     @staticmethod
@@ -1664,20 +1720,22 @@ if __name__ == "__main__":
     if _test_plots:
         plt.close("all")  # close all previously opened plots
         t1 = time.perf_counter()
-        zp = ZernPol(m=0, n=2); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # basic plot
+        zp = ZernPol(m=0, n=2); ZernPol.plot_profile(zp, color_map="jet", show_title=False)  # basic plot
         t2 = time.perf_counter(); print("Plotting of 1 non-zero takes ms: ", int(round(1000*(t2-t1), 0)))
-        # zp = ZernPol(m=-10, n=30); ZernPol.plot_zernike_polynomial(zp, color_map="jet", show_title=False)  # high order plot
+        coordinates = ZernPol.gen_polar_coordinates(r_step=0.005)
+        zp = ZernPol(m=-10, n=30); ZernPol.plot_profile(zp, color_map="jet", show_title=False, polar_coordinates=coordinates)  # high order plot
 
         # Testing 3D surface plotting
-        r, theta = ZernPol.gen_equal_polar_mesh(n_points=400)
-        amplitudes = [1.0]; zernikes = [ZernPol(m=0, n=2)]  # for reusing the sum function of polynomials
-        zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
-        # zern_surface = ZernPol._sum_zernikes_meshgrid(amplitudes, zernikes, r, theta)  # also works!
-        plot_sum_fig_3d(zern_surface, r, theta, color_map="viridis")
+        ZernPol.plot_profile(ZernPol(m=0, n=2), color_map="viridis", projection="3d")
 
         # Testing 3D figure plotting on the externally initialized Figure class
         fig3d = plt.figure(figsize=(6.8, 6.8))
-        fig3d = subplot_sum_on_fig_3d(fig3d, zern_surface, r, theta, show_range_colorbar=True, color_map="magma")
+        zern_surface = ZernPol.gen_zernikes_surface([1.0], [ZernPol(m=0, n=2)], equal_n_coordinates=True, n_points=400)
+        ZernPol.plot_sum_zernikes_on_fig(figure=fig3d, use_defaults=False, zernikes_sum_surface=zern_surface,
+                                         show_range=True, color_map="magma", projection="3D")
+        fig3d2 = plt.figure(figsize=(5.8, 5.8))
+        ZernPol.plot_sum_zernikes_on_fig(figure=fig3d2, coefficients=[1.0], polynomials=[ZernPol(m=0, n=2)],
+                                         show_range=True, color_map="bwr", projection="3D")
 
         # Testing accelerated plotting / sum calculation
         fig3 = plt.figure(figsize=(3, 3))
@@ -1685,7 +1743,8 @@ if __name__ == "__main__":
         for i in range(n_pols):
             polynomials.append(ZernPol(osa=58+i))
         coefficients[0] = 1.0  # only 1st polynomial will be plotted
-        fig3 = ZernPol.plot_sum_zernikes_on_fig(coefficients, polynomials, fig3, show_range=False, color_map="turbo")
+        fig3 = ZernPol.plot_sum_zernikes_on_fig(figure=fig3, coefficients=coefficients, polynomials=polynomials,
+                                                show_range=False, color_map="turbo")
         fig3.subplots_adjust(0, 0, 1, 1)
         t2 = time.perf_counter(); print("Plotting of 1 non-zero and 30 zero pol-s takes ms: ", int(round(1000*(t2-t1), 0)))
 
