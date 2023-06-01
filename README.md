@@ -59,8 +59,9 @@ with similar signature: ***noll2osa(...)***, ***osa2fringe(...)***, ***osa2fring
 It calculates the sum of initialized Zernike polynomials (*ZernPol*) using coefficients and (r, theta) polar coordinates.
 The variable *get_surface* allows returning for vector polar coordinates with different shapes the values as for mesh of these coordinates.
 The details of acceptable values - see the docstring of this method or the API Dictionary.
-4) Plotting the initialized Zernike polynomial (ZernPol): ***ZernPol.plot_zernike_polynomial(polynomial)***  
-It plots the Zernike polynomial on unit circle polar coordinates (blocked non-interactive call of *matplotlib.pyplot.show()*)
+4) Plotting the initialized Zernike polynomial (ZernPol) with default parameters for coordinates: ***ZernPol.plot_profile(polynomial)***   
+It plots the Zernike polynomial on unit circle using polar coordinates - on "2D" projection (blocked non-interactive call of *matplotlib.pyplot.show()*).   
+For "3D" projection the polar coordinates are converted to the cartesian ones, as demanded by plotting method.   
 5) Plotting Zernike polynomials sum:  ***ZernPol.plot_sum_zernikes_on_fig(...)*** - check the list of parameters in the docstring.
 By using only default parameters, this method will plot sum of Zernike polynomials specified in the list with their coefficients
 on the provided figure (expected as an instance of the class *matplotlib.pyplot.Figure*).
