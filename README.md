@@ -61,7 +61,9 @@ The variable *get_surface* allows returning for vector polar coordinates with di
 The details of acceptable values - see the docstring of this method or the API Dictionary.
 4) Plotting the initialized Zernike polynomial (ZernPol) with default parameters for coordinates: ***ZernPol.plot_profile(polynomial)***   
 It plots the Zernike polynomial on unit circle using polar coordinates - on "2D" projection (blocked non-interactive call of *matplotlib.pyplot.show()*).   
-For "3D" projection the polar coordinates are converted to the cartesian ones, as demanded by plotting method.   
+For "3D" projection the polar coordinates are converted to the cartesian ones, as demanded by plotting method.  
+**(!):** Note that the plotting method name has been changed from  ***plot_profile(...)*** for ver. <= 0.0.10, the new version of the package will be 
+simply sequentially incremented, without minor version changing, since there is no packages dependent on this one.   
 5) Plotting Zernike polynomials sum:  ***ZernPol.plot_sum_zernikes_on_fig(...)*** - check the list of parameters in the docstring.
 By using only default parameters, this method will plot sum of Zernike polynomials specified in the list with their coefficients
 on the provided figure (expected as an instance of the class *matplotlib.pyplot.Figure*).
