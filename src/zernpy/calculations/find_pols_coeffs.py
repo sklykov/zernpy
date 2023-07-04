@@ -7,6 +7,7 @@ Calculation of Zernike radial polynomials coefficients using recurrence equation
 
 """
 import time
+from functools import lru_cache  # allows usage of the special cache if the recursive iterations are calculated
 
 
 # %% Gen orders dict.
@@ -217,6 +218,7 @@ def check_special_orders_dr(orders: tuple) -> dict:
     return special_coefficients
 
 
+@lru_cache(maxsize=128)  # allows using of the least recently used cashe for storing previously calculated values for coefficients
 def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
     """
     Find coefficients of radial polynomials for each radial order and return it as dictionary.
@@ -279,6 +281,7 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
         return sum_dict_coeffs
 
 
+@lru_cache(maxsize=128)
 def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
     """
     Find coefficients of derivatives of radial polynomials for each radial order and return it as dictionary.
@@ -480,4 +483,5 @@ if __name__ == "__main__":
     coeffs1 = measure_time_high_orders((0, 30))
     coeffs2 = measure_time_high_orders((-9, 25))
     coeffs3 = measure_time_high_orders((0, 50))
-    coeffs_dr1 = measure_time_high_orders((0, 60))
+    coeffs4 = measure_time_high_orders((0, 60))
+    coeffs_dr1 = measure_time_high_orders((0, 60), measure_dr=True)

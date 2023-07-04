@@ -1037,7 +1037,7 @@ class ZernPol:
         Parameters
         ----------
         n_points : int, optional
-            Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 200.
+            Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 250.
 
         Returns
         -------
@@ -1713,7 +1713,7 @@ def check_conformity():
 # %% Tests
 if __name__ == "__main__":
     _test_plots = False  # regulates testing of plotting various plots
-    _test_calculations = False  # regulates tests below concerning calculations
+    _test_calculations = True  # regulates tests below concerning calculations
     check_conformity()  # testing initialization
 
     # Testing plotting, the plots will be opened in the additional pop-up windows
