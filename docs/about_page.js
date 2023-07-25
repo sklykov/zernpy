@@ -1,20 +1,23 @@
+"use strict";
+
 // Perform all actions below when the page is loaded
 document.addEventListener("DOMContentLoaded", () =>{
-    "use strict";
+
+    // Selectors of DOM elements
+    const images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
+    const navbar = document.getElementsByClassName("navbar")[0];
+    const navbarLinks = document.getElementsByClassName("navbarLink");
+    const nameImage = document.querySelector(".DisplayZernikeName");
 
     // Variables accessible for all defined below functions, mostly DOM elements
     let previousPageWidth = false;
-    let nameImage = document.querySelector(".DisplayZernikeName");
     let defaultNameImageText = nameImage.textContent;  // default text for element showing the polynomial name
-    let images = document.querySelectorAll(".ZernProfile");  // returns the NodeList class
-    let navbar = document.getElementsByClassName("navbar")[0];
-    let navbarLinks = document.getElementsByClassName("navbarLink");
 
     // Move the element showing the name of image to the left
     function moveNamePolEl(){
         nameImage.style.textAlign = "left"; 
         nameImage.style.position = "relative";  // allows moving this field below
-        nameImage.style.left = "15px"; nameImage.style.top = "35px";
+        nameImage.style.left = "1em"; nameImage.style.top = "1.5em";
         defaultNameImageText = defaultNameImageText.replace("below", "right");
         nameImage.textContent = defaultNameImageText; 
     }
@@ -177,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () =>{
         navbar.style.display = "flex"; navbar.style.flexDirection = "column"; 
         // restore default values for navbar elements (links) 
         for (let i=0; i<navbarLinks.length; i++){
-            navbarLinks[i].style.paddingTop = "20px"; navbarLinks[i].style.paddingBottom = "20px"; navbarLinks[i].style.margin = "1.2em 0.5em";
+            navbarLinks[i].style.paddingTop = "2.5em"; navbarLinks[i].style.paddingBottom = "2.5em"; navbarLinks[i].style.margin = "1.2em 0.5em";
         }
     }
 

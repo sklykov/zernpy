@@ -1,11 +1,8 @@
+"use strict";  // enables more strict behavior of JS
+
 // the way of adding the Event listener - to guarantee that the page and all elements are available
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("Index Page loaded");
-    "use strict";  // enables more strict behavior of JS
-
-    // Variables for storing values
-    let nOrder = 0; let mOrder = 0; let osaIndex = -1; let nollIndex = -1; let fringeIndex = -1;
-    let notOrdersSelected = false; let selectedNollOrFringe = false;
+    // console.log("Index Page loaded");
 
     // Set explicitly default values for indexing scheme and m,n associated orders and save handlers to them
     const nOrderInput = document.getElementById("firstInputOrder"); nOrderInput.value = 0;
@@ -19,16 +16,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const secondInputOrder = document.getElementById("secondInputOrder");
     const selector = document.getElementsByName("Index type")[0];  // get the selected HTML element by name
     selector.selectedIndex = 0;  // set the default option to selected HTML element
-    let selectedPolynomialType = selector.value;
     const conversionReport = document.getElementById("conversionString");
 
-    // Register event for tracing the new selected value from index.html
+    // Variables for storing values
+    let nOrder = 0; let mOrder = 0; let osaIndex = -1; let nollIndex = -1; let fringeIndex = -1;
+    let notOrdersSelected = false; let selectedNollOrFringe = false; let selectedPolynomialType = selector.value;
+    let previousOrderN = 0; let previousOrderM = 0;
+
+    // Register event for tracing the new selected value of indexing type for Zernike polynomial from index.html
     selector.addEventListener("change", () => {
         conversionReport.textContent = "Click button on the left to get here conversions";
         console.log("Selected type of polynomial specification: " + selector.value); 
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         nOrder = -1; mOrder = -1; osaIndex = -1; nollIndex = -1; fringeIndex = -1;  // set inconsistent values as defaults
-        // Defines which type of polynomial definition selected
+        // Adjust inputs depending on the selected type of polynomial indexing
         switch (selectedPolynomialType){
             case "m,n":
                 nOrder = nOrderInput.value; mOrder = mOrderInput.value;
@@ -73,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Register update of nOrder / indices
+    // Register update of nOrder / OSA, Noll, Fringe indices (value is used for both cases: n order and the specific index)
     nOrderInput.addEventListener("change", () =>{
         conversionReport.textContent = "Click button on the left to get here conversions";
         let isNumber = validateOrderN(); 
@@ -111,7 +112,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Register update of mOrder
+    // Register update of mOrder (disabled then any of indices selected)
     mOrderInput.addEventListener("change", () => {
         conversionReport.textContent = "Click button on the left to get here conversions";
         let isNumber = validateOrderN(); 
@@ -146,7 +147,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function validateOrderM(){
         let inputValue = parseInt(mOrderInput.value);
         if (Number.isInteger(inputValue)){
-            if (inputValue >= 0 && inputValue <= 200){
+            if (inputValue >= -200 && inputValue <= 200){
                 return true;
             } else if (inputValue > 200){
                 window.alert("Order or index more than 200 is too high and not allowed!");
@@ -165,9 +166,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     console.log("Orders checked successfully");
                     convertOrders();
                     conversionReport.textContent = `OSA index = ${osaIndex}, Noll index = ${nollIndex}, Fringe index = ${fringeIndex}`;
+                    previousOrderN = Number(nOrderInput.value); previousOrderM = Number(mOrderInput.value);  // explicit conversion to Number
                 } else {
-                    conversionReport.textContent = "Orders provided inconsistently and reassigned to default values";
-                    mOrder = 0; nOrder = 0; nOrderInput.value = 0; mOrderInput.value = 0; 
+                    conversionReport.textContent = "Orders provided inconsistently and reassigned to the previous checked ones";
+                    mOrder = previousOrderM; nOrder = previousOrderN; nOrderInput.value = previousOrderN; mOrderInput.value = previousOrderM; 
                 }
                 break;
             case "osa":
@@ -185,7 +187,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Check provided orders - their consistency
+    // Check (validate) provided orders - their consistency
     function checkOrders(m, n){
         let passedCheck = false;
         // all requirements for orders below
@@ -197,7 +199,6 @@ document.addEventListener("DOMContentLoaded", function () {
             } else if (m == 0){
                 passedCheck = true;
             }
-            
         }
         return passedCheck;
     }
@@ -245,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return (n*(n + 1))/2 + Math.abs(m) + add_n;
     }
 
-    // Found orders from index
+    // Convert index to orders
     function index2orders(indexType){
         let found = false;
         for(let radialOrder = 0; radialOrder <= 200; radialOrder++){
@@ -277,10 +278,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (found) break;
                 m += 2; 
             }
-            if (found) break; 
-             
-        }
-        
+            if (found) break;      
+        }    
     }
 
 });
