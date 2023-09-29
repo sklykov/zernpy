@@ -1,32 +1,38 @@
-### zernpy - package for calculation Zernike polynomials
+### zernpy - Python package for calculation real-valued Zernike polynomials
 
-This project is intended for calculation of Zernike polynomials parameters / values / properties using exact (analytical) and recursive equations, 
-the last ones were supposed to be the faster way to calculate values of high order polynomials in comparison to usage of their exact 
-definition (that used the sum of factorials, see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).     
-However, it's turned out that usage of sum of factorials (calculated from *math.factorial* method) even for high orders provides
-sufficiently fast calculation of radial polynomials. On other hand, I found that for polynomials with radial orders higher than 46th order
-the exact equation with factorials starts providing ambiguous results due to high integers produced by factorials. Thus, it turns out that
-only possible stable way to get polynomial value for high orders is to use the recursive equations for retain stability of calculation along
-with the drawback of fast decreasing the performance with increasing of the radial order.    
-Also, I hope that someone also would find useful some of developed methods for usage in any further project.     
-The recursive and tabular equations are taken from the articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
+#### Project description and references
+This project is intended for calculation of Zernike polynomials' parameters / real values / properties using exact (analytical) and recursive equations.   
+The recursive and tabular equations, as well as the valuable information, are taken from the articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
 [[2]](https://doi.org/10.1080/09500340.2011.554896) and [[3]](https://doi.org/10.1364/OE.26.018878).    
-Several useful transformations (e.g., from OSA / ANSI index to Noll one) are implemented as the methods of the main class.
+The possibly useful functionality for further usage include: conversion between common indexing schemes (OSA / Noll / Fringe), radial / angular / polynomial 
+real values calculation along with their derivatives, plotting the circular 2D or 3D profile of single or sum of polynomials, fitting the arbitrary phase 
+profile specified on the circle aperture by the set of polynomials (see the description [below](#fitting-zernike-polynomials-to-a-2D-image-with-phases)). 
+For the complete list of implemented methods, refer to [API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).
+
+#### Notes about implementation
+It was supposed at the project start, that the recursive equations would be the faster way to calculate real values of high order polynomials in comparison 
+to usage of their exact definition (that used the sum of factorials, see the [Wiki article](https://en.wikipedia.org/wiki/Zernike_polynomials) for details).        
+However, it's turned out during the development and tests, that sum of factorials computation (based on Python built-in *math.factorial* method) even for high 
+orders (> 10th order) provides sufficiently fast calculation of radial polynomials.   
+On other hand, I found that for polynomials with radial orders higher than 46th order the exact equation with factorials starts providing ambiguous results 
+due to the big integer coefficients (exceeding the size of Python built-in *int* type) produced by factorials. Thus, it turns out that the stable way to get 
+polynomial (radial) values for these orders is to use the recursive equations for retain stability of calculation along with the drawback of fast 
+decreasing of the computational performance with the increased radial order.
 
 ### Setup instructions
 
 #### Basic installation
-For installation of this package, use the command: ***pip install zernpy***  
-
-#### Running tests for the code from the repository
-Using the library *pytest* just run in the root folder for the folder, containing the package: ***pytest***    
-It should collect 10 tests and automatically run them.
+For installation of this package, use the command: ***pip install zernpy***    
 
 #### Requirements
-For installation the *numpy* and *matplotlib* libraries are required.  
+For installation, the *numpy* and *matplotlib* libraries are required.  
 For running tests, the *pytest* library is required for automatic recognition of tests stored in package folders.  
 
+#### Running tests
+Simply run the command ***pytest*** in the command line from the project folder root. It should collect 10 tests and automatically run them.
+
 ### A few examples of the library features usage
+
 #### Initialization of base class instance
 The useful calculation methods are written as the instance and static methods. The first ones are accessible after initialization of a class instance
 by providing characteristic orders (see the Zernike polynomial definition, e.g. in [Wiki](https://en.wikipedia.org/wiki/Zernike_polynomials)):   
@@ -50,7 +56,7 @@ functions below 4. - 7.
 7) For calculating derivative of triangular function value for angle theta: ***zp.triangular_dtheta(theta)***   
 8) For calculating normalization factor (N): ***zp.normf()*** 
 
-#### Some useful static methods of ZernPol class:
+#### Some useful static methods of the ZernPol class:
 1) For getting tuple as (azimuthal order, radial order) for OSA index i: ***ZernPol.index2orders(osa_index=i)***  
 Same for Fringe and Noll indices: ***ZernPol.index2orders(noll_index=i)*** or ***ZernPol.index2orders(fringe_index=i)***
 2) Conversion between indices: ***ZernPol.osa2noll(osa_index)***,
