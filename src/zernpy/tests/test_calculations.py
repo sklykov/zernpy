@@ -127,3 +127,8 @@ def test_pol_values_edge_cases():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong calculation of using r < 0.0"
+    # Testing piston calculation (edge case - starting polynomial, should return constant value = 1.0)
+    zp = ZernPol(n=0, m=0)
+    r = 0.25; theta = 1.0; value = zp.polynomial_value(r, theta); value_ex = zp.polynomial_value(r, theta, use_exact_eq=True)
+    assert abs(1.0 - value) < 1E-6, f"Wrong calculated piston value (constant phase): {value}"
+    assert abs(value_ex - value) < 1E-6, f"Wrong difference between tabular and exact equations for piston value: {value}, {value_ex}"

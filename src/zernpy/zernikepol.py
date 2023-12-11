@@ -990,7 +990,7 @@ class ZernPol:
     @staticmethod
     def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = round(np.pi/240, 7)) -> polar_vectors:
         """
-        Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         defined by the specification of r_step and theta_rad_step parameters.
@@ -1029,7 +1029,7 @@ class ZernPol:
     @staticmethod
     def gen_equal_polar_mesh(n_points: int = 250) -> polar_vectors:
         """
-        Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         equal and defined by the parameter n_points.
@@ -1052,9 +1052,8 @@ class ZernPol:
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
-    def plot_profile(polynomial, color_map: str = "coolwarm", show_title: bool = True,
-                     use_defaults: bool = True, projection: str = "2d",
-                     polar_coordinates: polar_vectors = ()):
+    def plot_profile(polynomial, color_map: str = "coolwarm", show_title: bool = True, use_defaults: bool = True,
+                     projection: str = "2d", polar_coordinates: polar_vectors = ()):
         """
         Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
 
@@ -1199,7 +1198,7 @@ class ZernPol:
 
         """
         if use_defaults and len(coefficients) == 0 and len(polynomials) == 0:
-            raise ValueError("Input list with coefficients or with polynomials is empty")
+            raise ValueError("Input list with coefficients or with polynomials is empty along with the flag 'use_defaults' - True")
         if not use_defaults and len(zernikes_sum_surface) != 3:
             raise ValueError("Zernike surface isn't provided as a tuple with values Sum surface, R, Theta")
         if use_defaults:
@@ -1337,7 +1336,7 @@ class ZernPol:
 # %% Methods defs.
 def generate_polynomials(max_order: int = 10) -> tuple:
     """
-    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme.
+    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).
 
     Parameters
     ----------
@@ -1365,7 +1364,7 @@ def generate_polynomials(max_order: int = 10) -> tuple:
     if max_order > 30:
         __warning_mess = "Calculation polynomial values with orders higher than 30 is really slow"
         warnings.warn(__warning_mess)
-    polynomials_list = []
+    polynomials_list = [ZernPol(m=0, n=0)]  # list starting with piston
     for order in range(1, max_order + 1):  # going through all specified orders
         m = -order  # azimuthal order
         n = order  # radial order
@@ -1425,7 +1424,7 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
             polynomials_amplitudes[index] = random.uniform(0.25, 1.5)
         else:
             polynomials_amplitudes[index] = rand_ampl
-    # Generate some phases image - sum of polynomials on some 2D array of pixels converted to polar coordinates
+    # Generate random phases image - sum of polynomials on the 2D array of pixels converted to polar coordinates
     phases_image = np.zeros(shape=(img_height, img_width))  # blank image
     row_center = img_height // 2; cols_center = img_width // 2
     # Below - define radius of the Zernike circular profile, it is +1 for including more pixels in profile
@@ -1443,11 +1442,62 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
                     theta[j] += 2.0*np.pi
         # Speed up calculations by using vectors (r, theta) as the input parameters
         polynomials_ampl_list = polynomials_amplitudes.tolist()
-        phases_image[i, :] = ZernPol.sum_zernikes(polynomials_ampl_list,
-                                                  polynomials_list, r, theta)
+        phases_image[i, :] = ZernPol.sum_zernikes(polynomials_ampl_list, polynomials_list, r, theta)
+        # Set again all background pixels to zero, because they can be reset to some other constant (result of line above)
+        for j in range(img_width):
+            euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
+            if euclidean_dist > img_radius:
+                phases_image[i, j] = 0.0
     # Final conversion
     polynomials_list = tuple(polynomials_list)
     return phases_image, polynomials_amplitudes, polynomials_list
+
+
+def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple = (),
+                          img_width: int = 513, img_height: int = 513) -> np.ndarray:
+    """
+    Generate phases image (profile) for providecd set of polynomials with provided coefficients (amplitudes).
+
+    Parameters
+    ----------
+    polynomials : tuple, optional
+        Initialized ZernPol instances for generation of phases as the sum of all stored in this tuple polynomials. The default is ().
+    polynomials_amplitudes : tuple, optional
+        Amplitudes of polynomials provided in the tuple 'polynomials'. The default is ().
+    img_width : int, optional
+        Width of generated image. The default is 513.
+    img_height : int, optional
+        Height of generated image. The default is 513.
+
+    Returns
+    -------
+    phases_image : np.ndarray
+        2D image with phases calculated as the sum of provided polynomials.
+
+    """
+    # Generate random phases image - sum of polynomials on the 2D array of pixels converted to polar coordinates
+    phases_image = np.zeros(shape=(img_height, img_width))  # blank image
+    row_center = img_height // 2; cols_center = img_width // 2
+    # Below - define radius of the Zernike circular profile, it is +1 for including more pixels in profile
+    min_img_size = min(img_width, img_height); img_radius = 1 + min_img_size // 2
+    center = np.asarray([row_center, cols_center])  # center point of an image
+    # Calculation of 2D image with phases, which actually are composed by the sum of randomly selected Zernike polynomials
+    for i in range(img_height):
+        r = np.zeros(shape=(img_width, )); theta = np.zeros(shape=(img_width, ))
+        for j in range(img_width):
+            euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
+            if euclidean_dist <= img_radius:
+                r[j] = euclidean_dist / img_radius
+                theta[j] = np.arctan2(row_center - i, j - cols_center)
+                if theta[j] < 0.0:
+                    theta[j] += 2.0*np.pi
+        phases_image[i, :] = ZernPol.sum_zernikes(coefficients=list(polynomials_amplitudes), polynomials=list(polynomials), r=r, theta=theta)
+        # Set again all background pixels to zero, because they can be reset to some other constant (result of line above)
+        for j in range(img_width):
+            euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
+            if euclidean_dist > img_radius:
+                phases_image[i, j] = 0.0
+    return phases_image
 
 
 def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: float = 1.0,
@@ -1456,9 +1506,7 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     """
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
 
-    Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
-    over a unit aperture (pupil).
-    Also, 2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
+    2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
     out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
     True and plotting the second item from the returned tuple.
 
@@ -1494,8 +1542,7 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         meaning and type as explained before.
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), ))
-    logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings,
-                                                             strict_circle_border)
+    logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings, strict_circle_border)
     if return_cropped_image:
         cropped_image = logic_mask*phases_image  # for debugging
     zernike_coefficients = fit_zernikes(cropped_phases_coordinates, polynomials)
@@ -1517,7 +1564,7 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
     Parameters
     ----------
     polynomials : tuple
-        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
+        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.
     phases_vector : numpy.ndarray
         Recorded phases.
     radii_vector : numpy.ndarray
@@ -1713,17 +1760,17 @@ def check_conformity():
 # %% Tests
 if __name__ == "__main__":
     _test_plots = False  # regulates testing of plotting various plots
-    _test_calculations = True  # regulates tests below concerning calculations
+    _test_calculations = False  # regulates tests below concerning calculations
     check_conformity()  # testing initialization
 
     # Testing plotting, the plots will be opened in the additional pop-up windows
     if _test_plots:
         plt.close("all")  # close all previously opened plots
-        t1 = time.perf_counter()
-        zp = ZernPol(m=0, n=2); ZernPol.plot_profile(zp, color_map="jet", show_title=False)  # basic plot
-        t2 = time.perf_counter(); print("Plotting of 1 non-zero takes ms: ", int(round(1000*(t2-t1), 0)))
+        t1 = time.perf_counter(); zp = ZernPol(m=0, n=2); ZernPol.plot_profile(zp, color_map="jet", show_title=True)  # basic plot
+        t2 = time.perf_counter(); print("Plotting of 1 non-zero polynomial takes ms: ", int(round(1000*(t2-t1), 0)))
         coordinates = ZernPol.gen_polar_coordinates(r_step=0.005)
         zp = ZernPol(m=-10, n=30); ZernPol.plot_profile(zp, color_map="jet", show_title=False, polar_coordinates=coordinates)  # high order plot
+        zp = ZernPol(m=0, n=0); ZernPol.plot_profile(zp, color_map="turbo", show_title=True)  # plot of piston polynomial
 
         # Testing 3D surface plotting
         ZernPol.plot_profile(ZernPol(m=0, n=2), color_map="viridis", projection="3d")
@@ -1749,13 +1796,32 @@ if __name__ == "__main__":
         t2 = time.perf_counter(); print("Plotting of 1 non-zero and 30 zero pol-s takes ms: ", int(round(1000*(t2-t1), 0)))
 
         # Tests with generation / restoring Zernike profiles (phases images)
-        phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=301)
-        plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout()
-        plt.subplots_adjust(0, 0, 1, 1)
+        phases_image, polynomials_ampls, polynomials = generate_random_phases(img_height=301, img_width=321)
+        plt.figure(); plt.axis("off"); plt.imshow(phases_image, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
         polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True,
                                                               strict_circle_border=False, crop_radius=1.0)
         plt.figure(); plt.axis("off"); plt.imshow(cropped_img, cmap="jet")
         plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+
+        # Updated test of fitting including piston polynomial
+        height = 500; width = 481; crop_r = 1.0; strict_border = True; pols_coeffs = [-0.75, 0.86, 0.41]; fig4 = plt.figure(figsize=(4, 4))
+        polynomials = [ZernPol(osa=0), ZernPol(m=0, n=2), ZernPol(m=-3, n=3)]; rs, angles = ZernPol.gen_polar_coordinates()
+        phase_profile = ZernPol.sum_zernikes(coefficients=pols_coeffs, polynomials=polynomials, r=rs, theta=angles, get_surface=True)
+        # Below - plotting specified polynomials on the polar coordinates
+        ZernPol.plot_sum_zernikes_on_fig(figure=fig4, use_defaults=False, zernikes_sum_surface=zernikes_surface(phase_profile, rs, angles),
+                                         color_map="jet")
+        # Below - generate phases image with the cartesian coordinates
+        phases_image2 = generate_phases_image(polynomials=tuple(polynomials), polynomials_amplitudes=tuple(pols_coeffs),
+                                              img_height=height, img_width=width)
+        plt.figure(); plt.axis("off"); im = plt.imshow(phases_image2, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+        plt.colorbar(mappable=im)
+        # Below - fitting procedure on the provided phases image
+        polynomials_amplitudes2, cropped_img2 = fit_polynomials(phases_image2, polynomials, return_cropped_image=True,
+                                                                strict_circle_border=strict_border, crop_radius=crop_r)
+        print("Difference between used amplitudes and fitted ones:", pols_coeffs-polynomials_amplitudes2)
+        plt.figure(); plt.axis("off"); im = plt.imshow(cropped_img2, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
+        plt.colorbar(mappable=im)
+
         plt.show()  # show all images created by plt.figure() calls
 
     # Testing calculations and their performance comparison

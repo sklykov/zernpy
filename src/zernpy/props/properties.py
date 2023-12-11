@@ -14,6 +14,7 @@ Some properties of Zernike polynomials, which better to store in the folder and 
 # 6th order - 7th order: my guess about the naming
 
 polynomial_names: dict = {
+    (0, 0): "Piston",
     (-1, 1): "Vertical tilt", (1, 1): "Horizontal tilt", (-2, 2): "Oblique astigmatism",
     (0, 2): "Defocus", (2, 2): "Vertical astigmatism", (-3, 3): "Vertical trefoil",
     (-1, 3): "Vertical coma", (1, 3): "Horizontal coma", (3, 3): "Oblique trefoil",
@@ -32,6 +33,7 @@ polynomial_names: dict = {
     (5, 7): "Oblique secondary pentafoil", (7, 7): "Oblique septfoil"}
 
 short_polynomial_names: dict = {
+    (0, 0): "Piston",
     (-1, 1): "Vert. tilt", (1, 1): "Hor. tilt", (-2, 2): "Obliq. astigm.",
     (0, 2): "Defocus", (2, 2): "Vert. astigm.", (-3, 3): "Vert. 3foil",
     (-1, 3): "Vert. coma", (1, 3): "Hor. coma", (3, 3): "Obliq. 3foil",

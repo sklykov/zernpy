@@ -153,7 +153,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
 
 def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.ndarray:
     """
-    Fit provided tuple with polynomials (instances of ZernPol class) to the 2D image with phases.
+    Fit provided tuple with polynomials (instances of ZernPol class) to the 2D image with phases (e.g., recorded on the interferometer).
 
     Parameters
     ----------
@@ -161,15 +161,14 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
         Results provided by crop_phases_img(...) function composing the cropped phases along with polar coordinates.
         In general, this tuple contains 3 numpy arrays (vectors = 1D arrays) with phases and corresponding polar coordinates.
     polynomials : tuple
-        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
+        Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.
 
     Raises
     ------
     AttributeError
         If the input tuple with polynomials composed not from instances of ZernPol class.
     ValueError
-        If the length of the tuple with polynomials not enough for fitting or provided only piston (single polynomial).
-        Also, if the tuple contains repeated polynomials.
+        If the length of the tuple with polynomials is zero or if provided tuple contains repeated polynomials.
     numpy.linalg.LinAlgError
         If the fit procedure doesn't converge (namely, np.linalg.lstsq(...) function doesn't converge).
 
@@ -196,26 +195,22 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
             raise ValueError("Provided repeated polynomials")
     else:
         raise ValueError("Provided zero length tuple with polynomials")
-    # Checking below in if condition that polynomials contain not only piston as polynomial for fitting
-    m1 = polynomials[0].get_mn_orders()[0]; n1 = polynomials[0].get_mn_orders()[1]
-    if len(polynomials) > 1 or (len(polynomials) == 1 and m1 == 0 and n1 == 0):
+    # Checking the length of provided tuple with polynomials
+    if len(polynomials) > 0:
         # Calculation of Zernike polynomials values in the polar coordinates composed in radii, thetas vectors
         for j in range(len(polynomials)):
-            if polynomials[j].get_mn_orders()[0] == 0 and polynomials[j].get_mn_orders()[1] == 0:
-                continue  # do not calculate piston value, it's useless to fit this polynomial (constant value over aperture)
+            if cropped_radii_vector.shape[0] == cropped_thetas_vector.shape[0]:
+                zernike_values[:, j] = polynomials[j].polynomial_value(cropped_radii_vector, cropped_thetas_vector)
             else:
-                if cropped_radii_vector.shape[0] == cropped_thetas_vector.shape[0]:
-                    zernike_values[:, j] = polynomials[j].polynomial_value(cropped_radii_vector, cropped_thetas_vector)
-                else:
-                    thetas_length = cropped_thetas_vector.shape[0]
-                    for i in range(cropped_radii_vector.shape[0]):
-                        zernike_values[i*thetas_length:(i+1)*thetas_length, j] = polynomials[j].polynomial_value(cropped_radii_vector[i],
-                                                                                                                 cropped_thetas_vector)
+                thetas_length = cropped_thetas_vector.shape[0]
+                for i in range(cropped_radii_vector.shape[0]):
+                    zernike_values[i*thetas_length:(i+1)*thetas_length, j] = polynomials[j].polynomial_value(cropped_radii_vector[i],
+                                                                                                             cropped_thetas_vector)
         # Fitting procedure of calculated polynomials values to the provided phases (deformations)
         zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_phases_vector, rcond=None)
         zernike_coefficients = zernike_coefficients[0]  # unpacking fitting results
     else:
-        raise ValueError("Length of polynomials not enough for fitting or provided only piston")
+        raise ValueError("There isn't any polynomials provided")
     return zernike_coefficients
 
 
