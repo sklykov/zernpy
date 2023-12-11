@@ -292,7 +292,7 @@ class ZernPol:
         Returns
         -------
         str
-            String composed from polynomial name (if specified) and orders and indices.
+            String composed of a polynomial name (if specified in the stored file), polynomial's orders and indices.
 
         """
         name = self.get_polynomial_name()
@@ -956,7 +956,9 @@ class ZernPol:
         """
         S = 0.0  # default value - sum
         if len(coefficients) != len(polynomials):
-            raise ValueError("Lengths of coefficients and polynomials aren't equal")
+            raise ValueError("Lengths of lists with polynomials and their amplitudes aren't equal")
+        elif len(coefficients) == 0:
+            raise ValueError("Length of list with polynomials is zero")
         else:
             if not get_surface or not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                 for i, coefficient in enumerate(coefficients):
@@ -1074,13 +1076,13 @@ class ZernPol:
         projection : str, optional
             Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
         polar_coordinates : polar_vectors, optional
-            If use_defaults is False, this named tuple is used for accessing polar coordinates for plotting.
+            If the flag 'use_defaults' is False, this named tuple is used for accessing polar coordinates for plotting.
             The default is ().
 
         Raises
         ------
         ValueError
-            If use_defaults is False and polar_coordinates is not provided.
+            If the flag use_defaults is False and polar_coordinates are not provided.
 
         Returns
         -------
@@ -1165,7 +1167,7 @@ class ZernPol:
         Parameters
         ----------
         figure : plt.Figure
-            Figure() class there the plotting will be done, previous plot will be cleared.
+            'Figure' class there the plotting will be done, previous plot will be cleared out.
         use_defaults : bool, optional
             Use for plotting default values for generation of a mesh of polar coordinates and calculation
             of Zernike polynomials sum or Use for plotting provided calculated beforehand surface. The default is True.
@@ -1456,7 +1458,7 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
 def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple = (),
                           img_width: int = 513, img_height: int = 513) -> np.ndarray:
     """
-    Generate phases image (profile) for providecd set of polynomials with provided coefficients (amplitudes).
+    Generate phases image (profile) for provided set of polynomials with provided coefficients (amplitudes).
 
     Parameters
     ----------
@@ -1577,7 +1579,7 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
     Raises
     ------
     AttributeError
-        The any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape > 1).
+        Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape > 1)).
 
     Returns
     -------

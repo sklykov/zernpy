@@ -15,7 +15,7 @@ import random
 
 # %% Imports from modules
 if __name__ != "__main__":
-    from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors
+    from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors, generate_phases_image
 
 
 # %% Test functions
@@ -47,8 +47,7 @@ def test_random_fitting():
             elif i == 7:
                 # The allowed percentage below is huge because the cropping radius is equal to 80% of image size
                 height = 150; width = 150; strict_border = False; crop_r = 0.8; mdp = 33.0; stop_warns = True
-            random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(max_order=i, img_height=height,
-                                                                                               img_width=width)
+            random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(max_order=i, img_height=height, img_width=width)
             fitted_amplitudes, _ = fit_polynomials(random_phases_image, polynomials_tuple, suppress_warnings=stop_warns,
                                                    crop_radius=crop_r, strict_circle_border=strict_border)
             abs_diff_amplitudes = np.abs(fitted_amplitudes - random_amplitudes)
@@ -95,3 +94,40 @@ def test_random_fitting():
     diff1 = round(abs(z1_coeff - fit_coeffs[0]), 4); diff2 = round(abs(z2_coeff - fit_coeffs[1]), 4); eps = 0.0075
     diff3 = round(abs(z3_coeff - fit_coeffs[2]), 4)
     assert diff1 <= eps and diff2 <= eps and diff3 <= eps, f"Simple fitting not successful, diff-s:{diff1, diff2}"
+
+
+def test_preselected_polynomials_fitting():
+    """
+    Test difference between predefined Zernike polynomials coefficients and fitted ones.
+
+    Returns
+    -------
+    None.
+
+    """
+    height = 381; width = 350; crop_r = 1.0; strict_border = False; stop_warns = True
+    polynomials_list = [ZernPol(osa=0), ZernPol(m=-1, n=5), ZernPol(m=3, n=3), ZernPol(m=0, n=2)]
+    polynomials_coefficients = [-0.633, -0.214, 0.346, 1.022]
+    phases_image = generate_phases_image(polynomials=tuple(polynomials_list), polynomials_amplitudes=tuple(polynomials_coefficients),
+                                         img_width=width, img_height=height)
+    fitted_amplitudes, _ = fit_polynomials(phases_image, polynomials=tuple(polynomials_list), suppress_warnings=stop_warns,
+                                           crop_radius=crop_r, strict_circle_border=strict_border)
+    rmse = np.round(np.sqrt(np.mean(np.square(polynomials_coefficients - fitted_amplitudes))), 3)
+    assert rmse <= 0.025, (f"RMS value of difference between predefined and fitted amplitudes more than 0.025: {rmse}"
+                           + f"Used ampls: {polynomials_coefficients}, fitted: {fitted_amplitudes}")
+
+    # Test 2 edge cases of wrong usage of polynomials and their coefficients
+    polynomials = (); polynomials_coeffs = ()  # no polynomials initialized
+    try:
+        assert_flag = False
+        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs, img_width=width, img_height=height)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Empty tuple with polynomials not allowed but not raised ValueError"
+    polynomials = (ZernPol(osa=0),); polynomials_coeffs = (-0.633, -0.214)  # different lengths of tuples
+    try:
+        assert_flag = False
+        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs, img_width=width, img_height=height)
+    except ValueError:
+        assert_flag = True
+    assert assert_flag, "Empty tuple with polynomials not allowed but not raised ValueError"

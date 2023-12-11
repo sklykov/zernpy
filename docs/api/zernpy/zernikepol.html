@@ -109,6 +109,9 @@
                     <a class="function" href="#generate_random_phases">generate_random_phases</a>
             </li>
             <li>
+                    <a class="function" href="#generate_phases_image">generate_phases_image</a>
+            </li>
+            <li>
                     <a class="function" href="#fit_polynomials">fit_polynomials</a>
             </li>
             <li>
@@ -123,7 +126,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.0.11, 2023 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.12, 2023 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -917,7 +920,7 @@ the result of this method will raise ValueError (because r and theta shapes will
     </div>
     <a class="headerlink" href="#ZernPol.gen_polar_coordinates"></a>
     
-            <div class="docstring"><p>Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 defined by the specification of r_step and theta_rad_step parameters.</p>
@@ -958,7 +961,7 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
     </div>
     <a class="headerlink" href="#ZernPol.gen_equal_polar_mesh"></a>
     
-            <div class="docstring"><p>Generate named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 equal and defined by the parameter n_points.</p>
@@ -967,7 +970,7 @@ equal and defined by the parameter n_points.</p>
 
 <ul>
 <li><strong>n_points</strong> (int, optional):
-Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 200.</li>
+Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 250.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1011,14 +1014,14 @@ Use default parameters for polar coordinates generation. The default is True.</l
 <li><strong>projection</strong> (str, optional):
 Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".</li>
 <li><strong>polar_coordinates</strong> (polar_vectors, optional):
-If use_defaults is False, this named tuple is used for accessing polar coordinates for plotting.
+If the flag 'use_defaults' is False, this named tuple is used for accessing polar coordinates for plotting.
 The default is ().</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: If use_defaults is False and polar_coordinates is not provided.</li>
+<li><strong>ValueError</strong>: If the flag use_defaults is False and polar_coordinates are not provided.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1095,7 +1098,7 @@ or figure.show()) as the method of the input parameter figure.</p>
 
 <ul>
 <li><strong>figure</strong> (plt.Figure):
-Figure() class there the plotting will be done, previous plot will be cleared.</li>
+'Figure' class there the plotting will be done, previous plot will be cleared out.</li>
 <li><strong>use_defaults</strong> (bool, optional):
 Use for plotting default values for generation of a mesh of polar coordinates and calculation
 of Zernike polynomials sum or Use for plotting provided calculated beforehand surface. The default is True.</li>
@@ -1144,7 +1147,7 @@ Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.</li>
     </div>
     <a class="headerlink" href="#generate_polynomials"></a>
     
-            <div class="docstring"><p>Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme.</p>
+            <div class="docstring"><p>Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1205,6 +1208,41 @@ tuple with generated Zernike polynomials.</li>
 
 
                 </section>
+                <section id="generate_phases_image">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">generate_phases_image</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">polynomials_amplitudes</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#generate_phases_image"></a>
+    
+            <div class="docstring"><p>Generate phases image (profile) for provided set of polynomials with provided coefficients (amplitudes).</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>polynomials</strong> (tuple, optional):
+Initialized ZernPol instances for generation of phases as the sum of all stored in this tuple polynomials. The default is ().</li>
+<li><strong>polynomials_amplitudes</strong> (tuple, optional):
+Amplitudes of polynomials provided in the tuple 'polynomials'. The default is ().</li>
+<li><strong>img_width</strong> (int, optional):
+Width of generated image. The default is 513.</li>
+<li><strong>img_height</strong> (int, optional):
+Height of generated image. The default is 513.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>phases_image</strong> (np.ndarray):
+2D image with phases calculated as the sum of provided polynomials.</li>
+</ul>
+</div>
+
+
+                </section>
                 <section id="fit_polynomials">
                     <div class="attr function">
             
@@ -1217,9 +1255,7 @@ tuple with generated Zernike polynomials.</li>
     
             <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.</p>
 
-<p>Note that Piston (Z(0, 0) polynomial) is ignored and not fitted, because it represents the constant phase offset
-over a unit aperture (pupil).
-Also, 2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
+<p>2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
 out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
 True and plotting the second item from the returned tuple.</p>
 
@@ -1279,7 +1315,7 @@ of phases and coordinates composing, see the module test_fitting in 'tests' sub-
 
 <ul>
 <li><strong>polynomials</strong> (tuple):
-Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.</li>
+Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.</li>
 <li><strong>phases_vector</strong> (numpy.ndarray):
 Recorded phases.</li>
 <li><strong>radii_vector</strong> (numpy.ndarray):
@@ -1293,7 +1329,7 @@ Round digits for returned polynomials amplitudes (numpy.round(...) function call
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>AttributeError</strong>: The any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1).</li>
+<li><strong>AttributeError</strong>: Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1)).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
