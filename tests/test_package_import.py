@@ -2,16 +2,18 @@
 """
 Test the imports of "zernpy" package.
 
-@author: Sergei Klykov
+@author: Sergei Klykov, @year: 2023
 @licence: MIT
 """
 
 
 def test_initialization():
     try:
-        from zernpy import ZernPol
+        from zernpy import ZernPol, generate_polynomials
         zp = ZernPol(m=-2, n=2)
         assert len(zp.get_polynomial_name()) > 0, "Failed simple function call for getting polynomial name"
+        pols = generate_polynomials(4)
+        assert "Piston" in str(pols[0]), "Generated polynomials not started with Piston"
     except ImportError:
         import os
         os.chdir("..")  # navigate to the root folder of the project

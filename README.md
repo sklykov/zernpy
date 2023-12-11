@@ -23,6 +23,7 @@ decreasing of the computational performance with the increased radial order.
 
 #### Basic installation
 For installation of this package, use the command: ***pip install zernpy***    
+For updating already installed package:  ***pip install --upgrade zernpy*** or ***pip install -U zernpy***
 
 #### Requirements
 For installation, the *numpy* and *matplotlib* libraries are required.  
@@ -90,10 +91,11 @@ recorded in polar coordinates (provided separately also in vectors) to the provi
 to the procedure described above, but this function doesn't perform any cropping or phases pre-selection.   
 Import statement for using the scripts the mentioned functions:  
 ```python
-from zernpy import generate_polynomials, fit_polynomials, generate_random_phases, fit_polynomials_vectors
+from zernpy import generate_polynomials, fit_polynomials, generate_random_phases, generate_phases_image, fit_polynomials_vectors
 ```
 Or for importing all available functions and base class in one statement:    
 ```python
 from zernpy import *
 ```
-Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of *ZernPol* class.   
+Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of the *ZernPol* class, starting from the 
+'Piston' polynomial.    

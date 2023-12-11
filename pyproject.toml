@@ -27,6 +27,7 @@ keywords = ["zernike-polynomials"]
 "Repository" = "https://github.com/sklykov/zernpy/"
 "Bug Tracker" = "https://github.com/sklykov/zernpy/issues/"
 "Documentation" = "https://sklykov.github.io/zernpy/"
+"Changelog" = "https://github.com/sklykov/zernpy/blob/main/CHANGELOG.md"
 
 # [tool.setuptools]
 # include-package-data = true  # true by default

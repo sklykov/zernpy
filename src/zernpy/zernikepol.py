@@ -1759,6 +1759,10 @@ def check_conformity():
     print("ALL TEST PASSED")
 
 
+# %% Define default export classes and methods used with import * statement (import * from zernikepol)
+__all__ = ['ZernPol', 'fit_polynomials_vectors', 'fit_polynomials', 'generate_phases_image',
+           'generate_random_phases', 'generate_polynomials']
+
 # %% Tests
 if __name__ == "__main__":
     _test_plots = False  # regulates testing of plotting various plots
