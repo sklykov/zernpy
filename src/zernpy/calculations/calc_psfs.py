@@ -24,7 +24,7 @@ __docformat__ = "numpydoc"
 
 
 # %% Functions
-def get_aberrated_psf(zernike_pol, r: float) -> np.ndarray:
+def get_aberrated_radial_psf(zernike_pol, r: float) -> np.ndarray:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     if isinstance(r, int):
         r = float(r)
@@ -34,8 +34,17 @@ def get_aberrated_psf(zernike_pol, r: float) -> np.ndarray:
         else:
             return 4.0*round(pow(jv(n+1, r)/r, 2), 12)
 
+def get_aberrated_psf(zernike_pol, r: float, theta: float) -> np.ndarray:
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    radial = get_aberrated_radial_psf(zernike_pol, r)
+    # Calculation of the value according to Refs.
+    if m >= 0:
+        return np.power(np.cos(abs(m)*theta), 2)*radial  # ???
+    else:
+        return np.power(np.sin(abs(m)*theta), 2)*radial  # ???
 
-def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float):
+
+def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title: str = None):
     """
     Plot the intensity distribution on the image with WxH: (size, size) and using coefficient between pixel and physical distance.
 
@@ -47,6 +56,8 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float):
         Size of picture for plotting.
     calibration_coefficient : float
         Relation between distance in pixels and um (see parameters at the start lines of the script).
+    title : str, optional
+        Title for the plotted figure. The default is None.
 
     Returns
     -------
@@ -60,11 +71,20 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float):
     for i in range(size):
         for j in range(size):
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))
-            img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient)
+            # The PSF also has the angular dependency, not only the radial one
+            # img[i, j] = get_aberrated_radial_psf(zernike_pol, pixel_dist*calibration_coefficient)
+            theta = np.arctan2((i - i_center), (j - j_center))
+            theta += np.pi
+            if theta*180.0/np.pi < 0.0:
+                print("Calculated angle in degree:", theta*180.0/np.pi)
+            img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
         warnings.warn(__warn_message)
-    plt.figure(figsize=(6, 6))
+    if title is not None and len(title) > 0:
+        plt.figure(title, figsize=(6, 6))
+    else:
+        plt.figure(figsize=(6, 6))
     plt.imshow(img, cmap=plt.cm.viridis, aspect='auto', origin='lower', extent=(0, size, 0, size))
     plt.tight_layout()
 
@@ -72,8 +92,8 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float):
 # %% Tests
 if __name__ == '__main__':
     r = 0.0
-    orders1 = (-1, 1); psf01 = get_aberrated_psf(orders1, r)
-    orders2 = (0, 2); psf02 = get_aberrated_psf(orders2, r)
+    orders1 = (0, 2); psf01 = get_aberrated_radial_psf(orders1, r)
+    orders2 = (-1, 3); psf02 = get_aberrated_radial_psf(orders2, r)
     # Physical parameters
     wavelength = 0.55  # in micrometers
     k = 2.0*np.pi/wavelength  # angular frequency
@@ -83,6 +103,6 @@ if __name__ == '__main__':
     pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
     pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
     plt.close('all')
-    show_ideal_psf(orders1, 40, pixel2um_coeff/2); show_ideal_psf(orders1, 120, pixel2um_coeff_plot)
-    show_ideal_psf(orders2, 40, pixel2um_coeff/2); show_ideal_psf(orders2, 120, pixel2um_coeff_plot)
+    show_ideal_psf(orders1, 40, pixel2um_coeff/2, "Defocus"); show_ideal_psf(orders1, 140, pixel2um_coeff_plot)
+    show_ideal_psf(orders2, 40, pixel2um_coeff/2, "Vertical Coma"); show_ideal_psf(orders2, 150, pixel2um_coeff_plot)
     plt.show()
