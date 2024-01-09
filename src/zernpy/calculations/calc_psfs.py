@@ -24,24 +24,21 @@ __docformat__ = "numpydoc"
 
 
 # %% Functions
-def get_aberrated_radial_psf(zernike_pol, r: float) -> np.ndarray:
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    if isinstance(r, int):
-        r = float(r)
-    if isinstance(r, float):
-        if abs(round(r, 12)) == 0.0:  # check that the argument provided with 0 value
-            return 4.0*round(pow(jv(n+1, 1E-11)/1E-11, 2), 11)  # approximation of the limit for the special condition jv(x)/x, where x -> 0
-        else:
-            return 4.0*round(pow(jv(n+1, r)/r, 2), 12)
-
 def get_aberrated_psf(zernike_pol, r: float, theta: float) -> np.ndarray:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    radial = get_aberrated_radial_psf(zernike_pol, r)
-    # Calculation of the value according to Refs.
-    if m >= 0:
-        return np.power(np.cos(abs(m)*theta), 2)*radial  # ???
+    if isinstance(r, int):  # Convert int to float explicitly
+        r = float(r)
+    # Defining pure radial component (angular indenpendent) - Jv(r)/r
+    if isinstance(r, float):
+        if abs(round(r, 12)) == 0.0:  # check that the argument provided with 0 value
+            radial = 4.0*round(pow(jv(n+1, 1E-11)/1E-11, 2), 11)  # approximation of the limit for the special condition jv(x)/x, where x -> 0
+        else:
+            radial = 4.0*round(pow(jv(n+1, r)/r, 2), 12)
+    # !!! There isn't analytical predefined equation for describing the angular/radial (they are connected) PSF in case m!= 0
+    if m == 0:
+        return 1.0*radial
     else:
-        return np.power(np.sin(abs(m)*theta), 2)*radial  # ???
+        return 0.0  # !!! Should be exchanged to the integral equations
 
 
 def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title: str = None):
@@ -72,11 +69,8 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title
         for j in range(size):
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))
             # The PSF also has the angular dependency, not only the radial one
-            # img[i, j] = get_aberrated_radial_psf(zernike_pol, pixel_dist*calibration_coefficient)
             theta = np.arctan2((i - i_center), (j - j_center))
-            theta += np.pi
-            if theta*180.0/np.pi < 0.0:
-                print("Calculated angle in degree:", theta*180.0/np.pi)
+            theta += np.pi  # shift angles to the range [0, 2pi]
             img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
@@ -92,8 +86,7 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title
 # %% Tests
 if __name__ == '__main__':
     r = 0.0
-    orders1 = (0, 2); psf01 = get_aberrated_radial_psf(orders1, r)
-    orders2 = (-1, 3); psf02 = get_aberrated_radial_psf(orders2, r)
+    orders1 = (0, 2); orders2 = (0, 0)
     # Physical parameters
     wavelength = 0.55  # in micrometers
     k = 2.0*np.pi/wavelength  # angular frequency
@@ -103,6 +96,6 @@ if __name__ == '__main__':
     pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
     pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
     plt.close('all')
-    show_ideal_psf(orders1, 40, pixel2um_coeff/2, "Defocus"); show_ideal_psf(orders1, 140, pixel2um_coeff_plot)
-    show_ideal_psf(orders2, 40, pixel2um_coeff/2, "Vertical Coma"); show_ideal_psf(orders2, 150, pixel2um_coeff_plot)
+    show_ideal_psf(orders1, 40, pixel2um_coeff/2, "Defocus"); show_ideal_psf(orders1, 140, pixel2um_coeff_plot, "Detailed Defocus")
+    show_ideal_psf(orders2, 40, pixel2um_coeff/2, "Piston"); show_ideal_psf(orders2, 150, pixel2um_coeff_plot, "Detailed Piston")
     plt.show()
