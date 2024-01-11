@@ -13,6 +13,7 @@ from pathlib import Path
 from scipy.special import jv
 import warnings
 from scipy.ndimage import convolve
+from math import cos
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -26,6 +27,22 @@ __docformat__ = "numpydoc"
 
 # %% Functions
 def radial_func(n: int, r: float) -> float:
+    """
+    Define the radial function Jn(r)/r, there Jn - Bessel function of 1st kind with order n.
+
+    Parameters
+    ----------
+    n : int
+        Order of the Bessel function.
+    r : float
+        Radial parameter r.
+
+    Returns
+    -------
+    float
+        Evaluated function Jn(r)/r.
+
+    """
     # Defining pure radial function (angular indenpendent) - Jv(r)/r
     if isinstance(r, int):  # Convert int to float explicitly
         r = float(r)
@@ -33,28 +50,45 @@ def radial_func(n: int, r: float) -> float:
     # Calculate value only for input r as the float number
     if isinstance(r, float):
         if abs(round(r, 12)) == 0.0:  # check that the argument provided with 0 value
-            radial = round(pow(jv(n, 1E-11)/1E-11, 2), 11)  # approximation of the limit for the special condition jv(x)/x, where x -> 0
+            radial = round(2.0*pow(jv(n, 1E-11)/1E-11, 2), 11)  # approximation of the limit for the special condition jv(x)/x, where x -> 0
         else:
-            radial = round(pow(jv(n, r)/r, 2), 12)
+            radial = round(2.0*pow(jv(n, r)/r, 2), 11)
     return radial
 
 
-def get_aberrated_psf(zernike_pol, r: float, theta: float) -> float:
+def get_aberrated_psf(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # The analytical equation could be found in the Nijboer's thesis
-    if m == 0:
-        return 4.0*radial_func(n+1, r)
-    # Approximation of the (-1, 1) polynomial
+    if m == 0 and n == 0:  # piston value
+        x1 = radial_func(1, r)
+        return x1*x1*(1.0 + alpha*alpha)
+    # Approximation of the (-1, 1) polynomial (Y tilt). Note that each polynomial should be somehow evaluated or overall equation used
     elif m == -1 and n == 1:
-        c1 = 169/96; c2 = 11/6; c3 = 15/64; c4 = 15/32; c5 = 1/12
-        t1 = c1*radial_func(1, r) + c2*radial_func(2, r)*np.cos(theta) + radial_func(3, r)*(c3 + c4*np.cos(2.0*theta))
-        t2 = c5*radial_func(4, r)*(np.cos(theta) + np.cos(3.0*theta))
-        return pow((t1 + t2), 2)
+        alpha = round(alpha, 4)  # rounding with extended precision, commonly alpha up to 0.001 useful
+        x1 = radial_func(1, r); x2 = radial_func(2, r); x3 = radial_func(3, r); x4 = radial_func(4, r)
+        c1 = -(alpha*alpha)/8.0; c2 = (alpha*alpha)/4.0; c4 = pow(alpha, 3)/24.0; c5 = pow(alpha, 3)/132.0
+        u = x1 + alpha*x2*cos(theta) + c1*(x1 - x3) + c2*x3*cos(2.0*theta) + c4*x4*cos(3.0*theta) + c5*(x4 - 2.0*x1)
+        if alpha > 1.0:
+            c6 = pow(alpha, 4)/192.0; x5 = radial_func(5, r)
+            u += c6*(x1 + -1.5*x3 + 0.5*x5 - cos(2.0*theta)*(3.0*x3 - x5) + cos(4.0*theta)*x5)
+        if alpha > 2.0:
+            __warn_message = f"For such big aberration amplitude ({alpha}) not precise equation was found, use it with caution!"
+            warnings.warn(__warn_message)
+        return u*u
+    # Approximation of the (-2, 2) polynomial (defocus)
+    elif m == 0 and n == 2:
+        x1 = radial_func(1, r); x3 = radial_func(3, r); x5 = radial_func(5, r); x7 = radial_func(7, r)
+        c1 = -(alpha*alpha)/2.0; c2 = pow(alpha, 3)/6.0
+        a = x1 + c1*((4.0/3.0)*x1 - x3 + (2.0/3.0)*x5); b = alpha*x3 + c2*(-7.0*x1 + 4.8*x3 + 2.0*x5 - 0.8*x7)
+        if alpha < 0.0:
+            return a*a - b*b
+        else:
+            return b*b - a*a
     else:
         return 0.0  # !!! Should be exchanged to the integral or precalculated equations
 
 
-def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray) -> np.ndarray:
+def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: bool = False) -> np.ndarray:
     """
     Convolute the provided image with PSF kernel as 2D arrays and return the convolved image with the same type as the original one.
 
@@ -76,11 +110,15 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray) -> np.ndarray:
     conv_coeff = np.sum(psf_kernel)
     if conv_coeff > 0.0:
         convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
+    if scale2original:
+        max_original_intensity = np.max(img); max_conv_pixel = np.max(convolved_img)
+        scaling_factor = max_original_intensity / max_conv_pixel
+        convolved_img *= scaling_factor
     convolved_img = convolved_img.astype(dtype=img_type)  # converting convolved image to the initial image
     return convolved_img
 
 
-def get_psf_kernel(zernike_pol, calibration_coefficient: float) -> np.ndarray:
+def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) -> np.ndarray:
     """
     Calculate centralized matrix with PSF mask.
 
@@ -101,7 +139,7 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float) -> np.ndarray:
     # Define the kernel size, including even small intensity pixels
     max_size = int(round(10.0*(1.0/calibration_coefficient), 0)) + 1
     for i in range(max_size):
-        if radial_func(n, i*calibration_coefficient) < 0.001:
+        if abs(get_aberrated_psf(zernike_pol, i*calibration_coefficient, np.pi/2.0, alpha)) < 0.0001:
             break
     # Make kernel with odd sizes for precisely centering the kernel
     size = 2*i - 1
@@ -116,11 +154,11 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float) -> np.ndarray:
             # The PSF also has the angular dependency, not only the radial one
             theta = np.arctan2((j - j_center), (i - i_center))
             # theta += np.pi  # shift angles to the range [0, 2pi]
-            kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta)
+            kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     return kernel
 
 
-def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title: str = None):
+def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha: float, title: str = None):
     """
     Plot the intensity distribution on the image with WxH: (size, size) and using coefficient between pixel and physical distance.
 
@@ -150,7 +188,7 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title
             # The PSF also has the angular dependency, not only the radial one
             theta = np.arctan2((j - j_center), (i - i_center))
             # theta += np.pi  # shift angles to the range [0, 2pi]
-            img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta)
+            img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
         warnings.warn(__warn_message)
@@ -162,8 +200,8 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, title
     return img
 
 
-def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, title: str = None, show_original: bool = True,
-                     show_psf: bool = True):
+def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, alpha: float, title: str = None,
+                     show_original: bool = True, show_psf: bool = True):
     if size % 2 == 0:
         size += 1  # make the image with odd sizes
     img = np.zeros((size, size), dtype=float)
@@ -183,10 +221,10 @@ def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, tit
     if show_original:
         plt.figure("Original object", figsize=(6, 6)); plt.imshow(img, cmap=plt.cm.viridis, extent=(0, size, 0, size))
         plt.tight_layout()
-    psf_kernel = get_psf_kernel(zernike_pol, calibration_coefficient)
+    psf_kernel = get_psf_kernel(zernike_pol, calibration_coefficient, alpha)
     if show_psf:
         plt.figure(f"PSF for {title}", figsize=(6, 6)); plt.imshow(psf_kernel, cmap=plt.cm.viridis)
-    conv_img = convolute_img_psf(img, psf_kernel)
+    conv_img = convolute_img_psf(img, psf_kernel, scale2original=True)
     plt.figure(f"Convolved with {title} image"); plt.imshow(conv_img, cmap=plt.cm.viridis, extent=(0, size, 0, size)); plt.tight_layout()
 
 
@@ -203,10 +241,12 @@ if __name__ == '__main__':
     pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
     pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
     # Plotting
-    plt.close('all'); conv_pic_size = 12; detailed_plots_sizes = 80
+    plt.close('all'); conv_pic_size = 10; detailed_plots_sizes = 30
     # p_img = show_ideal_psf(orders2, 20, pixel2um_coeff/2, "Piston"); ytilt_img = show_ideal_psf(orders3, 20, pixel2um_coeff/2, "Y Tilt")
-    p_img = show_ideal_psf(orders2, detailed_plots_sizes, pixel2um_coeff_plot, "Detailed Piston")
-    ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, pixel2um_coeff_plot, "Detailed Y Tilt")
-    plot_correlation(orders2, conv_pic_size, pixel2um_coeff/2, "Piston", show_psf=False)
-    plot_correlation(orders3, conv_pic_size, pixel2um_coeff/2, "Y Tilt", False, show_psf=False)
+    p_img = show_ideal_psf(orders2, detailed_plots_sizes, pixel2um_coeff/4.5, 0.95, "Piston")
+    ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, pixel2um_coeff/4.5, 0.95, "Y Tilt")
+    defocus_img = show_ideal_psf(orders1, detailed_plots_sizes+10, pixel2um_coeff/4.5, 0.95, "Defocus")
+    plot_correlation(orders2, conv_pic_size, pixel2um_coeff/2, 1.5, "Piston", show_psf=False)
+    plot_correlation(orders3, conv_pic_size, pixel2um_coeff/2, 1.5, "Y Tilt", False, show_psf=False)
+    plot_correlation(orders1, conv_pic_size, pixel2um_coeff/2, 0.95, "Defocus", False, show_psf=True)
     plt.show()
