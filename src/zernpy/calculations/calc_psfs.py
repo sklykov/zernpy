@@ -13,7 +13,9 @@ from pathlib import Path
 from scipy.special import jv
 import warnings
 from scipy.ndimage import convolve
-from math import cos
+from math import cos, pi
+from zernpy import ZernPol
+
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -24,8 +26,39 @@ else:
 # %% Module parameters
 __docformat__ = "numpydoc"
 
+# %% Integral Functions
+def phase_integral_part(zernike_pol: ZernPol, alpha: float, phi: np.array, p: float, theta: float, r: float) -> np.array:
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    # phase_arg = complex(0.0, zernike_pol.polynomial_value(p, phi) - r*p*cos(phi - theta))
+    phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
+    return np.exp(phase_arg)
 
-# %% Functions
+
+def angular_integral(zernike_pol: ZernPol, r: float, theta: float, p: float, alpha: float) -> complex:
+    # Integration on the pupil angle. Vectorized form of simple integration equation
+    h_phi = pi/400.0; phi = np.arange(start=0.0, stop=2.0*pi, step=h_phi)
+    ang_int = np.sum(phase_integral_part(zernike_pol, alpha, phi, p, theta, r))
+    return h_phi*ang_int
+
+
+def get_psf_point(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
+    # Check and initialize Zernike polynomial if provided only orders
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    if not isinstance(zernike_pol, ZernPol):
+        zernike_pol = ZernPol(m=m, n=n)
+    # Integration on the pupil radius using Simpson equation
+    n_integral_points = 320; h_p = 1.0/n_integral_points
+    even_sum = 0.0j; odd_sum = 0.0j
+    for i in range(2, n_integral_points-2, 2):
+        p = i*h_p; even_sum += angular_integral(zernike_pol, r, theta, p, alpha)
+    for i in range(1, n_integral_points-1, 2):
+        p = i*h_p; odd_sum += angular_integral(zernike_pol, r, theta, p, alpha)
+    yA = angular_integral(zernike_pol, r, theta, 0.0, alpha); yB = angular_integral(zernike_pol, r, theta, 1.0, alpha)
+    integral_sum = (h_p/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum)
+    return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
+
+
+# %% Nijboer's Thesis Functions
 def radial_func(n: int, r: float) -> float:
     """
     Define the radial function Jn(r)/r, there Jn - Bessel function of 1st kind with order n.
@@ -137,14 +170,11 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
     """
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # Define the kernel size, including even small intensity pixels
-    max_size = int(round(10.0*(1.0/calibration_coefficient), 0)) + 1
-    for i in range(max_size):
-        if abs(get_aberrated_psf(zernike_pol, i*calibration_coefficient, np.pi/2.0, alpha)) < 0.0001:
-            break
-    # Make kernel with odd sizes for precisely centering the kernel
-    size = 2*i - 1
-    if i % 2 == 0:
-        size = i + 1
+    max_size = int(round(10.0*(1.0/calibration_coefficient), 0)) + 1; size = max_size
+    # # Make kernel with odd sizes for precisely centering the kernel
+    # size = 2*i - 1
+    if size % 2 == 0:
+        size += 1
     kernel = np.zeros(shape=(size, size))
     i_center = size//2; j_center = size//2
     # Calculate the PSF kernel for usage in convolution operation
@@ -152,9 +182,10 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
         for j in range(size):
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))
             # The PSF also has the angular dependency, not only the radial one
-            theta = np.arctan2((j - j_center), (i - i_center))
-            # theta += np.pi  # shift angles to the range [0, 2pi]
-            kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            theta = np.arctan2((i - i_center), (j - j_center))
+            theta += np.pi  # shift angles to the range [0, 2pi]
+            # kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            kernel[i, j] = get_psf_point(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     return kernel
 
 
@@ -186,9 +217,10 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha
         for j in range(size):
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))
             # The PSF also has the angular dependency, not only the radial one
-            theta = np.arctan2((j - j_center), (i - i_center))
-            # theta += np.pi  # shift angles to the range [0, 2pi]
-            img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            theta = np.arctan2((i - i_center), (j - j_center))
+            theta += np.pi  # shift angles to the range [0, 2pi]
+            # img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            img[i, j] = get_psf_point(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
         warnings.warn(__warn_message)
@@ -196,7 +228,7 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha
         plt.figure(title, figsize=(6, 6))
     else:
         plt.figure(figsize=(6, 6))
-    plt.imshow(img, cmap=plt.cm.viridis); plt.tight_layout()
+    plt.imshow(img, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
     return img
 
 
@@ -230,23 +262,23 @@ def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, alp
 
 # %% Tests
 if __name__ == '__main__':
-    r = 0.0
-    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1)
+    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3)
     # Physical parameters
     wavelength = 0.55  # in micrometers
     k = 2.0*np.pi/wavelength  # angular frequency
     NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length)
     # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
-    pixel_size = 0.125  # in micrometers, physical length in pixels (um / pixels)
+    pixel_size = 0.15  # in micrometers, physical length in pixels (um / pixels)
     pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
     pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
     # Plotting
-    plt.close('all'); conv_pic_size = 10; detailed_plots_sizes = 30
+    plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 16
     # p_img = show_ideal_psf(orders2, 20, pixel2um_coeff/2, "Piston"); ytilt_img = show_ideal_psf(orders3, 20, pixel2um_coeff/2, "Y Tilt")
-    p_img = show_ideal_psf(orders2, detailed_plots_sizes, pixel2um_coeff/4.5, 0.95, "Piston")
-    ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, pixel2um_coeff/4.5, 0.95, "Y Tilt")
-    defocus_img = show_ideal_psf(orders1, detailed_plots_sizes+10, pixel2um_coeff/4.5, 0.95, "Defocus")
-    plot_correlation(orders2, conv_pic_size, pixel2um_coeff/2, 1.5, "Piston", show_psf=False)
-    plot_correlation(orders3, conv_pic_size, pixel2um_coeff/2, 1.5, "Y Tilt", False, show_psf=False)
-    plot_correlation(orders1, conv_pic_size, pixel2um_coeff/2, 0.95, "Defocus", False, show_psf=True)
+    # p_img = show_ideal_psf(orders2, detailed_plots_sizes, pixel2um_coeff/1.65, -0.85, "Piston")
+    # ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, pixel2um_coeff/1.65, -0.85, "Y Tilt")
+    # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/2, 0.5, "Defocus")
+    # ast = show_ideal_psf(orders4, detailed_plots_sizes, pixel2um_coeff, 0.85, "Vertical Trefoil")
+    # plot_correlation(orders2, conv_pic_size, pixel2um_coeff, 0.85, "Piston", show_psf=True)
+    plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
+    # plot_correlation(orders1, conv_pic_size, pixel2um_coeff, 0.85, "Defocus", False, show_psf=True)
     plt.show()
