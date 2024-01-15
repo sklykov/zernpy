@@ -26,6 +26,7 @@ else:
 # %% Module parameters
 __docformat__ = "numpydoc"
 
+
 # %% Integral Functions
 def phase_integral_part(zernike_pol: ZernPol, alpha: float, phi: np.array, p: float, theta: float, r: float) -> np.array:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
@@ -89,6 +90,18 @@ def radial_func(n: int, r: float) -> float:
     return radial
 
 
+def radial_ampl_func(n: int, r: np.ndarray) -> np.ndarray:
+    # Expanse the calculation for using the numpy array, assuming it starting with 0.0
+    radial_ampl_f = None
+    if isinstance(r, np.array):
+        r = np.round(r, 12)
+        if r[0] == 0.0:
+            radial_ampl_f = np.zeros(shape=(r.shape[0]))
+            r1 = r[1:]; radial_ampl_f[1:] = jv(n, r1)/r1
+            radial_ampl_f[0] = jv(n, 1E-11)/1E-11
+    return radial_ampl_f
+
+
 def get_aberrated_psf(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # The analytical equation could be found in the Nijboer's thesis
@@ -121,6 +134,28 @@ def get_aberrated_psf(zernike_pol, r: float, theta: float, alpha: float = 1.0) -
         return 0.0  # !!! Should be exchanged to the integral or precalculated equations
 
 
+# %% Another attempt to use Nijboer's Thesis Functions
+def radial_integral_nijboer(zernike_pol: ZernPol, r: float, t: str, power: int) -> float:
+    integral_sum = 0.0; (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    # Integration on the pupil radius. Vectorized form of simple integration equation
+    h_p = 1.0/100; p = np.arange(start=0.0, stop=1.0, step=h_p)
+    if t == '0':
+        integral_sum = h_p*np.sum(np.power(zernike_pol.radial(p), power)*jv(0, p))
+    elif t == '2m':
+        integral_sum = h_p*np.sum(np.power(zernike_pol.radial(p), power)*jv(2*m, p))
+    return integral_sum
+
+
+def psf_point_approx_sum(zernike_pol: ZernPol, r: float, theta: float, alpha: float) -> complex:
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    # Integration on the pupil radius. Vectorized form of simple integration equation
+    s1 = 2.0*radial_ampl_func(1, r); s2 = -2.0*pow(1j, n+1)*alpha*np.cos(m*theta)*radial_ampl_func(n+1, r)
+    s3_1 = radial_integral_nijboer(zernike_pol, r, t='0', power=2); s3_2 = radial_integral_nijboer(zernike_pol, r, t='2m', power=2)
+    s3 = (pow(alpha, 2)/2.0)*(s3_1 + pow(1j, 2*m)*np.cos(2*m*theta)*s3_2)
+    return np.power(np.abs(s1 + s2 + s3), 2)/(4.0*pi*pi)
+
+
+# %% Calculation, plotting
 def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: bool = False) -> np.ndarray:
     """
     Convolute the provided image with PSF kernel as 2D arrays and return the convolved image with the same type as the original one.
