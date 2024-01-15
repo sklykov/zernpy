@@ -15,6 +15,7 @@ Documents/
 *.pdf
 .idea/
 .vscode/
+src/zernpy/calculations/*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

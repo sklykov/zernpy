@@ -15,6 +15,10 @@ import warnings
 from scipy.ndimage import convolve
 from math import cos, pi
 from zernpy import ZernPol
+import time
+import os
+from skimage import io
+from skimage.util import img_as_ubyte
 
 
 # %% Local (package-scoped) imports
@@ -25,20 +29,20 @@ else:
 
 # %% Module parameters
 __docformat__ = "numpydoc"
+n_phi_points = 200; n_p_points = 320
 
 
-# %% Integral Functions
-def phase_integral_part(zernike_pol: ZernPol, alpha: float, phi: np.array, p: float, theta: float, r: float) -> np.array:
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    # phase_arg = complex(0.0, zernike_pol.polynomial_value(p, phi) - r*p*cos(phi - theta))
+# %% Integral Functions - integration on the radial external, angular - internal (np.sum)
+def phase_integral_part_ang(zernike_pol: ZernPol, alpha: float, phi: np.array, p: float, theta: float, r: float) -> np.array:
     phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
     return np.exp(phase_arg)
 
 
 def angular_integral(zernike_pol: ZernPol, r: float, theta: float, p: float, alpha: float) -> complex:
-    # Integration on the pupil angle. Vectorized form of simple integration equation
-    h_phi = pi/400.0; phi = np.arange(start=0.0, stop=2.0*pi, step=h_phi)
-    ang_int = np.sum(phase_integral_part(zernike_pol, alpha, phi, p, theta, r))
+    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    h_phi = pi/n_phi_points; phi = np.arange(start=h_phi, stop=2.0*pi - h_phi, step=h_phi)
+    fa = phase_integral_part_ang(zernike_pol, alpha, 0.0, p, theta, r); fb = phase_integral_part_ang(zernike_pol, alpha, 2.0*pi, p, theta, r)
+    ang_int = np.sum(phase_integral_part_ang(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
     return h_phi*ang_int
 
 
@@ -48,7 +52,7 @@ def get_psf_point(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> fl
     if not isinstance(zernike_pol, ZernPol):
         zernike_pol = ZernPol(m=m, n=n)
     # Integration on the pupil radius using Simpson equation
-    n_integral_points = 320; h_p = 1.0/n_integral_points
+    n_integral_points = n_p_points; h_p = 1.0/n_integral_points
     even_sum = 0.0j; odd_sum = 0.0j
     for i in range(2, n_integral_points-2, 2):
         p = i*h_p; even_sum += angular_integral(zernike_pol, r, theta, p, alpha)
@@ -56,6 +60,37 @@ def get_psf_point(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> fl
         p = i*h_p; odd_sum += angular_integral(zernike_pol, r, theta, p, alpha)
     yA = angular_integral(zernike_pol, r, theta, 0.0, alpha); yB = angular_integral(zernike_pol, r, theta, 1.0, alpha)
     integral_sum = (h_p/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum)
+    return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
+
+
+# %% Integral Functions - vice versa (order of integration)
+def phase_integral_part_rad(zernike_pol: ZernPol, alpha: float, phi: float, p: np.array, theta: float, r: float) -> np.array:
+    phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
+    return np.exp(phase_arg)
+
+
+def radial_integral(zernike_pol: ZernPol, r: float, theta: float, phi: float, alpha: float) -> complex:
+    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    h_p = 1.0/n_p_points; p = np.arange(start=h_p, stop=1.0 - h_p, step=h_p)
+    fa = phase_integral_part_rad(zernike_pol, alpha, phi, 0.0, theta, r); fb = phase_integral_part_rad(zernike_pol, alpha, phi, 1.0, theta, r)
+    ang_int = np.sum(phase_integral_part_rad(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
+    return h_p*ang_int
+
+
+def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
+    # Check and initialize Zernike polynomial if provided only orders
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    if not isinstance(zernike_pol, ZernPol):
+        zernike_pol = ZernPol(m=m, n=n)
+    # Integration on the pupil radius using Simpson equation
+    n_integral_points = n_phi_points; h_phi = 2.0*pi/n_integral_points
+    even_sum = 0.0j; odd_sum = 0.0j
+    for i in range(2, n_integral_points-2, 2):
+        phi = i*h_phi; even_sum += radial_integral(zernike_pol, r, theta, phi, alpha)
+    for i in range(1, n_integral_points-1, 2):
+        phi = i*h_phi; odd_sum += radial_integral(zernike_pol, r, theta, phi, alpha)
+    yA = radial_integral(zernike_pol, r, theta, 0.0, alpha); yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha)
+    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum)
     return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
 
 
@@ -93,7 +128,8 @@ def radial_func(n: int, r: float) -> float:
 def radial_ampl_func(n: int, r: np.ndarray) -> np.ndarray:
     # Expanse the calculation for using the numpy array, assuming it starting with 0.0
     radial_ampl_f = None
-    if isinstance(r, np.array):
+    print(type(r))
+    if isinstance(r, np.ndarray):
         r = np.round(r, 12)
         if r[0] == 0.0:
             radial_ampl_f = np.zeros(shape=(r.shape[0]))
@@ -135,24 +171,35 @@ def get_aberrated_psf(zernike_pol, r: float, theta: float, alpha: float = 1.0) -
 
 
 # %% Another attempt to use Nijboer's Thesis Functions
-def radial_integral_nijboer(zernike_pol: ZernPol, r: float, t: str, power: int) -> float:
+# Tested, this approximation somehow doens't work
+def radial_integral_nijboer(zernike_pol: ZernPol, r: float, order: int, power: int) -> float:
     integral_sum = 0.0; (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # Integration on the pupil radius. Vectorized form of simple integration equation
-    h_p = 1.0/100; p = np.arange(start=0.0, stop=1.0, step=h_p)
-    if t == '0':
-        integral_sum = h_p*np.sum(np.power(zernike_pol.radial(p), power)*jv(0, p))
-    elif t == '2m':
-        integral_sum = h_p*np.sum(np.power(zernike_pol.radial(p), power)*jv(2*m, p))
+    h_p = 1.0/1000; p = np.arange(start=h_p, stop=1.0-h_p, step=h_p)
+    fa = 0.0; fb = np.power(zernike_pol.radial(1.0), power)*jv(order, r)
+    integral_sum = h_p*(np.sum(p*np.power(zernike_pol.radial(p), power)*jv(order, p*r)) + 0.5*(fa + fb))
     return integral_sum
 
 
 def psf_point_approx_sum(zernike_pol: ZernPol, r: float, theta: float, alpha: float) -> complex:
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    if not isinstance(zernike_pol, ZernPol):
+        zernike_pol = ZernPol(m=m, n=n)
     # Integration on the pupil radius. Vectorized form of simple integration equation
-    s1 = 2.0*radial_ampl_func(1, r); s2 = -2.0*pow(1j, n+1)*alpha*np.cos(m*theta)*radial_ampl_func(n+1, r)
-    s3_1 = radial_integral_nijboer(zernike_pol, r, t='0', power=2); s3_2 = radial_integral_nijboer(zernike_pol, r, t='2m', power=2)
-    s3 = (pow(alpha, 2)/2.0)*(s3_1 + pow(1j, 2*m)*np.cos(2*m*theta)*s3_2)
-    return np.power(np.abs(s1 + s2 + s3), 2)/(4.0*pi*pi)
+    r = round(r, 11)
+    if r == 0.0:
+        s1 = 2.0*(jv(1, 1E-11)/1E-11); s2 = -2.0*alpha*pow(1j, m+n+1)*np.cos(m*theta)*(jv(n+1, 1E-11)/1E-11)
+    else:
+        s1 = 2.0*(jv(1, r)/r); s2 = -2.0*alpha*pow(1j, m+n+1)*np.cos(m*theta)*(jv(n+1, r)/r)
+    s3_1 = radial_integral_nijboer(zernike_pol, r, order=0, power=2); s3_2 = radial_integral_nijboer(zernike_pol, r, order=2*m, power=2)
+    s3 = -(pow(alpha, 2)/2.0)*(s3_1 + pow(1j, 2*m)*np.cos(2*m*theta)*s3_2)
+    s4_1 = radial_integral_nijboer(zernike_pol, r, order=m, power=3); s4_2 = radial_integral_nijboer(zernike_pol, r, order=3*m, power=3)
+    s4 = (pow(alpha, 3)/12.0)*(3.0*pow(1j, m+1)*np.cos(m*theta)*s4_1 + pow(1j, 3*m+1)*np.cos(3*m*theta)*s4_2)
+    s5_1 = 3.0*radial_integral_nijboer(zernike_pol, r, order=0, power=4)
+    s5_2 = 4.0*pow(1j, 2*m)*np.cos(2*m*theta)*radial_integral_nijboer(zernike_pol, r, order=2*m, power=4)
+    s5_3 = pow(1j, 4*m)*np.cos(4*m*theta)*radial_integral_nijboer(zernike_pol, r, order=4*m, power=4)
+    s5 = (pow(alpha, 4)/96.0)*(s5_1 + s5_2 + s5_3)
+    return np.power(np.abs(s1 + s2 + s3 + s4 + s5), 2)
 
 
 # %% Calculation, plotting
@@ -204,10 +251,9 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
         Matrix with PSF values.
     """
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    # Define the kernel size, including even small intensity pixels
-    max_size = int(round(10.0*(1.0/calibration_coefficient), 0)) + 1; size = max_size
-    # # Make kernel with odd sizes for precisely centering the kernel
-    # size = 2*i - 1
+    # Define the kernel size just imperically
+    max_size = int(round(20.0*(1.0/calibration_coefficient), 0)) + 1; size = max_size
+    # Make kernel with odd sizes for precisely centering the kernel
     if size % 2 == 0:
         size += 1
     kernel = np.zeros(shape=(size, size))
@@ -220,7 +266,7 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
             theta = np.arctan2((i - i_center), (j - j_center))
             theta += np.pi  # shift angles to the range [0, 2pi]
             # kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
-            kernel[i, j] = get_psf_point(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            kernel[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     return kernel
 
 
@@ -255,7 +301,9 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha
             theta = np.arctan2((i - i_center), (j - j_center))
             theta += np.pi  # shift angles to the range [0, 2pi]
             # img[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
-            img[i, j] = get_psf_point(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            # img[i, j] = get_psf_point(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            img[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            # img[i, j] = psf_point_approx_sum(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
         warnings.warn(__warn_message)
@@ -294,10 +342,26 @@ def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, alp
     conv_img = convolute_img_psf(img, psf_kernel, scale2original=True)
     plt.figure(f"Convolved with {title} image"); plt.imshow(conv_img, cmap=plt.cm.viridis, extent=(0, size, 0, size)); plt.tight_layout()
 
+def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: float, title: str = None,
+                           show_original: bool = True, show_psf: bool = False):
+    try:
+        sample = img_as_ubyte(io.imread(os.path.join(os.getcwd(), "nesvizh_grey.jpg"), as_gray=True))
+        if show_original:
+            plt.figure("Original Photo"); plt.imshow(sample, cmap=plt.cm.gray); plt.axis('off'); plt.tight_layout()
+        psf_kernel = get_psf_kernel(zernike_pol, calibration_coefficient, alpha)
+        if show_psf:
+            plt.figure(f"PSF for {title}", figsize=(6, 6)); plt.imshow(psf_kernel, cmap=plt.cm.viridis)
+        conv_img = convolute_img_psf(sample, psf_kernel, scale2original=True)
+        plt.figure(f"Convolved with {title} image"); plt.imshow(conv_img, cmap=plt.cm.gray); plt.axis('off'); plt.tight_layout()
+    except FileNotFoundError:
+        _warn_message = "The sample photo is ignored in the repository, load it to the folder with this script from repo 'collection_numCalc'"
+        warnings.warn(_warn_message)
+
 
 # %% Tests
 if __name__ == '__main__':
     orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3)
+    plot_pure_psfs = False
     # Physical parameters
     wavelength = 0.55  # in micrometers
     k = 2.0*np.pi/wavelength  # angular frequency
@@ -307,13 +371,27 @@ if __name__ == '__main__':
     pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
     pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
     # Plotting
-    plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 16
-    # p_img = show_ideal_psf(orders2, 20, pixel2um_coeff/2, "Piston"); ytilt_img = show_ideal_psf(orders3, 20, pixel2um_coeff/2, "Y Tilt")
-    # p_img = show_ideal_psf(orders2, detailed_plots_sizes, pixel2um_coeff/1.65, -0.85, "Piston")
-    # ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, pixel2um_coeff/1.65, -0.85, "Y Tilt")
-    # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/2, 0.5, "Defocus")
-    # ast = show_ideal_psf(orders4, detailed_plots_sizes, pixel2um_coeff, 0.85, "Vertical Trefoil")
+    plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 22; calibration_coeff = pixel2um_coeff/2.0; alpha = 0.85
+    if plot_pure_psfs:
+        t1 = time.time()
+        p_img = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston")
+        print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Piston takes s:", round((time.time() - t1), 3)); t1 = time.time()
+        ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt")
+        print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Y Tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
+        # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/3.0, alpha, "Defocus")
+        t1 = time.time()
+        aberr4 = show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "Vertical Trefoil")
+        print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Vertical Trefoil takes s:", round((time.time() - t1), 3))
+
+    # Plot convolution of the sample photo with the various psfs
+    plot_correlation_photo(orders2, pixel2um_coeff/1.5, 1.0, "Piston", show_psf=True, show_original=True)
+    plot_correlation_photo(orders3, pixel2um_coeff/1.5, 1.0, "Y Tilt", show_psf=True, show_original=True)
+    plot_correlation_photo(orders1, pixel2um_coeff/1.5, 1.0, "Defocus", show_psf=True, show_original=True)
+    plot_correlation_photo(orders4, pixel2um_coeff/1.5, 1.0, "Vertical Trefoil", show_psf=True, show_original=True)
+
+    # Plot convolution of point objet with the various psfs
     # plot_correlation(orders2, conv_pic_size, pixel2um_coeff, 0.85, "Piston", show_psf=True)
-    plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
+    # plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
     # plot_correlation(orders1, conv_pic_size, pixel2um_coeff, 0.85, "Defocus", False, show_psf=True)
+
     plt.show()
