@@ -29,13 +29,21 @@ else:
 
 # %% Module parameters
 __docformat__ = "numpydoc"
-n_phi_points = 200; n_p_points = 320
+n_phi_points = 300; n_p_points = 320
+# Physical parameters
+wavelength = 0.55  # in micrometers
+k = 2.0*np.pi/wavelength  # angular frequency
+NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length)
+# Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
+pixel_size = 0.15  # in micrometers, physical length in pixels (um / pixels)
+pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
+pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
 
 
 # %% Integral Functions - integration on the radial external, angular - internal (np.sum)
 def phase_integral_part_ang(zernike_pol: ZernPol, alpha: float, phi: np.array, p: float, theta: float, r: float) -> np.array:
     phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
-    return np.exp(phase_arg)
+    return np.exp(phase_arg)*p
 
 
 def angular_integral(zernike_pol: ZernPol, r: float, theta: float, p: float, alpha: float) -> complex:
@@ -63,10 +71,11 @@ def get_psf_point(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> fl
     return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
 
 
-# %% Integral Functions - vice versa (order of integration)
+# %% Integral Functions - vice versa (order of integration on the radius r and angle theta)
 def phase_integral_part_rad(zernike_pol: ZernPol, alpha: float, phi: float, p: np.array, theta: float, r: float) -> np.array:
+    # !!! multiplication by phi (in r*p*np.cos(...) only guides to scaling of the resulting PSF
     phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
-    return np.exp(phase_arg)
+    return np.exp(phase_arg)*p
 
 
 def radial_integral(zernike_pol: ZernPol, r: float, theta: float, phi: float, alpha: float) -> complex:
@@ -90,8 +99,8 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> 
     for i in range(1, n_integral_points-1, 2):
         phi = i*h_phi; odd_sum += radial_integral(zernike_pol, r, theta, phi, alpha)
     yA = radial_integral(zernike_pol, r, theta, 0.0, alpha); yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha)
-    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum)
-    return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
+    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
+    return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
 # %% Nijboer's Thesis Functions
@@ -266,7 +275,7 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
             theta = np.arctan2((i - i_center), (j - j_center))
             theta += np.pi  # shift angles to the range [0, 2pi]
             # kernel[i, j] = get_aberrated_psf(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
-            kernel[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            kernel[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha*calibration_coefficient)  # ??? Scaling alpha
     return kernel
 
 
@@ -342,6 +351,7 @@ def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, alp
     conv_img = convolute_img_psf(img, psf_kernel, scale2original=True)
     plt.figure(f"Convolved with {title} image"); plt.imshow(conv_img, cmap=plt.cm.viridis, extent=(0, size, 0, size)); plt.tight_layout()
 
+
 def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: float, title: str = None,
                            show_original: bool = True, show_psf: bool = False):
     try:
@@ -360,18 +370,10 @@ def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: f
 
 # %% Tests
 if __name__ == '__main__':
-    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3)
-    plot_pure_psfs = False
-    # Physical parameters
-    wavelength = 0.55  # in micrometers
-    k = 2.0*np.pi/wavelength  # angular frequency
-    NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length)
-    # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
-    pixel_size = 0.15  # in micrometers, physical length in pixels (um / pixels)
-    pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
-    pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
+    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = False; plot_photo_convolution = False
+
     # Plotting
-    plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 22; calibration_coeff = pixel2um_coeff/2.0; alpha = 0.85
+    plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 22; calibration_coeff = pixel2um_coeff/1.5; alpha = 1.5
     if plot_pure_psfs:
         t1 = time.time()
         p_img = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston")
@@ -383,15 +385,26 @@ if __name__ == '__main__':
         aberr4 = show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "Vertical Trefoil")
         print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Vertical Trefoil takes s:", round((time.time() - t1), 3))
 
+    # Compare positive and negative coefficients influence on the PSF
+    # ytilt_img1 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "+ Y Tilt")
+    # ytilt_img2 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, -alpha, "- Y Tilt")
+    # p_img1 = show_ideal_psf(orders1, detailed_plots_sizes, calibration_coeff, alpha, "Defocus +")
+    # p_img2 = show_ideal_psf(orders1, detailed_plots_sizes, calibration_coeff, -alpha, "Defocus -")
+    # show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "+ Vertical Trefoil")
+    # show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, -alpha, "- Vertical Trefoil")
+    show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, alpha, "+ Obliq. Astigmatism")
+    show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, -alpha, "- Obliq. Astigmatism")
+    show_ideal_psf((-1, 3), detailed_plots_sizes, calibration_coeff, alpha, "+ Vert. Coma")
+    show_ideal_psf((-1, 3), detailed_plots_sizes, calibration_coeff, -alpha, "- Vert. Coma")
+
     # Plot convolution of the sample photo with the various psfs
-    plot_correlation_photo(orders2, pixel2um_coeff/1.5, 1.0, "Piston", show_psf=True, show_original=True)
-    plot_correlation_photo(orders3, pixel2um_coeff/1.5, 1.0, "Y Tilt", show_psf=True, show_original=True)
-    plot_correlation_photo(orders1, pixel2um_coeff/1.5, 1.0, "Defocus", show_psf=True, show_original=True)
-    plot_correlation_photo(orders4, pixel2um_coeff/1.5, 1.0, "Vertical Trefoil", show_psf=True, show_original=True)
+    if plot_photo_convolution:
+        plot_correlation_photo(orders2, pixel2um_coeff/1.5, 1.0, "Piston", show_psf=True, show_original=True)
+        plot_correlation_photo(orders3, pixel2um_coeff/1.5, 1.0, "Y Tilt", show_psf=True, show_original=True)
+        plot_correlation_photo(orders1, pixel2um_coeff/1.5, 1.0, "Defocus", show_psf=True, show_original=True)
+        plot_correlation_photo(orders4, pixel2um_coeff/1.5, 1.0, "Vertical Trefoil", show_psf=True, show_original=True)
 
     # Plot convolution of point objet with the various psfs
     # plot_correlation(orders2, conv_pic_size, pixel2um_coeff, 0.85, "Piston", show_psf=True)
     # plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
     # plot_correlation(orders1, conv_pic_size, pixel2um_coeff, 0.85, "Defocus", False, show_psf=True)
-
-    plt.show()
