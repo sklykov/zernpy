@@ -19,6 +19,7 @@ import time
 import os
 from skimage import io
 from skimage.util import img_as_ubyte
+import json
 
 
 # %% Local (package-scoped) imports
@@ -35,7 +36,7 @@ wavelength = 0.55  # in micrometers
 k = 2.0*np.pi/wavelength  # angular frequency
 NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length)
 # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
-pixel_size = 0.15  # in micrometers, physical length in pixels (um / pixels)
+pixel_size = 0.14  # in micrometers, physical length in pixels (um / pixels)
 pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
 pixel2um_coeff_plot = k*NA*(pixel_size/10.0)  # coefficient used for better plotting with the reduced pixel size for preventing pixelated
 
@@ -447,6 +448,85 @@ def psf_point_approx_sum(zernike_pol: ZernPol, r: float, theta: float, alpha: fl
     return np.power(np.abs(s1 + s2 + s3 + s4 + s5), 2)
 
 
+# %% Save and read the calculated PSF matricies
+def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_coefficient: float,
+             amplitude: float, polynomial_orders: tuple, folder_path: str = None, overwrite: bool = True) -> str:
+    """
+    Save the calculated PSF kernel along with the used for the calculation parameters.
+
+    Parameters
+    ----------
+    additional_file_name : str
+        Additional to the composed file name string, e.g. unique addition.
+    psf_kernel : np.ndarray
+        Calculated by using get_psf_kernel.
+    NA : float
+        NA used for the PSF calculation.
+    wavelength : float
+        Wavelength used for the PSF calculation (in micrometers).
+    calibration_coefficient : float
+        Calibration (micrometers/pixels) used for the PSF calculation.
+    amplitude : float
+        Amplitude of the polynomial.
+    polynomial_orders : tuple
+        Tuple as the (m, n) orders.
+    folder_path : str, optional
+        Absolute path to the folder where the file will be saved. The default is None.
+    overwrite : bool, optional
+        Flag for letting overwriting of the existing file. The default is True.
+
+    Returns
+    -------
+    str
+        Absolute path to the file.
+
+    """
+    # Checking the provided folder or creating the folder for storing files
+    if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
+        working_folder = Path(__file__).cwd()
+        saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
+        if not saved_psfs_folder.is_dir():
+            saved_psfs_folder.mkdir()
+        print("Folder for saving calculated PSFs:", saved_psfs_folder)
+    else:
+        if Path(folder_path).is_dir():
+            saved_psfs_folder = Path(folder_path)
+    # Save provided PSF kernel with the provided parameters
+    json_file_path = saved_psfs_folder.joinpath(f"psf_{polynomial_orders}_{additional_file_name}_{amplitude}.json")
+    data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
+    data4serialization['PSF kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA
+    data4serialization['Wavelength'] = wavelength; data4serialization['Calibration (um/pixels)'] = calibration_coefficient
+    if json_file_path.exists() and overwrite:
+        _warn_message = "The file already exists, the content will be overwritten!"
+        warnings.warn(_warn_message)
+    if not json_file_path.exists() or (json_file_path.exists() and overwrite):
+        with open(json_file_path, 'w') as json_write_file:
+            json.dump(data4serialization, json_write_file)
+    return str(json_file_path.absolute())
+
+
+def read_psf(file_path: str) -> dict:
+    """
+    Read the saved PSF data from the *json file.
+
+    Parameters
+    ----------
+    file_path : str
+        Absolute path to the *json file.
+
+    Returns
+    -------
+    dict
+        Data stored in the *json file, the used keys: 'PSF kernel', 'NA', 'Wavelength', 'Calibration (um/pixels)'.
+
+    """
+    psf_file_path = Path(file_path); psf_data = None
+    if psf_file_path.exists() and psf_file_path.is_file():
+        with open(psf_file_path, 'r') as json_read_file:
+            psf_data = json.load(json_read_file)
+    return psf_data
+
+
 # %% Calculation, plotting
 def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: bool = False) -> np.ndarray:
     """
@@ -657,10 +737,10 @@ def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: f
 # %% Tests
 if __name__ == '__main__':
     orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = False; plot_photo_convolution = False
-    plot_photo_convolution_row = False; figsizes = (6.5, 6.5)
+    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = True
 
     # Plotting
-    plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 24; calibration_coeff = pixel2um_coeff/1.5; alpha = 2.0
+    plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 24; calibration_coeff = pixel2um_coeff/1.75; alpha = 2.0
     if plot_pure_psfs:
         t1 = time.time()
         p_img = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston")
@@ -681,8 +761,8 @@ if __name__ == '__main__':
     # show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, -alpha, "- Vertical Trefoil")
     # show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, alpha, "+ Obliq. Astigmatism")
     # show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, -alpha, "- Obliq. Astigmatism")
-    show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, alpha, f"{alpha} Primary Spherical")
-    show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, -alpha, f"{-alpha} Primary Spherical")
+    # show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, alpha, f"{alpha} Primary Spherical")
+    # show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, -alpha, f"{-alpha} Primary Spherical")
 
     # Testing the kernel calculation
     # v_coma_m = get_psf_kernel((-1, 3), calibration_coeff, -1.0)
@@ -707,3 +787,11 @@ if __name__ == '__main__':
     # plot_correlation(orders2, conv_pic_size, pixel2um_coeff, 0.85, "Piston", show_psf=True)
     # plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
     # plot_correlation(orders1, conv_pic_size, pixel2um_coeff, 0.85, "Defocus", False, show_psf=True)
+
+    # Testing saving / reading
+    if test_write_read_psf:
+        ampl = -1.0; psf_kernel = get_psf_kernel(orders4, calibration_coeff, ampl)
+        file_path = save_psf("test", psf_kernel, NA, wavelength, calibration_coeff, ampl, orders4)
+        psf_stored_data = read_psf(file_path)
+        read_psf_kernel = np.asarray(psf_stored_data['PSF kernel'])
+        plt.figure(figsize=figsizes); plt.imshow(read_psf_kernel, cmap=plt.cm.viridis); plt.tight_layout()
