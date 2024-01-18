@@ -558,7 +558,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
     return convolved_img
 
 
-def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) -> np.ndarray:
+def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float, unified_kernel_size: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix with PSF mask.
 
@@ -570,14 +570,29 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float) ->
     calibration_coefficient : float
         Relation between pixels and distance (physical).
 
+    unified_kernel_size : bool
+        Flag for adjusting or not the kernel size to the provided absolute value of alpha. The default is False.
+
     Returns
     -------
     kernel : numpy.ndarray
         Matrix with PSF values.
     """
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    # Define the kernel size just imperically
-    max_size = int(round(20.0*(1.0/calibration_coefficient), 0)) + 1; size = max_size
+    # Define the kernel size just empirically, based on made experimental plots
+    if not unified_kernel_size:
+        if abs(alpha) < 1.0:
+            multiplier = 20.0
+        elif abs(alpha) < 1.5:
+            multiplier = 24.0
+        elif abs(alpha) <= 2.0:
+            multiplier = 26.0
+        else:
+            multiplier = 30.0
+    else:
+        multiplier = 26.0
+    max_size = int(round(multiplier*(1.0/calibration_coefficient), 0)) + 1  # Note that with the amplitude growth, it requires to grow as well
+    size = max_size  # Just use the maximum estimation
     # Auto definition of the required PSF size is failed for the different PSFs forms (e.g., vertical coma with different amplitudes)
     # Make kernel with odd sizes for precisely centering the kernel
     if size % 2 == 0:
