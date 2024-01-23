@@ -9,6 +9,7 @@ Calculation and plotting of associated with polynomials PSFs.
 # %% Global imports
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 from pathlib import Path
 from scipy.special import jv
 import warnings
@@ -749,10 +750,49 @@ def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: f
         warnings.warn(_warn_message)
 
 
+# %% Object generation
+def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.ndarray:
+    if radius < 1.0:
+        radius = 1.0
+    max_size = 4*int(round(radius, 0)) + 1
+    i_shift, j_shift = center_shift
+    i_img_center = max_size // 2; j_img_center = max_size // 2
+    if i_shift <= 1.0 and j_shift <= 1.0:
+        i_center = i_img_center + i_shift; j_center = j_img_center + j_shift
+    else:
+        i_center = i_img_center; j_center = j_img_center
+    # Define image type
+    if isinstance(max_intensity, int):
+        if max_intensity <= 255:
+            img_type = 'uint8'
+        else:
+            img_type = 'uint16'
+    elif isinstance(max_intensity, float):
+        if max_intensity > 1.0:
+            max_intensity = 1.0
+            img_type = 'float'
+    else:
+        raise ValueError("Specify Max Intencity for image type according to uint8, uint16, float")
+    img = np.zeros(dtype=img_type, shape=(max_size, max_size))
+    for i in range(max_size):
+        for j in range(max_size):
+            distance = np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2))
+            if distance < 0.5*radius:
+                pixel_value = max_intensity
+            elif distance < radius:
+                pixel_value = float(max_intensity)*np.exp(pow(0.5, 1.25) - np.power(distance/radius, 1.25))
+            else:
+                pixel_value = float(max_intensity)*np.exp(pow(0.5, 2.5) - np.power(distance/radius, 2.5))
+            if 'uint' in img_type:
+                pixel_value = int(round(pixel_value, 0))
+            img[i, j] = pixel_value
+    return img
+
+
 # %% Tests
 if __name__ == '__main__':
     orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = False; plot_photo_convolution = False
-    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = True
+    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = False; test_disk_show = True
 
     # Plotting
     plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 24; calibration_coeff = pixel2um_coeff/1.75; alpha = 2.0
@@ -810,3 +850,11 @@ if __name__ == '__main__':
         psf_stored_data = read_psf(file_path)
         read_psf_kernel = np.asarray(psf_stored_data['PSF kernel'])
         plt.figure(figsize=figsizes); plt.imshow(read_psf_kernel, cmap=plt.cm.viridis); plt.tight_layout()
+
+    # Testing disk representation
+    if test_disk_show:
+        i_shift = 0.2; j_shift = -0.0; disk_r = 2.0
+        disk1 = make_sample(radius=disk_r, center_shift=(i_shift, j_shift))
+        plt.figure(figsize=figsizes); axes_img = plt.imshow(disk1, cmap=plt.cm.viridis); plt.tight_layout()
+        m_center, n_center = disk1.shape; m_center = m_center // 2 + i_shift; n_center = n_center // 2 + j_shift
+        axes_img.axes.add_patch(Circle((n_center, m_center), disk_r, edgecolor='red', facecolor='none'))
