@@ -21,6 +21,7 @@ import os
 from skimage import io
 from skimage.util import img_as_ubyte
 import json
+from math import e
 
 
 # %% Local (package-scoped) imports
@@ -789,6 +790,50 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     return img
 
 
+# %% Radial profile testing
+def profile1(x, sigma: float = 1.0):
+    return np.exp(-np.power(x, 2)/np.power(sigma, 2))
+
+
+def profile2(x):
+    y = np.zeros(shape=x.shape)
+    for i, el in enumerate(x):
+        if el < 0.5:
+            y[i] = 1.0
+        elif el < 1.0:
+            y[i] = np.exp(pow(0.5, 1.25) - np.power(el, 1.25))
+        else:
+            y[i] = np.exp(pow(0.5, 2.5) - np.power(el, 2.5))
+    return y
+
+
+def profile3(x, gamma: float = 1.0):
+    gamma2 = gamma*gamma
+    return gamma2/(np.power(x, 2) + gamma2)
+
+
+def profile4(x):
+    return np.exp(x)/np.power(1.0 + np.exp(x), 2)
+
+
+def profile5(x, b: float = 1.0):
+    y = np.zeros(shape=x.shape)
+    for i, el in enumerate(x):
+        if el < b:
+            el2 = el*el; b2 = b*b
+            y[i] = np.exp(b2/(el2 - b2))
+    return y*e
+
+
+def profile6(x, b: float = 1.0):
+    y = np.zeros(shape=x.shape)
+    for i, el in enumerate(x):
+        if el < b:
+            el3 = el*el*el; b3 = b*b*b
+            y[i] = np.exp(b3/(el3 - b3))
+    return y*e
+
+
 # %% Tests
 if __name__ == '__main__':
     orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = False; plot_photo_convolution = False
@@ -858,3 +903,12 @@ if __name__ == '__main__':
         plt.figure(figsize=figsizes); axes_img = plt.imshow(disk1, cmap=plt.cm.viridis); plt.tight_layout()
         m_center, n_center = disk1.shape; m_center = m_center // 2 + i_shift; n_center = n_center // 2 + j_shift
         axes_img.axes.add_patch(Circle((n_center, m_center), disk_r, edgecolor='red', facecolor='none'))
+        r = np.arange(start=0.0, stop=1.3, step=0.02)
+        profile1_f = profile1(r, 1.0)  # normal gaussian
+        profile2_f = profile2(r)  # discontinuous function
+        profile3_f = profile3(r, 1.0)  # lorentzian
+        profile4_f = profile4(r); max_4 = np.max(profile4_f); profile4_f /= max_4  # derivative of logistic function
+        profile5_f = profile5(r, 1.4)  # bump function
+        profile6_f = profile6(r, 1.4)  # modified bump function
+        plt.figure("Profile 1"); plt.plot(r, profile1_f, r, profile2_f, r, profile3_f, r, profile4_f, r, profile5_f, r, profile6_f)
+        plt.legend(['gaussian', 'discontinuous', 'lorentzian', 'd(logist.f)/dr', 'bump', 'mod. bump'])
