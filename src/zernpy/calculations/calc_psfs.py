@@ -758,7 +758,7 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     max_size = 4*int(round(radius, 0)) + 1
     i_shift, j_shift = center_shift
     i_img_center = max_size // 2; j_img_center = max_size // 2
-    if i_shift <= 1.0 and j_shift <= 1.0:
+    if abs(i_shift) <= 1.0 and abs(j_shift) <= 1.0:
         i_center = i_img_center + i_shift; j_center = j_img_center + j_shift
     else:
         i_center = i_img_center; j_center = j_img_center
@@ -775,35 +775,94 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     else:
         raise ValueError("Specify Max Intencity for image type according to uint8, uint16, float")
     img = np.zeros(dtype=img_type, shape=(max_size, max_size))
+    points = []
     for i in range(max_size):
         for j in range(max_size):
-            distance = np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2))
-            if distance < 0.5*radius:
-                pixel_value = max_intensity
-            elif distance < radius:
-                pixel_value = float(max_intensity)*np.exp(pow(0.5, 1.25) - np.power(distance/radius, 1.25))
-            else:
-                pixel_value = float(max_intensity)*np.exp(pow(0.5, 2.5) - np.power(distance/radius, 2.5))
-            if 'uint' in img_type:
-                pixel_value = int(round(pixel_value, 0))
-            img[i, j] = pixel_value
+            distance = np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2)); pixel_value = 0.0
+
+            # Discrete function
+            # if distance < 0.5*radius:
+            #     pixel_value = max_intensity
+            # elif distance < radius:
+            #     pixel_value = float(max_intensity)*np.exp(pow(0.5, 1.25) - np.power(distance/radius, 1.25))
+            # else:
+            #     pixel_value = float(max_intensity)*np.exp(pow(0.5, 2.5) - np.power(distance/radius, 2.5))
+
+            # # Continiuous bump function - too scaled result
+            # r_exceed = 0.499; power = 4
+            # if distance < radius*(1.0 + r_exceed):
+            #     x = distance/(radius + r_exceed)
+            #     x_pow = pow(x, power); b_pow = pow(1.0 + r_exceed, power)
+            #     pixel_value = e*np.exp(b_pow/(x_pow - b_pow))
+
+            # Discontinuous
+            # x = distance / radius; ots = np.exp(-1.0/np.power(6.0, 2))
+            # if distance < radius:
+            #     pixel_value = np.exp(-np.power(x, 2)/np.power(6.0, 2))
+            # else:
+            #     x_shift = pow(x, 4); x_c = pow(0.95, 4)
+            #     pixel_value = ots*np.exp(x_c - x_shift)
+
+            # Some calculations
+
+            # Exclude all outer of half radius pixels
+            if distance <= 0.5*radius:
+                pixel_value = 1.0
+            elif distance <= 0.75*radius:
+                pixel_value = 0.75
+                print(distance)
+            elif distance <= radius:
+                pixel_value = 0.5
+            elif distance <= 1.5*radius:
+                pixel_value = 0.25
+
+            if 0.5*radius < distance <= 2.0*radius:
+                i_m = i - 0.5; j_m = j - 0.5
+                r_diff1 = np.power(radius, 2) - np.power(i_m - i_center, 2)
+                r_diff2 = np.power(radius, 2) - np.power(j_m - j_center, 2)
+                if r_diff1 > 0.0:
+                    x1 = i_center - np.sqrt(r_diff1); x2 = i_center + np.sqrt(r_diff1)
+                    if x1 > 0.0:
+                        points.append((x1, i_m))
+                    if x2 > 0.0:
+                        points.append((x2, i_m))
+                if r_diff2 > 0.0:
+                    y1 = j_center - np.sqrt(r_diff2); y2 = j_center + np.sqrt(r_diff2)
+                    if y1 > 0.0:
+                        points.append((j_m, y1))
+                    if y2 > 0.0:
+                        points.append((j_m, y2))
+            # Pixel value scaling
+            pixel_value *= float(max_intensity)
+            # Pixel value conversion to the image type
+            if pixel_value > 0.0:
+                if 'uint' in img_type:
+                    pixel_value = int(round(pixel_value, 0))
+                img[i, j] = pixel_value
+    points = set(points)
+    print(len(points), points)
     return img
 
 
-# %% Radial profile testing
+# %% Radial profile testing for the object generation
 def profile1(x, sigma: float = 1.0):
     return np.exp(-np.power(x, 2)/np.power(sigma, 2))
 
 
 def profile2(x):
-    y = np.zeros(shape=x.shape)
+    y = np.zeros(shape=x.shape); ots = np.exp(-np.power(1.0, 2)/np.power(3*1.0, 2))
     for i, el in enumerate(x):
-        if el < 0.5:
-            y[i] = 1.0
-        elif el < 1.0:
-            y[i] = np.exp(pow(0.5, 1.25) - np.power(el, 1.25))
+        # if el < 0.5:
+        #     y[i] = 1.0
+        # elif el < 1.0:
+        #     y[i] = np.exp(pow(0.5, 1.25) - np.power(el, 1.25))
+        # else:
+        #     y[i] = np.exp(pow(0.5, 2.5) - np.power(el, 2.5))
+        if el <= 1.0:
+            y[i] = np.exp(-np.power(el, 2)/np.power(3*1.0, 2))
         else:
-            y[i] = np.exp(pow(0.5, 2.5) - np.power(el, 2.5))
+            xc = 1.0; el = pow(el, 8)
+            y[i] = ots*np.exp(xc-el)
     return y
 
 
@@ -832,6 +891,16 @@ def profile6(x, b: float = 1.0):
             el3 = el*el*el; b3 = b*b*b
             y[i] = np.exp(b3/(el3 - b3))
     return y*e
+
+
+# %% Testing the bump function difference in the radial profiles
+def bump_f(x: np.ndarray, b: float = 1.0, power: int = 2) -> np.ndarray:
+    y = np.zeros(shape=x.shape)
+    for i, el in enumerate(x):
+        if el < b:
+            el_pow = pow(el, power); b_pow = pow(b, power)
+            y[i] = e*np.exp(b_pow/(el_pow - b_pow))
+    return y
 
 
 # %% Tests
@@ -898,7 +967,7 @@ if __name__ == '__main__':
 
     # Testing disk representation
     if test_disk_show:
-        i_shift = 0.2; j_shift = -0.0; disk_r = 2.0
+        i_shift = 0.0; j_shift = 0.0; disk_r = 1.85
         disk1 = make_sample(radius=disk_r, center_shift=(i_shift, j_shift))
         plt.figure(figsize=figsizes); axes_img = plt.imshow(disk1, cmap=plt.cm.viridis); plt.tight_layout()
         m_center, n_center = disk1.shape; m_center = m_center // 2 + i_shift; n_center = n_center // 2 + j_shift
@@ -910,5 +979,12 @@ if __name__ == '__main__':
         profile4_f = profile4(r); max_4 = np.max(profile4_f); profile4_f /= max_4  # derivative of logistic function
         profile5_f = profile5(r, 1.4)  # bump function
         profile6_f = profile6(r, 1.4)  # modified bump function
-        plt.figure("Profile 1"); plt.plot(r, profile1_f, r, profile2_f, r, profile3_f, r, profile4_f, r, profile5_f, r, profile6_f)
+        plt.figure("Profiles Comparison"); plt.plot(r, profile1_f, r, profile2_f, r, profile3_f, r, profile4_f, r, profile5_f, r, profile6_f)
         plt.legend(['gaussian', 'discontinuous', 'lorentzian', 'd(logist.f)/dr', 'bump', 'mod. bump'])
+        # Comparison of bump functions depending on the power of arguments
+        size = 1.499; step_r = 0.01; r1 = np.arange(start=0.0, stop=size+step_r, step=step_r)
+        bump2 = bump_f(r1, size, 2); bump4 = bump_f(r1, size, 4); bump3 = bump_f(r1, size, 3);
+        bump8 = bump_f(r1, size, 8); bump16 = bump_f(r1, size, 16);
+        bump64 = bump_f(r1, size, 64); bump32 = bump_f(r1, size, 32)
+        plt.figure("Bump() Comparison"); plt.plot(r1, bump2, r1, bump3, r1, bump4, r1, bump8, r1, bump16)
+        plt.legend(['^2', '^3', '^4', '^8', '^16']); plt.axvline(x=0.5);  plt.axvline(x=1.0)
