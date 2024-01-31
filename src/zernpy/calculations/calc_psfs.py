@@ -756,7 +756,7 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     if radius < 1.0:
         radius = 1.0
     max_size = 4*int(round(radius, 0)) + 1
-    i_shift, j_shift = center_shift
+    i_shift, j_shift = center_shift; net_shift = np.sqrt(i_shift*i_shift + j_shift*j_shift)
     i_img_center = max_size // 2; j_img_center = max_size // 2
     if abs(i_shift) <= 1.0 and abs(j_shift) <= 1.0:
         i_center = i_img_center + i_shift; j_center = j_img_center + j_shift
@@ -775,10 +775,12 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     else:
         raise ValueError("Specify Max Intencity for image type according to uint8, uint16, float")
     img = np.zeros(dtype=img_type, shape=(max_size, max_size))
-    points = []
+    # Below - difficult to calculate the precise intersection of the circle and pixels
+    # points = []
     for i in range(max_size):
         for j in range(max_size):
-            distance = np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2)); pixel_value = 0.0
+            distance = round(np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2)), 6)
+            pixel_value = 0.0  # meaning the intensity in the pixel
 
             # Discrete function
             # if distance < 0.5*radius:
@@ -803,44 +805,90 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
             #     x_shift = pow(x, 4); x_c = pow(0.95, 4)
             #     pixel_value = ots*np.exp(x_c - x_shift)
 
-            # Some calculations
+            # The center of bead lays always within single pixel
+            oversize = round(radius + 1 + net_shift, 6); bump_f_power = 16
+            if distance <= round(0.25*radius, 6):
+                pixel_value = 1.0  # entire pixel lays inside the circle
+            elif distance <= oversize - 0.5:
+                x = pow(distance, bump_f_power); b = pow(oversize, bump_f_power)
+                pixel_value = e*np.exp(b/(x - b))
 
-            # Exclude all outer of half radius pixels
-            if distance <= 0.5*radius:
-                pixel_value = 1.0
-            elif distance <= 0.75*radius:
-                pixel_value = 0.75
-                print(distance)
-            elif distance <= radius:
-                pixel_value = 0.5
-            elif distance <= 1.5*radius:
-                pixel_value = 0.25
+            # !!! The scheme below - overcomplicated and requires better definition of intersections of pixels and circle curvature
+            # # Rough estimate of the potentially outside pixels - they should be checked for intersection with the circle
+            # elif h_rad <= distance <= 1.5*radius:
+            #     stop_checking = False  # flag for quitting this calculations
+            #     # First, sort out the pixels that lay completely within the circle:
+            #     if i < i_center:
+            #         i_corner = i - 0.5
+            #     else:
+            #         i_corner = i + 0.5
+            #     if j < j_center:
+            #         j_corner = j - 0.5
+            #     else:
+            #         j_corner = j + 0.5
+            #     # Below - distance to the most distant point of the pixel
+            #     distance_corner = round(np.sqrt(np.power(i_corner - i_center, 2) + np.power(j_corner - j_center, 2)), 6)
+            #     if distance_corner <= radius:
+            #         pixel_value = 1.0; stop_checking = True
 
-            if 0.5*radius < distance <= 2.0*radius:
-                i_m = i - 0.5; j_m = j - 0.5
-                r_diff1 = np.power(radius, 2) - np.power(i_m - i_center, 2)
-                r_diff2 = np.power(radius, 2) - np.power(j_m - j_center, 2)
-                if r_diff1 > 0.0:
-                    x1 = i_center - np.sqrt(r_diff1); x2 = i_center + np.sqrt(r_diff1)
-                    if x1 > 0.0:
-                        points.append((x1, i_m))
-                    if x2 > 0.0:
-                        points.append((x2, i_m))
-                if r_diff2 > 0.0:
-                    y1 = j_center - np.sqrt(r_diff2); y2 = j_center + np.sqrt(r_diff2)
-                    if y1 > 0.0:
-                        points.append((j_m, y1))
-                    if y2 > 0.0:
-                        points.append((j_m, y2))
-            # Pixel value scaling
+                # # So, the pixel's borders can potentially are intersected by the circle
+                # if not stop_checking:
+                #     i_m = i - 0.5; j_m = j - 0.5; i_p = i + 0.5; j_p = j + 0.5; r2 = radius*radius
+                #     r_diff1 = round(r2 - np.power(i_m - i_center, 2), 6); r_diff2 = round(r2 - np.power(j_m - j_center, 2), 6)
+                #     r_diff3 = round(r2 - np.power(i_p - i_center, 2), 6); r_diff4 = round(r2 - np.power(j_p - j_center, 2), 6)
+                #     found_points = 0; this_pixel_points = []
+                #     # calculation of the j index
+                #     if r_diff1 > 0.0:
+                #         j1 = round(j_center - np.sqrt(r_diff1), 6); j2 = round(j_center + np.sqrt(r_diff1), 6)
+                #         if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
+                #             point = (i_m, j1); points.append(point); this_pixel_points.append(point); found_points += 1
+                #         if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
+                #             point = (i_m, j2); points.append(point); this_pixel_points.append(point); found_points += 1
+                #     if r_diff3 > 0.0:
+                #         j1 = round(j_center - np.sqrt(r_diff3), 6); j2 = round(j_center + np.sqrt(r_diff3), 6)
+                #         if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
+                #             point = (i_p, j1); points.append(point); this_pixel_points.append(point); found_points += 1
+                #         if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
+                #             point = (i_p, j2); points.append(point); this_pixel_points.append(point); found_points += 1
+                #     # calculation of the i index
+                #     if r_diff2 > 0.0:
+                #         i1 = round(i_center - np.sqrt(r_diff2), 6); i2 = round(i_center + np.sqrt(r_diff2), 6)
+                #         if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
+                #             point = (i1, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
+                #         if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
+                #             point = (i2, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
+                #     if r_diff4 > 0.0:
+                #         i1 = round(i_center - np.sqrt(r_diff4), 6); i2 = round(i_center + np.sqrt(r_diff4), 6)
+                #         if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
+                #             point = (i1, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
+                #         if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
+                #             point = (i2, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
+
+                #     # Calculated intersected square
+                #     if found_points == 2:
+                #         print(f"Found intersections for the pixel [{i, j}]:", this_pixel_points)
+                #         x1, y1 = this_pixel_points[0]; x2, y2 = this_pixel_points[1]; S = 0.0
+                #         # Define intersection type - too complex (triangle, trapezoid, etc.)
+                #         # A = (i_m, j_m); B = (i_m, j_p); C = (i_p, j_m); D = (i_p, j_p)
+                #         x_m = 0.5*(x1 + x2); y_m = 0.5*(y1 + y2)
+                #         # print("middle point:", x_m, y_m)
+                #         # distance_m = round(np.sqrt(np.power(x_m - i_center, 2) + np.power(y_m - j_center, 2)), 6)
+                #         # if distance_m > distance:
+                #         #     S = 1.0 - 0.5*(distance_m - distance)
+                #         # else:
+                #         #     S = 1.0 + 0.5*(distance_m - distance)
+                #         # pixel_value = S
+                #     # print(f"Found points for the single pixel [{i, j}]:", found_points)
+
+            # Pixel value scaling according the the provided image type
             pixel_value *= float(max_intensity)
             # Pixel value conversion to the image type
             if pixel_value > 0.0:
                 if 'uint' in img_type:
                     pixel_value = int(round(pixel_value, 0))
                 img[i, j] = pixel_value
-    points = set(points)
-    print(len(points), points)
+    # points = set(points)  # excluding repeated found in the loop coordinates
+    # print("found # of points:", len(points), "\ncoordinates:", points)
     return img
 
 
@@ -967,7 +1015,7 @@ if __name__ == '__main__':
 
     # Testing disk representation
     if test_disk_show:
-        i_shift = 0.0; j_shift = 0.0; disk_r = 1.85
+        i_shift = 0.0; j_shift = 0.3; disk_r = 10
         disk1 = make_sample(radius=disk_r, center_shift=(i_shift, j_shift))
         plt.figure(figsize=figsizes); axes_img = plt.imshow(disk1, cmap=plt.cm.viridis); plt.tight_layout()
         m_center, n_center = disk1.shape; m_center = m_center // 2 + i_shift; n_center = n_center // 2 + j_shift
@@ -979,12 +1027,11 @@ if __name__ == '__main__':
         profile4_f = profile4(r); max_4 = np.max(profile4_f); profile4_f /= max_4  # derivative of logistic function
         profile5_f = profile5(r, 1.4)  # bump function
         profile6_f = profile6(r, 1.4)  # modified bump function
-        plt.figure("Profiles Comparison"); plt.plot(r, profile1_f, r, profile2_f, r, profile3_f, r, profile4_f, r, profile5_f, r, profile6_f)
-        plt.legend(['gaussian', 'discontinuous', 'lorentzian', 'd(logist.f)/dr', 'bump', 'mod. bump'])
+        # plt.figure("Profiles Comparison"); plt.plot(r, profile1_f, r, profile2_f, r, profile3_f, r, profile4_f, r, profile5_f, r, profile6_f)
+        # plt.legend(['gaussian', 'discontinuous', 'lorentzian', 'd(logist.f)/dr', 'bump', 'mod. bump'])
         # Comparison of bump functions depending on the power of arguments
-        size = 1.499; step_r = 0.01; r1 = np.arange(start=0.0, stop=size+step_r, step=step_r)
-        bump2 = bump_f(r1, size, 2); bump4 = bump_f(r1, size, 4); bump3 = bump_f(r1, size, 3);
-        bump8 = bump_f(r1, size, 8); bump16 = bump_f(r1, size, 16);
-        bump64 = bump_f(r1, size, 64); bump32 = bump_f(r1, size, 32)
+        size = 1.5; step_r = 0.01; r1 = np.arange(start=0.0, stop=size+step_r, step=step_r)
+        bump2 = bump_f(r1, size, 2); bump4 = bump_f(r1, size, 4); bump3 = bump_f(r1, size, 3); bump64 = bump_f(r1, size, 64)
+        bump8 = bump_f(r1, size, 8); bump16 = bump_f(r1, size, 16); bump32 = bump_f(r1, size, 32)
         plt.figure("Bump() Comparison"); plt.plot(r1, bump2, r1, bump3, r1, bump4, r1, bump8, r1, bump16)
-        plt.legend(['^2', '^3', '^4', '^8', '^16']); plt.axvline(x=0.5);  plt.axvline(x=1.0)
+        plt.legend(['^2', '^3', '^4', '^8', '^16']); plt.axvline(x=0.5); plt.axvline(x=1.0)
