@@ -36,7 +36,7 @@ n_phi_points = 300; n_p_points = 320
 # Physical parameters
 wavelength = 0.55  # in micrometers
 k = 2.0*np.pi/wavelength  # angular frequency
-NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length)
+NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
 # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
 pixel_size = 0.14  # in micrometers, physical length in pixels (um / pixels)
 pixel2um_coeff = k*NA*pixel_size  # coefficient used for relate pixels to physical units
@@ -103,7 +103,7 @@ def radial_integral(zernike_pol: ZernPol, r: float, theta: float, phi: float, al
 
     """
     # Integration on the pupil angle. Vectorized form of the trapezoidal rule
-    h_p = 1.0/n_p_points; p = np.arange(start=h_p, stop=1.0 - h_p, step=h_p)
+    h_p = 1.0/n_p_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
     fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r); fb = diffraction_integral_r(zernike_pol, alpha, phi, 1.0, theta, r)
     ang_int = np.sum(diffraction_integral_r(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
     return h_p*ang_int
@@ -205,7 +205,7 @@ def angular_integral(zernike_pol: ZernPol, r: float, theta: float, p: float, alp
 
     """
     # Integration on the pupil angle. Vectorized form of the trapezoidal rule
-    h_phi = pi/n_phi_points; phi = np.arange(start=h_phi, stop=2.0*pi - h_phi, step=h_phi)
+    h_phi = pi/n_phi_points; phi = np.arange(start=h_phi, stop=2.0*pi, step=h_phi)
     fa = diffraction_integral_ang(zernike_pol, alpha, 0.0, p, theta, r); fb = diffraction_integral_ang(zernike_pol, alpha, 2.0*pi, p, theta, r)
     ang_int = np.sum(diffraction_integral_ang(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
     return h_phi*ang_int
@@ -246,6 +246,37 @@ def get_psf_point_ang(zernike_pol, r: float, theta: float, alpha: float = 1.0) -
     yA = angular_integral(zernike_pol, r, theta, 0.0, alpha); yB = angular_integral(zernike_pol, r, theta, 1.0, alpha)
     integral_sum = (h_p/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum)
     return np.power(np.abs(integral_sum), 2)/(4.0*pi*pi)
+
+
+# %% Attempt to speed up calculations by using provided in the Born & Wolf's handbook equation
+def diffraction_int_approx_sum(zernike_pol: ZernPol, s: int, alpha: float, theta, r):
+    m, n = define_orders(zernike_pol)
+    if s == 0:
+        c = 2.0
+    else:
+        c = 4.0
+    coeffiicent = c*pow(1j, (m-1)*s)*np.cos(m*s*theta)
+    h_p = 1.0/n_p_points; p_arr = np.arange(start=h_p, stop=1.0, step=h_p)
+    eps_zero = 1E-11  # substituion of the exact 0.0 value
+    if r <= 1E-12:
+        r = eps_zero
+    if alpha <= 1E-12:
+        alpha = 1E-11
+    fa = jv(s, alpha*zernike_pol.radial(eps_zero))*jv(m*s, eps_zero*r)*eps_zero  # f(0.0)
+    fb = jv(s, alpha*zernike_pol.radial(1.0))*jv(m*s, r); fAB = 0.5*(fa + fb)
+    integral_sum = h_p*np.sum(jv(s, alpha*zernike_pol.radial(p_arr))*jv(m*s, r*p_arr)*p_arr)
+    return coeffiicent*(fAB + integral_sum)
+
+
+def get_psf_point_bwap(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
+    m, n = define_orders(zernike_pol)
+    if not isinstance(zernike_pol, ZernPol):
+        zernike_pol = ZernPol(m=m, n=n)
+    s_max = 30; phases_sum = 0.0j
+    for s_i in range(s_max):
+        phases_sum += diffraction_int_approx_sum(zernike_pol, s_i, alpha, theta, r)
+    integral_normalization = 1.0/(pi*pi)
+    return integral_normalization*np.power(np.abs(phases_sum), 2)
 
 
 # %% Nijboer's Thesis Functions
@@ -613,7 +644,7 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float, un
     return kernel
 
 
-def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha: float, title: str = None):
+def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha: float, title: str = None, test_alt: bool = False):
     """
     Plot the intensity distribution on the image with WxH: (size, size) and using coefficient between pixel and physical distance.
 
@@ -643,7 +674,12 @@ def show_ideal_psf(zernike_pol, size: int, calibration_coefficient: float, alpha
             # The PSF also has the angular dependency, not only the radial one
             theta = np.arctan2((i - i_center), (j - j_center))
             theta += np.pi  # shift angles to the range [0, 2pi]
-            img[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            if not test_alt:
+                img[i, j] = get_psf_point_r(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
+            else:
+                # Implementation for testing and comparing with the general equation
+                theta -= np.pi/2.0
+                img[i, j] = get_psf_point_bwap(zernike_pol, pixel_dist*calibration_coefficient, theta, alpha)
     if img[0, 0] > np.max(img)/100:
         __warn_message = f"The provided size for plotting PSF ({size}) isn't sufficient for proper representation"
         warnings.warn(__warn_message)
@@ -752,16 +788,42 @@ def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: f
 
 
 # %% Object generation
-def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.ndarray:
+def distance_f(i_px, j_px, i_centre, j_centre):
+    """
+    Calculate the distances for pixels.
+
+    Parameters
+    ----------
+    i_px : int or numpy.ndarray
+        Pixel(-s) i of an image.
+    j_px : int or numpy.ndarray
+        Pixel(-s) i of an image.
+    i_centre : int
+        Center of an image.
+    j_centre : int
+        Center of an image.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Distances between provided pixels and the center of an image.
+
+    """
+    return np.round(np.sqrt(np.power(i_px - i_centre, 2) + np.power(j_px - j_centre, 2)), 6)
+
+
+def make_sample(radius: float, center_shift: tuple, max_intensity=255, test_plots: bool = False) -> np.ndarray:
     if radius < 1.0:
         radius = 1.0
     max_size = 4*int(round(radius, 0)) + 1
-    i_shift, j_shift = center_shift; net_shift = np.sqrt(i_shift*i_shift + j_shift*j_shift)
+    i_shift, j_shift = center_shift
+    net_shift = round(0.5*np.sqrt(i_shift*i_shift + j_shift*j_shift), 6)
     i_img_center = max_size // 2; j_img_center = max_size // 2
     if abs(i_shift) <= 1.0 and abs(j_shift) <= 1.0:
         i_center = i_img_center + i_shift; j_center = j_img_center + j_shift
     else:
         i_center = i_img_center; j_center = j_img_center
+    print("Center of a bead:", i_center, j_center)
     # Define image type
     if isinstance(max_intensity, int):
         if max_intensity <= 255:
@@ -777,9 +839,11 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
     img = np.zeros(dtype=img_type, shape=(max_size, max_size))
     # Below - difficult to calculate the precise intersection of the circle and pixels
     # points = []
+    q_rad = round(0.25*radius, 6)
+    size_subareas = 1001; normalization = 0.001*size_subareas*size_subareas
     for i in range(max_size):
         for j in range(max_size):
-            distance = round(np.sqrt(np.power(i - i_center, 2) + np.power(j - j_center, 2)), 6)
+            distance = distance_f(i, j, i_center, j_center)
             pixel_value = 0.0  # meaning the intensity in the pixel
 
             # Discrete function
@@ -806,79 +870,109 @@ def make_sample(radius: float, center_shift: tuple, max_intensity=255) -> np.nda
             #     pixel_value = ots*np.exp(x_c - x_shift)
 
             # The center of bead lays always within single pixel
-            oversize = round(radius + 1 + net_shift, 6); bump_f_power = 16
-            if distance <= round(0.25*radius, 6):
+            # oversize = round(radius + 1 + net_shift, 6); bump_f_power = 16
+            if distance < q_rad:
                 pixel_value = 1.0  # entire pixel lays inside the circle
-            elif distance <= oversize - 0.5:
-                x = pow(distance, bump_f_power); b = pow(oversize, bump_f_power)
-                pixel_value = e*np.exp(b/(x - b))
+            # elif distance <= oversize - 0.5:
+            #     x = pow(distance, bump_f_power); b = pow(oversize, bump_f_power)
+            #     pixel_value = e*np.exp(b/(x - b))
 
             # !!! The scheme below - overcomplicated and requires better definition of intersections of pixels and circle curvature
-            # # Rough estimate of the potentially outside pixels - they should be checked for intersection with the circle
-            # elif h_rad <= distance <= 1.5*radius:
-            #     stop_checking = False  # flag for quitting this calculations
-            #     # First, sort out the pixels that lay completely within the circle:
-            #     if i < i_center:
-            #         i_corner = i - 0.5
-            #     else:
-            #         i_corner = i + 0.5
-            #     if j < j_center:
-            #         j_corner = j - 0.5
-            #     else:
-            #         j_corner = j + 0.5
-            #     # Below - distance to the most distant point of the pixel
-            #     distance_corner = round(np.sqrt(np.power(i_corner - i_center, 2) + np.power(j_corner - j_center, 2)), 6)
-            #     if distance_corner <= radius:
-            #         pixel_value = 1.0; stop_checking = True
+            # Rough estimate of the potentially outside pixels - they should be checked for intersection with the circle
 
-                # # So, the pixel's borders can potentially are intersected by the circle
-                # if not stop_checking:
-                #     i_m = i - 0.5; j_m = j - 0.5; i_p = i + 0.5; j_p = j + 0.5; r2 = radius*radius
-                #     r_diff1 = round(r2 - np.power(i_m - i_center, 2), 6); r_diff2 = round(r2 - np.power(j_m - j_center, 2), 6)
-                #     r_diff3 = round(r2 - np.power(i_p - i_center, 2), 6); r_diff4 = round(r2 - np.power(j_p - j_center, 2), 6)
-                #     found_points = 0; this_pixel_points = []
-                #     # calculation of the j index
-                #     if r_diff1 > 0.0:
-                #         j1 = round(j_center - np.sqrt(r_diff1), 6); j2 = round(j_center + np.sqrt(r_diff1), 6)
-                #         if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
-                #             point = (i_m, j1); points.append(point); this_pixel_points.append(point); found_points += 1
-                #         if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
-                #             point = (i_m, j2); points.append(point); this_pixel_points.append(point); found_points += 1
-                #     if r_diff3 > 0.0:
-                #         j1 = round(j_center - np.sqrt(r_diff3), 6); j2 = round(j_center + np.sqrt(r_diff3), 6)
-                #         if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
-                #             point = (i_p, j1); points.append(point); this_pixel_points.append(point); found_points += 1
-                #         if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
-                #             point = (i_p, j2); points.append(point); this_pixel_points.append(point); found_points += 1
-                #     # calculation of the i index
-                #     if r_diff2 > 0.0:
-                #         i1 = round(i_center - np.sqrt(r_diff2), 6); i2 = round(i_center + np.sqrt(r_diff2), 6)
-                #         if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
-                #             point = (i1, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
-                #         if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
-                #             point = (i2, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
-                #     if r_diff4 > 0.0:
-                #         i1 = round(i_center - np.sqrt(r_diff4), 6); i2 = round(i_center + np.sqrt(r_diff4), 6)
-                #         if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
-                #             point = (i1, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
-                #         if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
-                #             point = (i2, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
+            elif q_rad <= distance <= radius + net_shift + 1.0:
+                stop_checking = False  # flag for quitting this calculations
+                # First, sort out the pixels that lay completely within the circle, but the distance is more than quarter of R:
+                if i < i_center:
+                    i_corner = i - 0.5
+                else:
+                    i_corner = i + 0.5
+                if j < j_center:
+                    j_corner = j - 0.5
+                else:
+                    j_corner = j + 0.5
+                # Below - distance to the most distant point of the pixel
+                distance_corner = distance_f(i_corner, j_corner, i_center, j_center)
+                if distance_corner <= radius:
+                    pixel_value = 1.0; stop_checking = True
 
-                #     # Calculated intersected square
-                #     if found_points == 2:
-                #         print(f"Found intersections for the pixel [{i, j}]:", this_pixel_points)
-                #         x1, y1 = this_pixel_points[0]; x2, y2 = this_pixel_points[1]; S = 0.0
-                #         # Define intersection type - too complex (triangle, trapezoid, etc.)
-                #         # A = (i_m, j_m); B = (i_m, j_p); C = (i_p, j_m); D = (i_p, j_p)
-                #         x_m = 0.5*(x1 + x2); y_m = 0.5*(y1 + y2)
-                #         # print("middle point:", x_m, y_m)
-                #         # distance_m = round(np.sqrt(np.power(x_m - i_center, 2) + np.power(y_m - j_center, 2)), 6)
-                #         # if distance_m > distance:
-                #         #     S = 1.0 - 0.5*(distance_m - distance)
-                #         # else:
-                #         #     S = 1.0 + 0.5*(distance_m - distance)
-                #         # pixel_value = S
-                #     # print(f"Found points for the single pixel [{i, j}]:", found_points)
+                # So, the pixel's borders can potentially are intersected by the circle, calculate the estimated intersection area
+                if not stop_checking:
+                    i_m = i - 0.5; j_m = j - 0.5; i_p = i + 0.5; j_p = j + 0.5
+                    # circle_arc_area = np.zeros(shape=(size_subareas, size_subareas))
+                    # h_x = (i_p - i_m)/size_subareas; h_y = (j_p - j_m)/size_subareas
+                    # x_row = np.round(np.arange(start=i_m, stop=i_p+h_x/2, step=h_x), 6)
+                    # y_col = np.round(np.arange(start=j_m, stop=j_p+h_y/2, step=h_y), 6)
+                    x_row = np.linspace(start=i_m, stop=i_p, num=size_subareas); y_col = np.linspace(start=j_m, stop=j_p, num=size_subareas)
+                    # print(np.min(x_row), np.max(x_row), np.min(y_col), np.max(y_col))
+                    coords = np.meshgrid(x_row, y_col); distances = distance_f(coords[0], coords[1], i_center, j_center)
+                    circle_arc_area1 = np.where(distances <= radius, 0.001, 0.0)
+                    # print(circle_arc_area1.shape)
+                    if np.max(circle_arc_area1) > 0.0 and radius <= 2.0 and test_plots:
+                        plt.figure(f"{i, j}"); plt.imshow(circle_arc_area1)
+                    # print(np.max(circle_arc_area1), np.min(circle_arc_area1))
+                    # for y in range(size_subareas):
+                    #     for x in range(size_subareas):
+                    #         i_c = i_m + y*((i_p - i_m)/size_subareas); j_c = j_m + x*((j_p - j_m)/size_subareas)
+                    #         distance_px = distance_f(i_c, j_c, i_center, j_center)
+                    #         if distance_px <= radius:
+                    #             circle_arc_area[y, x] = 1.0
+                    # S = round(np.sum(circle_arc_area)/np.sum(pixel_area), 6)
+                    S1 = round(np.sum(circle_arc_area1)/normalization, 6)
+                    if S1 > 1.0:
+                        print(np.min(x_row), np.max(x_row), np.min(y_col), np.max(y_col))
+                        print(circle_arc_area1.shape)
+                        print("Overflowed value", S1, "sum of pixels inside of the intersection:", np.sum(circle_arc_area1), "norm.:", normalization)
+                        if test_plots:
+                            plt.figure(f"[{i, j}]"); plt.imshow(circle_arc_area1)
+                        S1 = 1.0
+                    print(f"Found ratio for the pixel [{i, j}]:", S1); pixel_value = S1
+                    # print(f"Found ratio for the pixel [{i, j}]:", S, "diff for - vect. implementations:", round(abs(S-S1), 6))
+                    # r_diff1 = round(r2 - np.power(i_m - i_center, 2), 6); r_diff2 = round(r2 - np.power(j_m - j_center, 2), 6)
+                    # r_diff3 = round(r2 - np.power(i_p - i_center, 2), 6); r_diff4 = round(r2 - np.power(j_p - j_center, 2), 6)
+                    # found_points = 0; this_pixel_points = []
+                    # # calculation of the j index
+                    # if r_diff1 > 0.0:
+                    #     j1 = round(j_center - np.sqrt(r_diff1), 6); j2 = round(j_center + np.sqrt(r_diff1), 6)
+                    #     if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
+                    #         point = (i_m, j1); points.append(point); this_pixel_points.append(point); found_points += 1
+                    #     if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
+                    #         point = (i_m, j2); points.append(point); this_pixel_points.append(point); found_points += 1
+                    # if r_diff3 > 0.0:
+                    #     j1 = round(j_center - np.sqrt(r_diff3), 6); j2 = round(j_center + np.sqrt(r_diff3), 6)
+                    #     if j1 > 0.0 and j1 <= j_p and j1 >= j_m:
+                    #         point = (i_p, j1); points.append(point); this_pixel_points.append(point); found_points += 1
+                    #     if j2 > 0.0 and j2 <= j_p and j2 >= j_m:
+                    #         point = (i_p, j2); points.append(point); this_pixel_points.append(point); found_points += 1
+                    # # calculation of the i index
+                    # if r_diff2 > 0.0:
+                    #     i1 = round(i_center - np.sqrt(r_diff2), 6); i2 = round(i_center + np.sqrt(r_diff2), 6)
+                    #     if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
+                    #         point = (i1, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
+                    #     if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
+                    #         point = (i2, j_m); points.append(point); this_pixel_points.append(point); found_points += 1
+                    # if r_diff4 > 0.0:
+                    #     i1 = round(i_center - np.sqrt(r_diff4), 6); i2 = round(i_center + np.sqrt(r_diff4), 6)
+                    #     if i1 > 0.0 and i1 <= i_p and i1 >= i_m:
+                    #         point = (i1, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
+                    #     if i2 > 0.0 and i2 <= i_p and i2 >= i_m:
+                    #         point = (i2, j_p); points.append(point); this_pixel_points.append(point); found_points += 1
+
+                    # # Calculated intersected square
+                    # if found_points == 2:
+                    #     print(f"Found intersections for the pixel [{i, j}]:", this_pixel_points)
+                    #     x1, y1 = this_pixel_points[0]; x2, y2 = this_pixel_points[1]; S = 0.0
+                    #     # Define intersection type - too complex (triangle, trapezoid, etc.)
+                    #     # A = (i_m, j_m); B = (i_m, j_p); C = (i_p, j_m); D = (i_p, j_p)
+                    #     x_m = 0.5*(x1 + x2); y_m = 0.5*(y1 + y2)
+                    # print("middle point:", x_m, y_m)
+                    # distance_m = round(np.sqrt(np.power(x_m - i_center, 2) + np.power(y_m - j_center, 2)), 6)
+                    # if distance_m > distance:
+                    #     S = 1.0 - 0.5*(distance_m - distance)
+                    # else:
+                    #     S = 1.0 + 0.5*(distance_m - distance)
+                    # pixel_value = S
+                    # print(f"Found points for the single pixel [{i, j}]:", found_points)
 
             # Pixel value scaling according the the provided image type
             pixel_value *= float(max_intensity)
@@ -953,21 +1047,27 @@ def bump_f(x: np.ndarray, b: float = 1.0, power: int = 2) -> np.ndarray:
 
 # %% Tests
 if __name__ == '__main__':
-    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = False; plot_photo_convolution = False
-    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = False; test_disk_show = True
+    orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = True; plot_photo_convolution = False
+    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = False; test_disk_show = False
 
     # Plotting
-    plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 24; calibration_coeff = pixel2um_coeff/1.75; alpha = 2.0
+    plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 22; calibration_coeff = pixel2um_coeff; alpha = 2.0
     if plot_pure_psfs:
         t1 = time.time()
-        p_img = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston")
+        p_img = show_ideal_psf(orders2, detailed_plots_sizes-10, calibration_coeff, alpha, "Piston")
         print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Piston takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt")
-        print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Y Tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/3.0, alpha, "Defocus")
-        t1 = time.time()
-        aberr4 = show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "Vertical Trefoil")
-        print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Vertical Trefoil takes s:", round((time.time() - t1), 3))
+        # p_img2 = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston2", test_alt=True)
+        # print("Alternative calculation of Piston takes s:", round((time.time() - t1), 3)); t1 = time.time()
+        # ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt")
+        # print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Y Tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
+        # ytilt_img2 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt2", test_alt=True)
+        # print("Alternative calculation of Y tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
+        # # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/3.0, alpha, "Defocus")
+        # t1 = time.time()
+        # aberr4 = show_ideal_psf(orders4, detailed_plots_sizes+2, calibration_coeff, alpha, "Vertical Trefoil")
+        # print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Vertical Trefoil takes s:", round((time.time() - t1), 3))
+        # aberr4_2 = show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "Vertical Trefoil2", test_alt=True)
+        # print("Alternative calculation of Vertical Trefoil takes s:", round((time.time() - t1), 3)); t1 = time.time()
 
     # Compare positive and negative coefficients influence on the PSF
     # ytilt_img1 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "+ Y Tilt")
@@ -982,8 +1082,8 @@ if __name__ == '__main__':
     # show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, -alpha, f"{-alpha} Primary Spherical")
 
     # Testing the kernel calculation
-    # v_coma_m = get_psf_kernel((-1, 3), calibration_coeff, -1.0)
-    # plt.figure(figsize=figsizes); plt.imshow(v_coma_m, cmap=plt.cm.viridis); plt.tight_layout()
+    v_coma_m = get_psf_kernel((-1, 3), calibration_coeff, -1.0)
+    plt.figure(figsize=figsizes); plt.imshow(v_coma_m, cmap=plt.cm.viridis); plt.tight_layout()
     # v_coma_p = get_psf_kernel((-1, 3), calibration_coeff, 1.0)
     # plt.figure(figsize=figsizes); plt.imshow(v_coma_p, cmap=plt.cm.viridis); plt.tight_layout()
 
@@ -1015,8 +1115,8 @@ if __name__ == '__main__':
 
     # Testing disk representation
     if test_disk_show:
-        i_shift = 0.0; j_shift = 0.3; disk_r = 10
-        disk1 = make_sample(radius=disk_r, center_shift=(i_shift, j_shift))
+        i_shift = 0.23; j_shift = -0.591; disk_r = 6.0
+        disk1 = make_sample(radius=disk_r, center_shift=(i_shift, j_shift), test_plots=False)
         plt.figure(figsize=figsizes); axes_img = plt.imshow(disk1, cmap=plt.cm.viridis); plt.tight_layout()
         m_center, n_center = disk1.shape; m_center = m_center // 2 + i_shift; n_center = n_center // 2 + j_shift
         axes_img.axes.add_patch(Circle((n_center, m_center), disk_r, edgecolor='red', facecolor='none'))
@@ -1033,5 +1133,5 @@ if __name__ == '__main__':
         size = 1.5; step_r = 0.01; r1 = np.arange(start=0.0, stop=size+step_r, step=step_r)
         bump2 = bump_f(r1, size, 2); bump4 = bump_f(r1, size, 4); bump3 = bump_f(r1, size, 3); bump64 = bump_f(r1, size, 64)
         bump8 = bump_f(r1, size, 8); bump16 = bump_f(r1, size, 16); bump32 = bump_f(r1, size, 32)
-        plt.figure("Bump() Comparison"); plt.plot(r1, bump2, r1, bump3, r1, bump4, r1, bump8, r1, bump16)
-        plt.legend(['^2', '^3', '^4', '^8', '^16']); plt.axvline(x=0.5); plt.axvline(x=1.0)
+        # plt.figure("Bump() Comparison"); plt.plot(r1, bump2, r1, bump3, r1, bump4, r1, bump8, r1, bump16)
+        # plt.legend(['^2', '^3', '^4', '^8', '^16']); plt.axvline(x=0.5); plt.axvline(x=1.0)
