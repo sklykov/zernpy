@@ -212,10 +212,16 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         if m == 0 and n == 0:
             multiplier = 1.0
         else:
-            multiplier = 1.25*sqrt(n)
-        if alpha > 1.0:
-            multiplier *= sqrt(alpha)
-        size = int(round(multiplier/len2pixels, 0)) + 1  # Note that with the amplitude growth, it requires to grow as well
+            multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided order
+        if abs(alpha) >= 0.5:
+            multiplier *= sqrt(2.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        # Estimation below based on the provided calibration
+        if len2pixels < 0.5:
+            size = int(round(multiplier/len2pixels, 0)) + 1
+        elif len2pixels < 1.0:
+            size = int(round(2.0*multiplier/len2pixels, 0)) + 1
+        else:
+            size = int(round(multiplier*(4.0*len2pixels), 0)) + 1
     else:
         size = kernel_size
     # Auto definition of the required PSF size is complicated for the different PSFs forms (e.g., vertical coma with different amplitudes)
@@ -304,15 +310,13 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
 
 
 # %% Save and read the calculated PSF matricies
-def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_coefficient: float,
-             amplitude: float, zernike_pol, folder_path: str = None, overwrite: bool = True) -> str:
+def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_coefficient: float, amplitude: float,
+             zernike_pol, folder_path: str = None, overwrite: bool = True, additional_file_name: str = None) -> str:
     """
     Save the calculated PSF kernel along with the used for the calculation parameters.
 
     Parameters
     ----------
-    additional_file_name : str
-        Additional to the composed file name string, e.g. unique addition.
     psf_kernel : np.ndarray
         Calculated by using get_psf_kernel.
     NA : float
@@ -329,6 +333,8 @@ def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavel
         Absolute path to the folder where the file will be saved. The default is None.
     overwrite : bool, optional
         Flag for letting overwriting of the existing file. The default is True.
+    additional_file_name : str
+        Additional to the composed file name string, e.g. unique addition.
 
     Returns
     -------
@@ -348,7 +354,10 @@ def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavel
         if Path(folder_path).is_dir():
             saved_psfs_folder = Path(folder_path)
     # Save provided PSF kernel with the provided parameters
-    json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{amplitude}.json")
+    if additional_file_name is not None and len(additional_file_name) > 0:
+        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{amplitude}.json")
+    else:
+        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{amplitude}.json")
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
     data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
     data4serialization["Calibration (wavelength physical units/pixels)"] = calibration_coefficient
@@ -453,7 +462,7 @@ if __name__ == '__main__':
     # Flags for performing tests
     check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
     check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
-    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below
+    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below, TODO: restore calculations
     # PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
     check_warnings = False  # flag for checking the warning producing
     check_io = False  # check save / read kernels
