@@ -14,18 +14,24 @@ from pathlib import Path
 import warnings
 from math import sqrt, pi
 from zernpy import ZernPol
+import time
+from skimage.morphology import disk  # only for tests, won't be used as part as export functions
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calc_zernike_pol import define_orders
-    from calc_psfs_check import save_psf, read_psf
+    from calc_psfs_check import save_psf, read_psf, convolute_img_psf
 else:
     from .calc_zernike_pol import define_orders
-    from .calc_psfs_check import save_psf, read_psf
+    from .calc_psfs_check import save_psf, read_psf, convolute_img_psf
 
 
 # %% Module parameters
 __docformat__ = "numpydoc"
+um_char = "\u00B5"  # Unicode char code for micrometers
+lambda_char = "\u03BB"  # Unicode char code for lambda (wavelength)
+pi_char = "\u03C0"  # Unicode char code for pi
+# print(um_char, lambda_char, pi_char)  # check the codes for characters from above
 
 
 # %% Reference
@@ -159,9 +165,9 @@ def get_psf_point_r(zernike_pol: ZernPol, r: float, theta: float, alpha: float, 
 
 # %% PSF kernel calc.
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
-                   n_int_phi_points: int = 300, show_kernel: bool = True, fig_title: str = None, normalize_values: bool = False,
+                   n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
                    airy_pattern: bool = False, kernel_size: int = 0) -> np.ndarray:
-    """
+    f"""
     Calculate centralized matrix with the PSF mask values.
 
     Parameters
@@ -171,16 +177,16 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     len2pixels : float
         Relation between length in physical units (the same as the provided wavelength) and pixels.
     alpha : float
-        Zernike amplitude (expansion coefficient) in physical units used for the wavelength specification.
-        Note that the normalized Zernike polynomials are used.
+        Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., {um_char}).
+        Note that the normalized Zernike polynomials are used, so its coefficient is normalized to the specified wavelength.
     wavelength : float
-        Wavelenght of the light used for calculations (in imaging).
+        Wavelength ({lambda_char}) in physical units (e.g., {um_char}) of the light used for calculations (in imaging).
     NA : float
         Objective property.
     n_int_r_points : int, optional
         Number of points used for integration on the unit pupli radius from the range [0.0, 1.0]. The default is 320.
     n_int_phi_points : int, optional
-        Number of points used for integration on the unit pupli angle from the range [0.0, 2pi]. The default is 300.
+        Number of points used for integration on the unit pupli angle from the range [0.0, 2{pi_char}]. The default is 300.
     show_kernel : bool, optional
         Plot the calculated kernel interactively. The default is True.
     fig_title : str, optional
@@ -211,7 +217,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         if m == 0 and n == 0:
             multiplier = 1.0
         else:
-            multiplier = 1.5*sqrt(n)
+            multiplier = 1.25*sqrt(n)
         if alpha > 1.0:
             multiplier *= sqrt(alpha)
         size = int(round(multiplier/len2pixels, 0)) + 1  # Note that with the amplitude growth, it requires to grow as well
@@ -222,15 +228,23 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if size % 2 == 0:
         size += 1
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
-    print('Estimated kernel size in pixels:', size)
+    # Print note about calculation length
+    if size > 21:
+        if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
+            print(f"Note that the calculated kernel size: {size}x{size}. Estimated calculation time: {int(round(size*size*40/1000, 0))} sec.")
+        else:
+            print(f"Note that the calculated kernel size: {size}x{size}. Calculation may take from several dozends of seconds to minutes")
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist:
-        __warn_message = "Provided calibration coefficient [um/pixel] isn't sufficient enough in relation of Nyquist freq. of the optical resolution"
+        __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
+        __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
         warnings.warn(__warn_message)
     # Calculate the PSF kernel for usage in convolution operation
+    # mean_time_integration = 0.0; n = 0
     for i in range(size):
         for j in range(size):
+            t1 = time.perf_counter(); n += 1
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
             # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
             distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
@@ -242,6 +256,8 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                 kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
             else:
                 kernel[i, j] = airy_ref_pattern(distance)
+            # t2 = time.perf_counter(); mean_time_integration += round(1000.0*(t2-t1), 0)
+    # print("Mean integration time, ms:", round(mean_time_integration/n, 0))
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -262,7 +278,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
 
 
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel', 'save_psf', 'read_psf']
+__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf']
 
 # %% Tests
 if __name__ == '__main__':
@@ -279,8 +295,11 @@ if __name__ == '__main__':
     # Flags for performing tests
     check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
     check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
-    check_various_pols = True  # checking the shape of some Zernike polynomials for comparing with the link below
-    # https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
+    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below
+    # PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
+    check_warnings = False  # flag for checking the warning producing
+    check_io = False  # check save / read kernels
+    show_convolution_results = True  # check result of convolution of several kernel with the disk
 
     # Definition of some Zernike polynomials
     pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4); pol9 = (-4, 4)
@@ -295,8 +314,23 @@ if __name__ == '__main__':
         kern_sign_n = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=-0.5, wavelength=wavelength, NA=NA, normalize_values=False)
 
     if check_various_pols:
-        kern_def = get_psf_kernel(pol3, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-        kern_ast = get_psf_kernel(pol6, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-        kern_4foil = get_psf_kernel(pol9, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
+        kern_def = get_psf_kernel(pol3, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_ast = get_psf_kernel(pol6, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_4foil = get_psf_kernel(pol9, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+
+    if check_warnings:
+        kern_def = get_psf_kernel(pol3, len2pixels=1.0, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
+
+    if check_io:
+        amplitude = 0.5  # in micrometers
+        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=amplitude, wavelength=wavelength, NA=NA, normalize_values=True)
+        used_path = save_psf("test", psf_kernel=kern_spher, NA=NA, wavelength=wavelength,
+                             calibration_coefficient=pixel_size, amplitude=amplitude, polynomial_orders=pol8)
+        kern_spher_read = read_psf(used_path)['PSF Kernel']  # read the saved values
+        diff = kern_spher - kern_spher_read  # for checking that saved / loaded kernels are consistent
+        plt.figure("Loaded Kernel"); plt.imshow(kern_spher_read, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
+
+    if show_convolution_results:
+        pass

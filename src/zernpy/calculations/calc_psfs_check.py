@@ -519,15 +519,15 @@ def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavel
         saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
         if not saved_psfs_folder.is_dir():
             saved_psfs_folder.mkdir()
-        print("Folder for saving calculated PSFs:", saved_psfs_folder)
+        print("Auto assigned folder for saving calculated PSF kernel:", saved_psfs_folder)
     else:
         if Path(folder_path).is_dir():
             saved_psfs_folder = Path(folder_path)
     # Save provided PSF kernel with the provided parameters
     json_file_path = saved_psfs_folder.joinpath(f"psf_{polynomial_orders}_{additional_file_name}_{amplitude}.json")
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
-    data4serialization['PSF kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA
-    data4serialization['Wavelength'] = wavelength; data4serialization['Calibration (um/pixels)'] = calibration_coefficient
+    data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
+    data4serialization["Calibration (wavelength physical units/pixels)"] = calibration_coefficient
     if json_file_path.exists() and overwrite:
         _warn_message = "The file already exists, the content will be overwritten!"
         warnings.warn(_warn_message)
