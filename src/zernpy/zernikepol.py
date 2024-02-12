@@ -4,7 +4,7 @@ Main script with the class definition for accessing Zernike polynomial initializ
 
 Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
-@author: Sergei Klykov, @year: 2023 \n
+@author: Sergei Klykov, @year: 2024 \n
 @licence: MIT \n
 
 """
@@ -29,6 +29,7 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
                                   warn_mess_slow_calc)
+    # from calculations.calc_psfs import get_psf_kernel  # TODO: move all functions connected with PSF to the separate class def.
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
                                                 triangular_derivative, radial_derivative,
@@ -39,11 +40,12 @@ else:
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from .props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
                                    warn_mess_slow_calc)
+    # from .calculations.calc_psfs import get_psf_kernel
 
 # %% Module parameters
 __docformat__ = "numpydoc"
-polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the return type
-zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as input type
+polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the return type from the method
+zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as the input type
 
 
 # %% Class def.
@@ -53,8 +55,9 @@ class ZernPol:
     # Pre-initialized class variables
     __initialized: bool = False  # will be set to true after successful construction
     __n: int = 0; __m: int = 0; __osa_index: int = 0; __noll_index: int = 0; __fringe_index: int = 0
-    __show_slow_calc_warn: bool = False
+    __show_slow_calc_warn: bool = False  # internal flag for showing the warning about slow performant calculations
 
+    # %% Initialization and getters for the common class properties
     def __init__(self, **kwargs):
         """
         Initialize of the class for Zernike polynomial definition as the object.
@@ -353,7 +356,7 @@ class ZernPol:
         else:
             raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
 
-    # %% Calculations
+    # %% Polynomial values calculation in various forms
     def polynomial_value(self, r, theta, use_exact_eq: bool = False):
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
@@ -633,7 +636,7 @@ class ZernPol:
         """
         return normalization_factor(self)
 
-    # %% Static methods
+    # %% Static methods: indicies transformations
     @staticmethod
     def get_osa_index(m: int, n: int) -> int:
         """
@@ -870,6 +873,7 @@ class ZernPol:
         else:
             raise ValueError(f"Provided {fringe_index} isn't integer or less than 1")
 
+    # %% Static methods: generation parameters, sum of polynomials and plotting
     @staticmethod
     def _sum_zernikes_meshgrid(coefficients: list, polynomials: list, r: np.ndarray, theta: np.ndarray):
         """
@@ -1251,9 +1255,9 @@ class ZernPol:
                     k += 1
                 axes[i, j].axis('off')  # off polar coordinate axes
             ignored_column -= 1
-        fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
-        fig.tight_layout()
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1); fig.tight_layout()
 
+    # %% Static methods: parameters checking
     @staticmethod
     def _check_radii(radii):
         """
@@ -1335,7 +1339,7 @@ class ZernPol:
         return angles
 
 
-# %% Methods defs.
+# %% Independent functions defs.
 def generate_polynomials(max_order: int = 10) -> tuple:
     """
     Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).

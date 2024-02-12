@@ -13,21 +13,21 @@ from matplotlib.patches import Circle
 from pathlib import Path
 from scipy.special import jv
 import warnings
-from scipy.ndimage import convolve
 from math import cos, pi
 from zernpy import ZernPol
 import time
 import os
 from skimage import io
 from skimage.util import img_as_ubyte
-import json
 from math import e
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calc_zernike_pol import define_orders
+    from calc_psfs import convolute_img_psf, save_psf, read_psf
 else:
     from .calc_zernike_pol import define_orders
+    from .calc_psfs import convolute_img_psf, save_psf, read_psf
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -480,116 +480,7 @@ def psf_point_approx_sum(zernike_pol: ZernPol, r: float, theta: float, alpha: fl
     return np.power(np.abs(s1 + s2 + s3 + s4 + s5), 2)
 
 
-# %% Save and read the calculated PSF matricies
-def save_psf(additional_file_name: str, psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_coefficient: float,
-             amplitude: float, polynomial_orders: tuple, folder_path: str = None, overwrite: bool = True) -> str:
-    """
-    Save the calculated PSF kernel along with the used for the calculation parameters.
-
-    Parameters
-    ----------
-    additional_file_name : str
-        Additional to the composed file name string, e.g. unique addition.
-    psf_kernel : np.ndarray
-        Calculated by using get_psf_kernel.
-    NA : float
-        NA used for the PSF calculation.
-    wavelength : float
-        Wavelength used for the PSF calculation (in micrometers).
-    calibration_coefficient : float
-        Calibration (micrometers/pixels) used for the PSF calculation.
-    amplitude : float
-        Amplitude of the polynomial.
-    polynomial_orders : tuple
-        Tuple as the (m, n) orders.
-    folder_path : str, optional
-        Absolute path to the folder where the file will be saved. The default is None.
-    overwrite : bool, optional
-        Flag for letting overwriting of the existing file. The default is True.
-
-    Returns
-    -------
-    str
-        Absolute path to the file.
-
-    """
-    # Checking the provided folder or creating the folder for storing files
-    if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
-        working_folder = Path(__file__).cwd()
-        saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
-        if not saved_psfs_folder.is_dir():
-            saved_psfs_folder.mkdir()
-        print("Auto assigned folder for saving calculated PSF kernel:", saved_psfs_folder)
-    else:
-        if Path(folder_path).is_dir():
-            saved_psfs_folder = Path(folder_path)
-    # Save provided PSF kernel with the provided parameters
-    json_file_path = saved_psfs_folder.joinpath(f"psf_{polynomial_orders}_{additional_file_name}_{amplitude}.json")
-    data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
-    data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
-    data4serialization["Calibration (wavelength physical units/pixels)"] = calibration_coefficient
-    if json_file_path.exists() and overwrite:
-        _warn_message = "The file already exists, the content will be overwritten!"
-        warnings.warn(_warn_message)
-    if not json_file_path.exists() or (json_file_path.exists() and overwrite):
-        with open(json_file_path, 'w') as json_write_file:
-            json.dump(data4serialization, json_write_file)
-    return str(json_file_path.absolute())
-
-
-def read_psf(file_path: str) -> dict:
-    """
-    Read the saved PSF data from the *json file.
-
-    Parameters
-    ----------
-    file_path : str
-        Absolute path to the *json file.
-
-    Returns
-    -------
-    dict
-        Data stored in the *json file, the used keys: 'PSF kernel', 'NA', 'Wavelength', 'Calibration (um/pixels)'.
-
-    """
-    psf_file_path = Path(file_path); psf_data = None
-    if psf_file_path.exists() and psf_file_path.is_file():
-        with open(psf_file_path, 'r') as json_read_file:
-            psf_data = json.load(json_read_file)
-    return psf_data
-
-
-# %% Calculation, plotting
-def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: bool = False) -> np.ndarray:
-    """
-    Convolute the provided image with PSF kernel as 2D arrays and return the convolved image with the same type as the original one.
-
-    Parameters
-    ----------
-    img : numpy.ndarray
-        Sample image, not colour.
-    psf_kernel : numpy.ndarray
-        Calculated PSF kernel.
-
-    Returns
-    -------
-    convolved_img : numpy.ndarray
-        Result of convolution (used scipy.ndimage.convolve).
-
-    """
-    img_type = img.dtype
-    convolved_img = convolve(np.float32(img), psf_kernel, mode='reflect')
-    conv_coeff = np.sum(psf_kernel)
-    if conv_coeff > 0.0:
-        convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
-    if scale2original:
-        max_original_intensity = np.max(img); max_conv_pixel = np.max(convolved_img)
-        scaling_factor = max_original_intensity / max_conv_pixel
-        convolved_img *= scaling_factor
-    convolved_img = convolved_img.astype(dtype=img_type)  # converting convolved image to the initial image
-    return convolved_img
-
-
+# %% Plotting of PSFs
 def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float, unified_kernel_size: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix with PSF mask.
