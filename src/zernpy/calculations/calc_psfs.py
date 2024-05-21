@@ -205,9 +205,8 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     """
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
-    alpha /= wavelength
-    k = 2.0*pi/wavelength  # Calculate angular frequency (k)
-    # Estimation of the kernel size, empirical estimation of the sufficient size for the kernel
+    alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
+    # Empirical estimation of the sufficient size for the kernel
     if kernel_size < 3:
         if m == 0 and n == 0:
             multiplier = 1.0

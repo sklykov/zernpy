@@ -4,8 +4,7 @@ Main script with the class definition for accessing Zernike polynomial initializ
 
 Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
-@author: Sergei Klykov, @year: 2024 \n
-@licence: MIT \n
+@author: Sergei Klykov, @year: 2024, @licence: MIT \n
 
 """
 # %% Global imports
@@ -20,27 +19,20 @@ import time
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
-                                               triangular_derivative, radial_derivative,
-                                               radial_polynomial_eq, radial_derivative_eq,
-                                               radial_polynomial_coeffs, radial_polynomial_coeffs_dr,
-                                               MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
+    from calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function, triangular_derivative,
+                                               radial_derivative, radial_polynomial_eq, radial_derivative_eq, radial_polynomial_coeffs,
+                                               radial_polynomial_coeffs_dr, MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
-                                  warn_mess_slow_calc)
+    from props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long, warn_mess_slow_calc
     # from calculations.calc_psfs import get_psf_kernel  # TODO: move all functions connected with PSF to the separate class def.
 else:
-    from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function,
-                                                triangular_derivative, radial_derivative,
-                                                radial_polynomial_eq, radial_derivative_eq,
-                                                radial_polynomial_coeffs, radial_polynomial_coeffs_dr,
-                                                MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
+    from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function, triangular_derivative,
+                                                radial_derivative, radial_polynomial_eq, radial_derivative_eq, radial_polynomial_coeffs,
+                                                radial_polynomial_coeffs_dr, MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
     from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
     from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-    from .props.properties import (polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long,
-                                   warn_mess_slow_calc)
-    # from .calculations.calc_psfs import get_psf_kernel
+    from .props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long, warn_mess_slow_calc
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -48,7 +40,7 @@ polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the re
 zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as the input type
 
 
-# %% Class def.
+# %% Zernike Pol. class
 class ZernPol:
     """Define the Zernike polynomial class and associated calculation methods."""
 
