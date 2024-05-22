@@ -17,4 +17,3 @@ if __name__ != "__main__" and __name__ != "__mp_main__":
     from .zernikepol import ZernPol  # main class auto export on the import call of the package
     # functions auto export - when everything imported from the module
     from .zernikepol import generate_polynomials, fit_polynomials, generate_random_phases, fit_polynomials_vectors, generate_phases_image
-    from .calculations.calc_psfs import get_psf_kernel

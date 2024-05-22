@@ -13,11 +13,19 @@ from scipy.special import jv
 from pathlib import Path
 import warnings
 from math import sqrt, pi
-# import time
+import time
 from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
 from math import e
+from functools import partial
+
+# Testing the parallelazation with joblib. Native Pool.map() tested and results tranferred to the collection_numCalc repo
+try:
+    from joblib import Parallel, delayed
+    joblib_installed = True
+except ModuleNotFoundError:
+    joblib_installed = False
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -125,6 +133,15 @@ def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: floa
     return h_p*ang_int
 
 
+def radial_integral_args(phi: float, zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int) -> complex:
+    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
+    fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r)
+    fb = diffraction_integral_r(zernike_pol, alpha, phi, 1.0, theta, r)
+    ang_int = np.sum(diffraction_integral_r(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
+    return h_p*ang_int
+
+
 def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
     """
     Get the point for calculation of PSF depending on the image polar coordinates.
@@ -162,10 +179,38 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
     return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
+# %% Testing various speeding up calculation approaches
+def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int,
+                             paralleljobs: Parallel = None) -> float:
+    h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
+    # below - wrapping the callable function with the fixed arguments for using in the parallaled framework call
+    radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta, alpha=alpha, n_int_r_points=n_int_r_points)
+
+    # Vectorized or parallelazed form of for loop for even and odd phi-s
+    if not joblib_installed or paralleljobs is None:
+        even_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
+        even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
+        odd_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
+        odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    else:
+        if paralleljobs is not None and isinstance(paralleljobs, Parallel):
+            even_sums = paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(2, n_int_phi_points-2, 2))
+            odd_sums = paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(1, n_int_phi_points-1, 2))
+            # even_sum = sum(even_sums, start=even_sum); odd_sum = sum(even_sums, start=odd_sum)
+            even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums); odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+
+    # Simpson integration rule implementation
+    yA = radial_integral(zernike_pol, r, theta, 0.0, alpha, n_int_r_points)
+    yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha, n_int_r_points)
+    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
+    return np.power(np.abs(integral_sum), 2)*integral_normalization
+
+
 # %% PSF kernel calc.
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
                    n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
-                   airy_pattern: bool = False, kernel_size: int = 0) -> np.ndarray:
+                   airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
+                   test_vectorized: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix with the PSF mask values.
 
@@ -242,22 +287,39 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         warnings.warn(__warn_message)
     # Calculate the PSF kernel for usage in convolution operation
     # mean_time_integration = 0.0; n = 0
-    for i in range(size):
-        for j in range(size):
-            # t1 = time.perf_counter(); n += 1
-            pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
-            # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
-            distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
-            # The PSF also has the angular dependency, not only the radial one
-            theta = np.arctan2((i - i_center), (j - j_center))
-            theta += np.pi  # shift angles to the range [0, 2pi]
-            # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
-            if not airy_pattern:
-                kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
-            else:
-                kernel[i, j] = airy_ref_pattern(distance)
-            # t2 = time.perf_counter(); mean_time_integration += round(1000.0*(t2-t1), 0)
-    # print("Mean integration time, ms:", round(mean_time_integration/n, 0))
+    if not joblib_installed or not test_parallel:
+        for i in range(size):
+            for j in range(size):
+                pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
+                # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
+                distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
+                # The PSF also has the angular dependency, not only the radial one
+                theta = np.arctan2((i - i_center), (j - j_center))
+                theta += np.pi  # shift angles to the range [0, 2pi]
+                # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
+                if not airy_pattern:
+                    if not test_vectorized:
+                        kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                    else:
+                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                else:
+                    kernel[i, j] = airy_ref_pattern(distance)
+    elif joblib_installed and test_parallel:
+        # NOTE: after several tests, it clear that the parallelazation using joblib not optimizing performance
+        with Parallel(n_jobs=4, pre_dispatch=size*size*n_int_phi_points*n_int_phi_points+2, backend='multiprocessing') as paralleljobs:
+            for i in range(size):
+                for j in range(size):
+                    pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
+                    # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
+                    distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
+                    # The PSF also has the angular dependency, not only the radial one
+                    theta = np.arctan2((i - i_center), (j - j_center))
+                    theta += np.pi  # shift angles to the range [0, 2pi]
+                    # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
+                    if not airy_pattern:
+                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points, paralleljobs)
+                    else:
+                        kernel[i, j] = airy_ref_pattern(distance)
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -272,7 +334,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         if fig_title is not None and len(fig_title) > 0:
             plt.figure(fig_title, figsize=(6, 6))
         else:
-            plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength", figsize=(6, 6))
+            plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
     return kernel
 
@@ -455,12 +517,13 @@ if __name__ == '__main__':
     # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
     resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
     pixel_size_nyquist = 0.5*resolution  # Nyquist resolution needed for using theoretical physical resolution above
-    pixel_size = 0.65*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
+    pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
     # Note that pixel_size is only estimated here to be sufficient. It should be exchanged to the physical one as the input for the function
 
     # Flags for performing tests
     check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
     check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
+    check_performance_optimizations = True  # checking optimization of calculations
     check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below, TODO: restore calculations
     # PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
     check_warnings = False  # flag for checking the warning producing
@@ -477,8 +540,23 @@ if __name__ == '__main__':
         diff = kern_zc_ref - kern_zc; plt.figure("Difference Airy and Piston", figsize=(6, 6)); plt.imshow(diff, cmap=plt.cm.viridis, origin='upper')
 
     if check_sign_coeff:
-        kern_sign = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=False)
         kern_sign_n = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=-0.5, wavelength=wavelength, NA=NA, normalize_values=False)
+        kern_sign_p = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=False)
+
+    if check_performance_optimizations:
+        t1 = time.perf_counter()
+        kern_sign = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
+                                   NA=NA, normalize_values=True, show_kernel=False)
+        print("Calc. time for 'for loops' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
+        t1 = time.perf_counter()
+        kern_sign2 = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
+                                    NA=NA, normalize_values=True, show_kernel=False, test_vectorized=True, fig_id="Vector. Form")
+        print("Calc. time for 'vectorized' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
+        t1 = time.perf_counter()
+        kern_sign3 = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
+                                    NA=NA, normalize_values=True, show_kernel=False, test_parallel=True, fig_id="Parallel. Form")
+        print("Calc. time for 'parallelized' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
+        kern_diff1 = np.round(kern_sign - kern_sign2, 9); kern_diff2 = np.round(kern_sign - kern_sign3, 9)
 
     if check_various_pols:
         kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
