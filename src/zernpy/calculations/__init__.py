@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Default exports from this module.
+Default exports from this module (calculations).
 
 @author: Sergei Klykov
 

@@ -3,7 +3,7 @@
 Calculation and plotting of associated with polynomials PSFs.
 
 @author: Sergei Klykov
-@licence: MIT
+@licence: MIT, @year: 2024
 
 """
 # %% Global imports
