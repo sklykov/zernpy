@@ -12,13 +12,13 @@ import matplotlib.pyplot as plt
 from scipy.special import jv
 from pathlib import Path
 import warnings
-from math import sqrt, pi
+from math import sqrt, pi, e
 import time
 from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
-from math import e
 from functools import partial
+import time
 
 # Testing the parallelazation with joblib. Native Pool.map() tested and results tranferred to the collection_numCalc repo
 try:
@@ -168,6 +168,25 @@ def radial_integral_args(phi: float, zernike_pol, r: float, theta: float, alpha:
     return h_p*ang_int
 
 
+def radial_integral_s(params: tuple) -> complex:
+    """
+    Wrap function to accept input variables as tuple for parallalezing the computation.
+
+    Parameters
+    ----------
+    params : tuple
+        phi, constants. zernike_pol, r, theta, alpha, n_int_r_points = constants.
+
+    Returns
+    -------
+    complex
+        Phase integral value.
+
+    """
+    phi, constants = params; zernike_pol, r, theta, alpha, n_int_r_points = constants
+    return radial_integral_args(phi, zernike_pol, r, theta, alpha, n_int_r_points)
+
+
 def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
     """
     Get the point for calculation of PSF depending on the image polar coordinates.
@@ -233,10 +252,48 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
 
 
 # %% PSF kernel calc.
+def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: float) -> int:
+    """
+    Estimate empirically the kernel size.
+
+    Parameters
+    ----------
+    zernike_pol : ZernPol
+        The instance of ZernPol() class required for calculation of Zernike polynomial values.
+    len2pixels : float
+        Relation between length in physical units (the same as the provided wavelength) and pixels.
+    alpha : float
+        Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., \u00B5m).
+        Note that the normalized Zernike polynomials are used, so its coefficient is normalized to the specified wavelength.
+    wavelength: float
+        Monochromatic wavelength.
+
+    Returns
+    -------
+    int
+        Estimated kernel size.
+
+    """
+    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    if m == 0 and n == 0:
+        multiplier = 1.0
+    else:
+        multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided order
+        if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
+            multiplier += 0.5*sqrt(n - abs(m))
+        elif abs(m) > 0 and n % 2 == 0:
+            multiplier = 1.35*sqrt(n)
+    if abs(alpha) >= 0.5:
+        multiplier *= sqrt(2.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+    # Estimation below based on the provided calibration
+    size = int(round(multiplier*wavelength/len2pixels, 0)) + 1
+    return size
+
+
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
                    n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
                    airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
-                   test_vectorized: bool = False) -> np.ndarray:
+                   test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix with the PSF mask values.
 
@@ -267,6 +324,16 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         Plot the Airy pattern for the provided parameters. The default is False.
     kernel_size : int, optional
         Custom kernel size, if not provided, then the the size will be estimated based on the parameters. The default is 0.
+    test_parallel : bool, optional
+        Testing joblib library for speeding up calculations. The default is False.
+    fig_id : str, optional
+        Some string id for the figure title. The default is "".
+    test_vectorized : bool, optional
+        For using vectorized calculations insted of simple for loops. The default is False.
+    suppress_warns : bool, optional
+        Flag for suppressing any thrown warnings. The default is False.
+    verbose: bool, optional
+        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
 
     Returns
     -------
@@ -279,19 +346,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
     # Empirical estimation of the sufficient size for the kernel
     if kernel_size < 3:
-        if m == 0 and n == 0:
-            multiplier = 1.0
-        else:
-            multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided order
-        if abs(alpha) >= 0.5:
-            multiplier *= sqrt(2.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
-        # Estimation below based on the provided calibration
-        if len2pixels < 0.5:
-            size = int(round(multiplier/len2pixels, 0)) + 1
-        elif len2pixels < 1.0:
-            size = int(round(2.0*multiplier/len2pixels, 0)) + 1
-        else:
-            size = int(round(multiplier*(4.0*len2pixels), 0)) + 1
+        size = get_kernel_size(zernike_pol, len2pixels, alpha, wavelength)
     else:
         size = kernel_size
     # Auto definition of the required PSF size is complicated for the different PSFs forms (e.g., vertical coma with different amplitudes)
@@ -299,23 +354,27 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if size % 2 == 0:
         size += 1
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
-    # Print note about calculation length
-    if size > 21:
+    # Print note about calculation duration
+    if size > 21 and not suppress_warns:
         if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
-            print(f"Note that the calculated kernel size: {size}x{size}. Estimated calculation time: {int(round(size*size*40/1000, 0))} sec.")
+            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")
         else:
-            print(f"Note that the calculated kernel size: {size}x{size}. Calculation may take from several dozends of seconds to minutes")
+            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Calculation may take from several dozends of seconds to minutes")
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
-    if len2pixels > pixel_size_nyquist:
+    if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
         warnings.warn(__warn_message)
     # Calculate the PSF kernel for usage in convolution operation
     # mean_time_integration = 0.0; n = 0
     if not joblib_installed or not test_parallel:
+        if verbose:
+            calculated_points = 0  # for explicit showing of performance
         for i in range(size):
             for j in range(size):
+                if verbose:
+                    t1 = time.perf_counter()  # for explicit showing of performance
                 pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
                 # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
                 distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
@@ -328,6 +387,9 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                         kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                     else:
                         kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                        if verbose:
+                            calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
+                            print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
                 else:
                     kernel[i, j] = airy_ref_pattern(distance)
     elif joblib_installed and test_parallel:
@@ -350,7 +412,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if normalize_values:
         kernel /= np.max(kernel)
     # Provide warning in the case if kernel size not sufficient for representation of the calculated kernel
-    if kernel[0, 0] > np.max(kernel)/100:
+    if kernel[0, 0] > np.max(kernel)/100 and not suppress_warns:
         __warn_message = f"The calculated size for PSF ({size}) isn't sufficient for its proper representation"
         warnings.warn(__warn_message)
     # Plotting the calculated kernel
@@ -531,7 +593,7 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 
 
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_args']
+__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral', 'get_kernel_size']
 
 # %% Tests
 if __name__ == '__main__':

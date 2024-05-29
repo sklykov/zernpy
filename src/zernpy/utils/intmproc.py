@@ -35,7 +35,7 @@ class DispenserManager():
             help of partial(compute_func, param1=value1, param2=value2), "from functools import partial".
         params_list : list
             List with parameters for which the compute_func should be calculated.
-            Note that parameter should be pickleable ()
+            Note that parameter should be pickleable.
         n_workers : int, optional
             Number of workers for performing computations. If None is provided, the os.cpu_count()//2 will be used. The default is None.
         verbose_info : bool, optional
@@ -108,7 +108,7 @@ class DispenserManager():
         Returns
         -------
         int
-            DESCRIPTION.
+            Max amount of workers detected by os.cpu_count().
 
         """
         return self.__MAX_WORKERS
@@ -132,7 +132,7 @@ class DispenserManager():
                     for proc_i in range(len(self.__workers_pool)):
                         self.__queues[proc_i].put(self.__parameters_vector[current_param_index])
                         task_assigned[proc_i] = True; processing_indices[proc_i] = current_param_index
-                        self.__triggers[proc_i].set(); time.sleep(0.001)
+                        self.__triggers[proc_i].set(); time.sleep(0.0001)
                         # print(f"Set job for parameter {self.__parameters_vector[current_param_index]}, index {current_param_index}")
                         indices2process.remove(current_param_index); current_param_index += 1
                         # print(f"Remaining indices of parameters to compute: {indices2process}")
@@ -150,9 +150,9 @@ class DispenserManager():
                             self.__queues[proc_i].put(self.__parameters_vector[current_param_index])
                             self.__triggers[proc_i].set(); processing_indices[proc_i] = current_param_index
                             # print(f"Set job for parameter {self.__parameters_vector[current_param_index]}, index {current_param_index}")
-                            time.sleep(0.001)
+                            time.sleep(0.0001)
                     else:
-                        time.sleep(0.001)
+                        time.sleep(0.0001)
                 # print(f"Remaining indices of parameters to compute: {indices2process}")
                 if self.verbose_info:
                     # print(f"Remained computations: {len(self.__results) - computed_tasks}")
@@ -200,6 +200,37 @@ class DispenserManager():
 
         """
         self.close()
+
+    def update_params(self, params_list: list):
+        """
+        Update list with parameters.
+
+        Parameters
+        ----------
+        params_list : list
+            List with parameters for which the compute_func should be calculated.
+            Note that parameter should be pickleable.
+
+        Raises
+        ------
+        TypeError
+            Check the signature. Most probably there is some incosistency in params_list.
+        ValueError
+            If number of workers > number of parameters.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.__initialized:
+            # Checking input parameters - list with iterable parameters. Restrict to list only acceptable type
+            if len(params_list) == 0:
+                raise TypeError("Provided parameters list has 0 length = no splitting of jobs needed")
+            elif len(params_list) < self.workers_number:
+                raise ValueError("There is no sence for trying to split number of jobs less than initialized workers")
+            else:
+                self.__results = [None]*len(params_list); self.__parameters_vector = params_list
 
 
 # %% Individual worker special class
@@ -276,7 +307,25 @@ def test_plus(x: float | int) -> float | int:
         x + 1.
 
     """
-    time.sleep(0.005); return x + 1
+    time.sleep(0.004); return x + 1
+
+
+def test_minus(x: float | int) -> float | int:
+    """
+    Simulation of the time-costly computation task.
+
+    Parameters
+    ----------
+    x : float | int
+        Some number.
+
+    Returns
+    -------
+    float | int
+        x - 1.
+
+    """
+    time.sleep(0.004); return x - 1
 
 
 # %% Define standard exports from this module
@@ -297,8 +346,8 @@ if __name__ == "__main__":
     t1 = time.perf_counter(); results_paral = cl.compute()
     elapsed_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
     print(f"1st run Parallelized computation took {elapsed_ms} ms")
-    params = [12*(i+1) for i in range(203)]  # ... computation points
-    t1 = time.perf_counter(); results_paral2 = cl.compute()
+    params = [10*(i+1) for i in range(203)]  # ... computation points
+    cl.update_params(params); t1 = time.perf_counter(); results_paral2 = cl.compute()
     elapsed_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
     print(f"2nd run (changed parameters) Parallelized computation took {elapsed_ms} ms")
     time.sleep(0.65); cl.close()
