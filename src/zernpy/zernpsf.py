@@ -12,11 +12,13 @@ import warnings
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char)
+    from calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char, radial_integral_args)
     from zernikepol import ZernPol
+    from utils.intmproc import DispenserManager
 else:
-    from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char)
+    from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char, radial_integral_args)
     from .zernikepol import ZernPol
+    from .utils.intmproc import DispenserManager
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -58,7 +60,33 @@ class ZernPSF:
         else:
             raise ValueError("ZernPSF class required ZernPol class as the input")
 
-    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: float, pixel_physical_size: float):
+    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: float, pixel_physical_size: float) -> None:
+        f"""
+        Set parameters in physical units.
+
+        Parameters
+        ----------
+        NA : float
+            Numerical aperture of an objective, assumed usage of microscopic ones.
+        wavelength : float
+            Wavelength of monochromatic light ({lambda_char}) used for imaging in physical units (e.g., as {um_char}).
+        expansion_coeff : float
+            Amplitude or expansion coefficient of the Zernike polynomial in physical units.
+            Note that according to the used equation it will be used as adjusted to the units of wavelength: alpha = expansion_coeff/wavelength.
+            See the equation in the method "calculate_psf_kernel".
+        pixel_physical_size : float
+            Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
+
+        Raises
+        ------
+        ValueError
+            If one of the sanity check has been failed, check the Error message for details.
+
+        Returns
+        -------
+        None.
+
+        """
         # Sanity check for NA
         if NA < 0.0 or NA > 1.7:
             raise ValueError("NA should lay in the range of (0.0, 1.7] at most - for common microscopic objectives")
@@ -85,11 +113,11 @@ class ZernPSF:
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
 
-    def calculate_psf_kernel(self, suppress_warnings: bool = False):
+    def calculate_psf_kernel(self, suppress_warnings: bool = False, normalized: bool = True, use_parallel: bool = False):
         if len(self.__warn_message) > 0 and not suppress_warnings:
             warnings.warn(self.__warn_message)
         if not self.__physical_props_set:
-            self.__warn_message = "Physical properties for calculation hasn't been set, the default values will be used"
+            self.__warn_message = "Physical properties for calculation haven't been set, the default values will be used"
             warnings.warn(self.__warn_message)
 
 

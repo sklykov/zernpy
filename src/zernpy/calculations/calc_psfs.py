@@ -134,6 +134,32 @@ def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: floa
 
 
 def radial_integral_args(phi: float, zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int) -> complex:
+    """
+    Make integration of the diffraction integral on the radius of the entrance pupil.
+
+    The order of parameters are rearranged for the wrapping this function by using partial from functools.
+
+    Parameters
+    ----------
+    phi : float
+        Angle on the pupil coordinates.
+    zernike_pol : ZernPol
+        Zernike polynomial definition as the ZernPol() class.
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    alpha : float
+        Amplitude of the polynomial.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+
+    Returns
+    -------
+    complex
+        Complex amplitude of the field as result of integration on the pupil radius coordinate.
+
+    """
     # Integration on the pupil angle. Vectorized form of the trapezoidal rule
     h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
     fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r)
@@ -505,7 +531,7 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 
 
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf']
+__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_args']
 
 # %% Tests
 if __name__ == '__main__':
