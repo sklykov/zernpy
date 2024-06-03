@@ -612,8 +612,7 @@ if __name__ == '__main__':
     check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
     check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
     check_performance_optimizations = True  # checking optimization of calculations
-    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below, TODO: restore calculations
-    # PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
+    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below
     check_warnings = False  # flag for checking the warning producing
     check_io = False  # check save / read kernels
     show_convolution_results = False  # check result of convolution of several kernel with the disk
