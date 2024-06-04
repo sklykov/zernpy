@@ -617,11 +617,6 @@ def plot_correlation(zernike_pol, size: int, calibration_coefficient: float, alp
             pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))/R
             if pixel_dist < 1.0:
                 img[i, j] = 1.0
-            # Blurring edges effects
-            # elif pixel_dist == 1.0:
-            #     img[i, j] = round(1.0/pow(pixel_dist+0.2, 2.6), 3)
-            # elif pixel_dist < 1.5:
-            #     img[i, j] = round(1.0/pow(pixel_dist, 2.6), 3)
             else:
                 continue
     if show_original:
@@ -678,44 +673,17 @@ def plot_correlation_photo(zernike_pol, calibration_coefficient: float, alpha: f
 # %% Tests
 if __name__ == '__main__':
     orders1 = (0, 2); orders2 = (0, 0); orders3 = (-1, 1); orders4 = (-3, 3); plot_pure_psfs = True; plot_photo_convolution = False
-    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = False; test_disk_show = False
+    plot_photo_convolution_row = False; figsizes = (6.5, 6.5); test_write_read_psf = False
 
     # Plotting
     plt.ion(); plt.close('all'); conv_pic_size = 14; detailed_plots_sizes = 22; calibration_coeff = pixel2um_coeff; alpha = 2.0
     if plot_pure_psfs:
-        t1 = time.time()
-        p_img = show_ideal_psf(orders2, detailed_plots_sizes-10, calibration_coeff, alpha, "Piston")
+        t1 = time.time(); p_img = show_ideal_psf(orders2, detailed_plots_sizes-10, calibration_coeff, alpha, "Piston")
         print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Piston takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        # p_img2 = show_ideal_psf(orders2, detailed_plots_sizes, calibration_coeff, alpha, "Piston2", test_alt=True)
-        # print("Alternative calculation of Piston takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        # ytilt_img = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt")
-        # print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Y Tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        # ytilt_img2 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "Y Tilt2", test_alt=True)
-        # print("Alternative calculation of Y tilt takes s:", round((time.time() - t1), 3)); t1 = time.time()
-        # # defocus_img = show_ideal_psf(orders1, detailed_plots_sizes, pixel2um_coeff/3.0, alpha, "Defocus")
-        # t1 = time.time()
-        # aberr4 = show_ideal_psf(orders4, detailed_plots_sizes+2, calibration_coeff, alpha, "Vertical Trefoil")
-        # print(f"Calculation (steps on phi/p {n_phi_points}/{n_p_points}) of Vertical Trefoil takes s:", round((time.time() - t1), 3))
-        # aberr4_2 = show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "Vertical Trefoil2", test_alt=True)
-        # print("Alternative calculation of Vertical Trefoil takes s:", round((time.time() - t1), 3)); t1 = time.time()
 
         # Testing the kernel calculation
         v_coma_m = get_psf_kernel((-1, 3), calibration_coeff, -1.0)
         plt.figure(figsize=figsizes); plt.imshow(v_coma_m, cmap=plt.cm.viridis); plt.tight_layout()
-        # v_coma_p = get_psf_kernel((-1, 3), calibration_coeff, 1.0)
-        # plt.figure(figsize=figsizes); plt.imshow(v_coma_p, cmap=plt.cm.viridis); plt.tight_layout()
-
-    # Compare positive and negative coefficients influence on the PSF
-    # ytilt_img1 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, alpha, "+ Y Tilt")
-    # ytilt_img2 = show_ideal_psf(orders3, detailed_plots_sizes, calibration_coeff, -alpha, "- Y Tilt")
-    # p_img1 = show_ideal_psf(orders1, detailed_plots_sizes, calibration_coeff, alpha, "Defocus +")
-    # p_img2 = show_ideal_psf(orders1, detailed_plots_sizes, calibration_coeff, -alpha, "Defocus -")
-    # show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, alpha, "+ Vertical Trefoil")
-    # show_ideal_psf(orders4, detailed_plots_sizes, calibration_coeff, -alpha, "- Vertical Trefoil")
-    # show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, alpha, "+ Obliq. Astigmatism")
-    # show_ideal_psf((-2, 2), detailed_plots_sizes, calibration_coeff, -alpha, "- Obliq. Astigmatism")
-    # show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, alpha, f"{alpha} Primary Spherical")
-    # show_ideal_psf((0, 4), detailed_plots_sizes, calibration_coeff, -alpha, f"{-alpha} Primary Spherical")
 
     # Plot convolution of the sample photo with the various psfs
     if plot_photo_convolution:
@@ -729,11 +697,6 @@ if __name__ == '__main__':
         amplitudes = [-2.0, 0.0, 2.0]; vert_coma = (-1, 3)
         for amplitude in amplitudes:
             plot_correlation_photo(vert_coma, pixel2um_coeff/1.5, amplitude, f"Y Coma {amplitude}", show_psf=False, show_original=False)
-
-    # Plot convolution of point objet with the various psfs
-    # plot_correlation(orders2, conv_pic_size, pixel2um_coeff, 0.85, "Piston", show_psf=True)
-    # plot_correlation(orders3, conv_pic_size, pixel2um_coeff/1.75, 0.5, "Y Tilt", True, show_psf=True)
-    # plot_correlation(orders1, conv_pic_size, pixel2um_coeff, 0.85, "Defocus", False, show_psf=True)
 
     # Testing saving / reading
     if test_write_read_psf:

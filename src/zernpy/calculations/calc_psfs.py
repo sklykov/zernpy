@@ -285,8 +285,11 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
             multiplier = 1.35*sqrt(n)
     if abs(alpha) >= 0.5:
         multiplier *= sqrt(2.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
-    # Estimation below based on the provided calibration
+    # Estimation below based on the provided physical properties
     size = int(round(multiplier*wavelength/len2pixels, 0)) + 1
+    # Correct the size of a kernel to the odd integer below
+    if size % 2 == 0:
+        size += 1
     return size
 
 
@@ -445,22 +448,20 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
         Result of convolution (used scipy.ndimage.convolve).
 
     """
-    img_type = img.dtype
-    convolved_img = convolve(np.float32(img), psf_kernel, mode='reflect')
-    conv_coeff = np.sum(psf_kernel)
+    img_type = img.dtype; convolved_img = convolve(np.float32(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)
     if conv_coeff > 0.0:
         convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
     if scale2original:
         max_original_intensity = np.max(img); max_conv_pixel = np.max(convolved_img)
-        scaling_factor = max_original_intensity / max_conv_pixel
-        convolved_img *= scaling_factor
+        scaling_factor = max_original_intensity / max_conv_pixel; convolved_img *= scaling_factor
     convolved_img = convolved_img.astype(dtype=img_type)  # converting convolved image to the initial image
     return convolved_img
 
 
 # %% Save and read the calculated PSF matricies
-def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_coefficient: float, amplitude: float,
-             zernike_pol, folder_path: str = None, overwrite: bool = True, additional_file_name: str = None) -> str:
+def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: float,
+             kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str = None,
+             overwrite: bool = True, additional_file_name: str = None) -> str:
     """
     Save the calculated PSF kernel along with the used for the calculation parameters.
 
@@ -471,19 +472,25 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_c
     NA : float
         NA used for the PSF calculation.
     wavelength : float
-        Wavelength used for the PSF calculation (in micrometers).
-    calibration_coefficient : float
-        Calibration (micrometers/pixels) used for the PSF calculation.
-    amplitude : float
-        Amplitude of the polynomial.
+        Wavelength used for the PSF calculation (in physical units).
+    pixel_size : float
+        Pixel size (in physical units same to wavelength) used for the PSF calculation.
+    expansion_coefficient : float
+        Amplitude (in other words) of the polynomial.
+    kernel_size : int
+        Size of the PSF kernel.
+    n_int_points_r : int
+        Number of the used integration points on r.
+    n_int_points_phi : int
+        Number of the used integration points on phi.
     zernike_pol : tuple or ZernPol()
-        Tuple as the (m, n) orders or an instance of ZernPol().
+        Tuple as the (m, n) orders or an instance of ZernPol() class.
     folder_path : str, optional
         Absolute path to the folder where the file will be saved. The default is None.
     overwrite : bool, optional
         Flag for letting overwriting of the existing file. The default is True.
     additional_file_name : str
-        Additional to the composed file name string, e.g. unique addition.
+        Additional to the composed file name string, e.g. unique addition. The default is None.
 
     Returns
     -------
@@ -494,8 +501,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_c
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
     # Checking the provided folder or creating the folder for storing files
     if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
-        working_folder = Path(__file__).cwd()
-        saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
+        working_folder = Path(__file__).cwd(); saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
         if not saved_psfs_folder.is_dir():
             saved_psfs_folder.mkdir()
         print("Auto assigned folder for saving calculated PSF kernel:", saved_psfs_folder)
@@ -504,15 +510,16 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, calibration_c
             saved_psfs_folder = Path(folder_path)
     # Save provided PSF kernel with the provided parameters
     if additional_file_name is not None and len(additional_file_name) > 0:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{amplitude}.json")
+        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
     else:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{amplitude}.json")
+        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
     data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
-    data4serialization["Calibration (wavelength physical units/pixels)"] = calibration_coefficient
-    if json_file_path.exists() and overwrite:
-        _warn_message = "The file already exists, the content will be overwritten!"
-        warnings.warn(_warn_message)
+    data4serialization["Pixel Size"] = pixel_size; data4serialization["Expansion Coefficient"] = expansion_coefficient
+    data4serialization["Kernel Size"] = kernel_size; data4serialization["# of integration points R"] = n_int_points_r
+    data4serialization["# of integration points angle"] = n_int_points_phi
+    if json_file_path.exists() and not overwrite:
+        _warn_message = "The file already exists, the content won't be overwritten."; warnings.warn(_warn_message)
     if not json_file_path.exists() or (json_file_path.exists() and overwrite):
         with open(json_file_path, 'w') as json_write_file:
             json.dump(data4serialization, json_write_file)
@@ -562,8 +569,7 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
     # Sizes calculation
     if radius < 1.0:
         radius = 1.0
-    max_size = 4*int(round(radius, 0)) + 1
-    i_img_center = max_size // 2; j_img_center = max_size // 2
+    max_size = 4*int(round(radius, 0)) + 1; i_img_center = max_size // 2; j_img_center = max_size // 2
     # Defining image type
     if max_intensity <= 255:
         img = np.zeros(dtype='uint8', shape=(max_size, max_size))
@@ -580,15 +586,13 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
                 pixel_value = 1.0  # entire pixel lays inside the circle
             # Continiuous bump function
             elif distance < radius*(1.0 + r_exceed):
-                x = distance/(radius + r_exceed)
-                x_pow = pow(x, power); b_pow = pow(1.0 + r_exceed, power)
+                x = distance/(radius + r_exceed); x_pow = pow(x, power); b_pow = pow(1.0 + r_exceed, power)
                 pixel_value = e*np.exp(b_pow/(x_pow - b_pow))
             # Pixel value scaling according the the provided image type
             pixel_value *= float(max_intensity)
             # Pixel value conversion to the image type
             if pixel_value > 0.0:
-                pixel_value = int(round(pixel_value, 0))
-                img[i, j] = pixel_value
+                pixel_value = int(round(pixel_value, 0)); img[i, j] = pixel_value
     return img
 
 
@@ -606,7 +610,6 @@ if __name__ == '__main__':
     resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
     pixel_size_nyquist = 0.5*resolution  # Nyquist resolution needed for using theoretical physical resolution above
     pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
-    # Note that pixel_size is only estimated here to be sufficient. It should be exchanged to the physical one as the input for the function
 
     # Flags for performing tests
     check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
@@ -654,15 +657,6 @@ if __name__ == '__main__':
 
     if check_warnings:
         kern_def = get_psf_kernel(pol3z, len2pixels=1.0, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-
-    if check_io:
-        amplitude = 0.5  # in micrometers
-        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=amplitude, wavelength=wavelength, NA=NA, normalize_values=True)
-        used_path = save_psf("test", psf_kernel=kern_spher, NA=NA, wavelength=wavelength,
-                             calibration_coefficient=pixel_size, amplitude=amplitude, polynomial_orders=pol8)
-        kern_spher_read = read_psf(used_path)['PSF Kernel']  # read the saved values
-        diff = kern_spher - kern_spher_read  # for checking that saved / loaded kernels are consistent
-        plt.figure("Loaded Kernel"); plt.imshow(kern_spher_read, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
 
     if show_convolution_results:
         # Generate the ideal centralized circle with the blurred edges
