@@ -17,12 +17,12 @@ import time
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char, radial_integral_s, radial_integral, get_kernel_size,
-                                        convolute_img_psf, get_bumped_circle, save_psf)
+                                        convolute_img_psf, get_bumped_circle, save_psf, read_psf)
     from zernikepol import ZernPol
     from utils.intmproc import DispenserManager
 else:
     from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, pi_char, radial_integral_s, radial_integral, get_kernel_size,
-                                         convolute_img_psf, get_bumped_circle, save_psf)
+                                         convolute_img_psf, get_bumped_circle, save_psf, read_psf)
     from .zernikepol import ZernPol
     from .utils.intmproc import DispenserManager
 
@@ -46,6 +46,7 @@ class ZernPSF:
     __ParallelCalc: DispenserManager = None; __integration_params: list = []  # for speeding up the calculations using several Processes
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
     k: float = 2.0*pi/wavelength  # angular frequency
+    json_file_path: str = str(Path(__file__).parent.absolute())  # default path to the saved file with calculated kernel and metadata
 
     def __init__(self, zernpol: ZernPol):
         """
@@ -288,26 +289,104 @@ class ZernPSF:
         return convolute_img_psf(img=image, psf_kernel=self.kernel, scale2original=scale2original)
 
     def visualize_convolution(self, radius: float = 4.0, max_intensity: int = 255):
-        target_disk = get_bumped_circle(radius, max_intensity)
-        plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.cm.viridis, origin='upper')
+        """
+        Plot convolution of the PSF kernel and sample image (even centered disk with blurred edges).
+
+        Parameters
+        ----------
+        radius : float, optional
+            Radius of the centered disk. The default is 4.0.
+        max_intensity : int, optional
+            Maximum intensity of the even disk. The default is 255.
+
+        Returns
+        -------
+        None.
+
+        """
+        target_disk = get_bumped_circle(radius, max_intensity)  # get the sample image of the even centered circle with blurred edges
+        plt.ion(); plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.cm.viridis, origin='upper')
         plt.axis('off'); plt.tight_layout()
         convolved_img = self.convolute_img(image=target_disk); plt.figure("Convolved PSF and Disk", figsize=(6, 6))
         plt.imshow(convolved_img, cmap=plt.cm.viridis, origin='upper'); plt.axis('off'); plt.tight_layout()
 
     def save_json(self, abs_path: str | Path = None, overwrite: bool = False):
+        """
+        Save class attributes (PSF kernel, physical properties, etc.) in the JSON file for further reloading and avoiding long computation.
+
+        Parameters
+        ----------
+        abs_path : str | Path, optional
+            Absolute path for the file. If None, the file will be saved in the folder "saved_psfs" in the root of the package.
+            The default is None.
+        overwrite : bool, optional
+            Flag for overwriting the existing file. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
         if abs_path is None:
-            abs_path = Path(__file__).parent.absolute()
+            abs_path = Path(self.json_file_path).joinpath("saved_psfs")  # default folder for storing the saved JSON files (root for the package)
         if not Path.exists(abs_path):
-            abs_path = ""
+            abs_path = ""  # the folder "saved_psfs" will be created in the root of the package
         if isinstance(abs_path, Path):
+            abs_path = str(abs_path)  # convert to the expected string format
+        if self.kernel_size == 1:
+            self.__warn_message = "Kernel most likely hasn't been calculated, the kernel size == 1 - default value"
+            warnings.warn(self.__warn_message); self.__warn_message = ""
+        self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength, expansion_coefficient=self.expansion_coeff,
+                                       pixel_size=self.pixel_size, kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
+                                       n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol, overwrite=overwrite, folder_path=abs_path)
+
+    def read_json(self, abs_path: str | Path = None):
+        """
+        Read the JSON file with the saved attributes and setting it for the class.
+
+        Parameters
+        ----------
+        abs_path : str | Path, optional
+            Absolute path to the file. If None is provided, then the stored in the attiribute path will be checked. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        if abs_path is None:
+            abs_path = self.json_file_path
+        elif isinstance(abs_path, Path):
             abs_path = str(abs_path)
-        save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength, expansion_coefficient=self.expansion_coeff,
-                 pixel_size=self.pixel_size, kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
-                 n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol, overwrite=overwrite, folder_path=abs_path)
-
-
-    def read_json(self):
-        pass
+        json_data = read_psf(abs_path)
+        if json_data is not None:
+            l: float; na: float; a: float; ps: float; read_props = 0
+            for key, item in json_data.items():
+                if key == "PSF Kernel":
+                    self.kernel = np.asarray(item); read_props += 1
+                elif key == "Kernel Size":
+                    self.kernel_size = item; read_props += 1
+                elif key == "# of integration points R":
+                    self.n_int_r_points = item; read_props += 1
+                elif key == "# of integration points angle":
+                    self.n_int_phi_points = item; read_props += 1
+                # Read the physical properties and store them in a list for further setting
+                elif key == "NA":
+                    na = item; read_props += 1
+                elif key == "Wavelength":
+                    l = item; read_props += 1
+                elif key == "Expansion Coefficient":
+                    a = item; read_props += 1
+                elif key == "Pixel Size":
+                    ps = item; read_props += 1
+            if read_props == 8:
+                self.set_physical_props(NA=na, wavelength=l, expansion_coeff=a, pixel_physical_size=ps)
+            else:
+                self.__warn_message = "Provided json file doesn't contain all necessary keys"
+                warnings.warn(self.__warn_message); self.__warn_message = ""
+        else:
+            self.__warn_message = "Provided path doesn't contain valid JSON data"
+            warnings.warn(self.__warn_message); self.__warn_message = ""
 
     # %% Parallelized computing methods
     def initialize_parallel_workers(self):
@@ -416,12 +495,15 @@ class ZernPSF:
 if __name__ == "__main__":
     # zpsf1 = ZernPSF(ZernPol(m=0, n=0)); kernel1 = zpsf1.calculate_psf_kernel(suppress_warns=True); zpsf1.plot_kernel()  # Airy
     zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55
-    zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=-0.25, pixel_physical_size=wavelength_um/4.0)
-    zpsf2.set_calculation_props(kernel_size=11, n_integration_points_r=250, n_integration_points_phi=360)
+    zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=-0.25, pixel_physical_size=wavelength_um/4.05)
+    zpsf2.set_calculation_props(kernel_size=11, n_integration_points_r=400, n_integration_points_phi=320)
     kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf2.plot_kernel("for loop")
     # zpsf2.initialize_parallel_workers(); kernel2 = zpsf2.get_kernel_parallel(); zpsf2.plot_kernel("parallel"); zpsf2.deinitialize_workers()
 
-    # Utilities tests
-    zpsf2.visualize_convolution()  # Visualize convolution on the disk image
-    # save calculated PSF kernel along with metadata
-    default_path = Path(__file__).parent.joinpath("saved_psfs").absolute(); zpsf2.save_json(abs_path=default_path, overwrite=True)
+    # Utilities tests (visualize, save, read)
+    # zpsf2.visualize_convolution()  # Visualize convolution on the disk image
+    # default_path = Path(__file__).parent.joinpath("saved_psfs").absolute()  # default path for storing JSON files
+    # zpsf2.save_json(abs_path=default_path, overwrite=True)  # save calculated PSF kernel along with metadata
+    zpsf2.save_json(overwrite=True)  # save calculated PSF kernel along with metadata
+    # saved_test_file_path = default_path.joinpath("psf_(-3, 3)_-0.25.json")
+    zpsf2.read_json()  # for testing reading

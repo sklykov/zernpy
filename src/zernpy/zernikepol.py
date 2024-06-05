@@ -25,7 +25,6 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
     from calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
     from props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long, warn_mess_slow_calc
-    # from calculations.calc_psfs import get_psf_kernel  # TODO: move all functions connected with PSF to the separate class def.
 else:
     from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function, triangular_derivative,
                                                 radial_derivative, radial_polynomial_eq, radial_derivative_eq, radial_polynomial_coeffs,
