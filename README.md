@@ -1,4 +1,4 @@
-### zernpy - Python package for calculation real-valued Zernike polynomials
+### zernpy - Python package for calculation real-valued Zernike polynomials and assotiated 2D PSF kernels
 
 #### Project description and references
 This project is intended for calculation of Zernike polynomials' parameters / real values / properties using exact (analytical) and recursive equations.   
@@ -7,7 +7,8 @@ The recursive and tabular equations, as well as the valuable information, are ta
 The possibly useful functionality for further usage include: conversion between common indexing schemes (OSA / Noll / Fringe), radial / angular / polynomial 
 real values calculation along with their derivatives, plotting the circular 2D or 3D profile of single or sum of polynomials, fitting the arbitrary phase 
 profile specified on the circle aperture by the set of polynomials (see the description [below](#fitting-zernike-polynomials-to-a-2D-image-with-phases)). 
-For the complete list of implemented methods, refer to [API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).
+For the complete list of implemented methods for Zernike polynomial, please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).   
+For the implemented 2D PSF calculation as the class, please refer to [ZernPol API documentation] (https://sklykov.github.io/zernpy/api/zernpy/zernpsf.html).
 
 #### Notes about implementation
 It was supposed at the project start, that the recursive equations would be the faster way to calculate real values of high order polynomials in comparison 
@@ -97,5 +98,16 @@ Or for importing all available functions and base class in one statement:
 ```python
 from zernpy import *
 ```
-Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of the *ZernPol* class, starting from the 
-'Piston' polynomial.    
+Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of the *ZernPol* class, starting from the 'Piston' polynomial.    
+
+#### 2D PSF kernel calculation
+The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase distribution for the focal point (no Z-axis dependency). The used references are listed in the docstring of the **calculate_psf_kernel()** method.   
+The sample of calculated PSF for Vertical Trefoil:    
+![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")    
+Initialization and usage of the class instance:    
+```python  # code block for Python code
+from zernpy import ZernPSF
+zpsf = ZernPSF(ZernPol(m=-2, n=2))
+zpsf.set_physical_properties(NA, wavelength, expansion_coeff, pixel_physical_size)
+
+```

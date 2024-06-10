@@ -18,9 +18,9 @@ from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
 from functools import partial
-import time
+# import time
 
-# Testing the parallelazation with joblib. Native Pool.map() tested and results tranferred to the collection_numCalc repo
+# Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
 try:
     from joblib import Parallel, delayed
     joblib_installed = True
@@ -77,9 +77,9 @@ def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p, theta: floa
     alpha : float
         Amplitude of the polynomial (RMS).
     phi : float
-        Angle on the pupil (entrance pupil of microobjective) coordinates (for integration).
-    p : np.array or float
-        Integration interval on the pupil (entrance pupil of microobjective) radius or radius as float number.
+        Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
+    p : numpy.array or float
+        Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
     theta : floats
         Angle on the image coordinates.
     r : float
@@ -170,7 +170,7 @@ def radial_integral_args(phi: float, zernike_pol, r: float, theta: float, alpha:
 
 def radial_integral_s(params: tuple) -> complex:
     """
-    Wrap function to accept input variables as tuple for parallalezing the computation.
+    Wrap function to accept input variables as tuple for parallelizing the computation.
 
     Parameters
     ----------
@@ -228,10 +228,10 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
 def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int,
                              paralleljobs: Parallel = None) -> float:
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    # below - wrapping the callable function with the fixed arguments for using in the parallaled framework call
+    # below - wrapping the callable function with the fixed arguments for using in the paralleled framework call
     radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta, alpha=alpha, n_int_r_points=n_int_r_points)
 
-    # Vectorized or parallelazed form of for loop for even and odd phi-s
+    # Vectorized or parallelized form of for loop for even and odd phi-s
     if not joblib_installed or paralleljobs is None:
         even_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
         even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
@@ -314,9 +314,9 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     NA : float
         Objective property.
     n_int_r_points : int, optional
-        Number of points used for integration on the unit pupli radius from the range [0.0, 1.0]. The default is 320.
+        Number of points used for integration on the unit pupil radius from the range [0.0, 1.0]. The default is 320.
     n_int_phi_points : int, optional
-        Number of points used for integration on the unit pupli angle from the range [0.0, 2\u03C0]. The default is 300.
+        Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
     show_kernel : bool, optional
         Plot the calculated kernel interactively. The default is True.
     fig_title : str, optional
@@ -326,13 +326,13 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     airy_pattern : bool, optional
         Plot the Airy pattern for the provided parameters. The default is False.
     kernel_size : int, optional
-        Custom kernel size, if not provided, then the the size will be estimated based on the parameters. The default is 0.
+        Custom kernel size, if not provided, then the size will be estimated based on the parameters. The default is 0.
     test_parallel : bool, optional
         Testing joblib library for speeding up calculations. The default is False.
     fig_id : str, optional
         Some string id for the figure title. The default is "".
     test_vectorized : bool, optional
-        For using vectorized calculations insted of simple for loops. The default is False.
+        For using vectorized calculations instead of simple for loops. The default is False.
     suppress_warns : bool, optional
         Flag for suppressing any thrown warnings. The default is False.
     verbose: bool, optional
@@ -362,7 +362,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
             print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")
         else:
-            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Calculation may take from several dozends of seconds to minutes")
+            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Calculation may take from several dozens of seconds to minutes")
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
@@ -396,7 +396,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                 else:
                     kernel[i, j] = airy_ref_pattern(distance)
     elif joblib_installed and test_parallel:
-        # NOTE: after several tests, it clear that the parallelazation using joblib not optimizing performance
+        # NOTE: after several tests, it is clear that the parallelization using joblib not optimizing performance
         with Parallel(n_jobs=4, pre_dispatch=size*size*n_int_phi_points*n_int_phi_points+2, backend='multiprocessing') as paralleljobs:
             for i in range(size):
                 for j in range(size):
@@ -458,7 +458,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
     return convolved_img
 
 
-# %% Save and read the calculated PSF matricies
+# %% Save and read the calculated PSF matrices
 def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: float,
              kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str = None,
              overwrite: bool = True, additional_file_name: str = None) -> str:
@@ -584,11 +584,11 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
             r_exceed = 0.25; power = 8
             if distance < q_rad:
                 pixel_value = 1.0  # entire pixel lays inside the circle
-            # Continiuous bump function
+            # Continuous bump function
             elif distance < radius*(1.0 + r_exceed):
                 x = distance/(radius + r_exceed); x_pow = pow(x, power); b_pow = pow(1.0 + r_exceed, power)
                 pixel_value = e*np.exp(b_pow/(x_pow - b_pow))
-            # Pixel value scaling according the the provided image type
+            # Pixel value scaling according the provided image type
             pixel_value *= float(max_intensity)
             # Pixel value conversion to the image type
             if pixel_value > 0.0:
@@ -605,16 +605,16 @@ if __name__ == '__main__':
     plt.ion(); plt.close('all')  # close all plots before plotting new ones
     # Physical parameters of a system (an objective)
     wavelength = 0.55  # in micrometers
-    NA = 0.95  # microobjective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
+    NA = 0.95  # micro-objective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
     # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
     resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
-    pixel_size_nyquist = 0.5*resolution  # Nyquist resolution needed for using theoretical physical resolution above
+    pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
     pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
 
     # Flags for performing tests
-    check_zero_case = False  # checking that integral equation is corresponding to the Airy pattern (zero case)
+    check_zero_case = True  # checking that integral equation is corresponding to the Airy pattern (zero case)
     check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
-    check_performance_optimizations = True  # checking optimization of calculations
+    check_performance_optimizations = False  # checking optimization of calculations
     check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below
     check_warnings = False  # flag for checking the warning producing
     check_io = False  # check save / read kernels
@@ -625,8 +625,10 @@ if __name__ == '__main__':
     pol1z = ZernPol(m=pol1[0], n=pol1[1]); pol2z = ZernPol(m=pol2[0], n=pol2[1]); pol3z = ZernPol(m=pol3[0], n=pol3[1])
 
     if check_zero_case:
-        kern_zc = get_psf_kernel(pol1z, pixel_size, 0.5, wavelength, NA)
-        kern_zc_ref = get_psf_kernel(pol1z, pixel_size, 0.5, wavelength, NA, airy_pattern=True)
+        kern_zc = get_psf_kernel(pol1z, len2pixels=wavelength/5.5, alpha=-0.4, wavelength=0.55, NA=0.65,
+                                 show_kernel=True, normalize_values=True)
+        kern_zc_ref = get_psf_kernel(pol1z, len2pixels=wavelength/5.5, alpha=-0.4, wavelength=0.55, NA=0.65, airy_pattern=True,
+                                     show_kernel=True, normalize_values=True)
         diff = kern_zc_ref - kern_zc; plt.figure("Difference Airy and Piston", figsize=(6, 6)); plt.imshow(diff, cmap=plt.cm.viridis, origin='upper')
 
     if check_sign_coeff:

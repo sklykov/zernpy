@@ -627,7 +627,7 @@ class ZernPol:
         """
         return normalization_factor(self)
 
-    # %% Static methods: indicies transformations
+    # %% Static methods: indices transformations
     @staticmethod
     def get_osa_index(m: int, n: int) -> int:
         """
