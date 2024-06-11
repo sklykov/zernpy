@@ -252,7 +252,7 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
 
 
 # %% PSF kernel calc.
-def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: float) -> int:
+def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float) -> int:
     """
     Estimate empirically the kernel size.
 
@@ -265,8 +265,10 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     alpha : float
         Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., \u00B5m).
         Note that the normalized Zernike polynomials are used, so its coefficient is normalized to the specified wavelength.
-    wavelength: float
+    wavelength : float
         Monochromatic wavelength.
+    NA : float
+        Numerical Aperture of the objective.
 
     Returns
     -------
@@ -275,18 +277,26 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
 
     """
     (m, n) = define_orders(zernike_pol)  # get polynomial orders
-    if m == 0 and n == 0:
-        multiplier = 1.0
+    size_ext = 0   # additional size depending on some parameters below
+    if m == 0 and n == 0:  # Airy
+        if 0.25 < NA < 1.0:
+            multiplier = 4.5*(1.0 - NA)
+        else:
+            multiplier = 4.5 + 2.5*sqrt(1.0 / NA)
     else:
-        multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided order
+        multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided radial order n
         if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
             multiplier += 0.5*sqrt(n - abs(m))
         elif abs(m) > 0 and n % 2 == 0:
             multiplier = 1.35*sqrt(n)
+        if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
+            size_ext += int(round(sqrt(n+abs(m)))) + 1
     if abs(alpha) >= 0.5:
-        multiplier *= sqrt(2.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        multiplier *= sqrt(2.45*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+    elif abs(alpha) >= 0.25:
+        multiplier *= sqrt(4.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
     # Estimation below based on the provided physical properties
-    size = int(round(multiplier*wavelength/len2pixels, 0)) + 1
+    size = int(round((multiplier*wavelength)/len2pixels, 0)) + 1 + size_ext
     # Correct the size of a kernel to the odd integer below
     if size % 2 == 0:
         size += 1
@@ -349,7 +359,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
     # Empirical estimation of the sufficient size for the kernel
     if kernel_size < 3:
-        size = get_kernel_size(zernike_pol, len2pixels, alpha, wavelength)
+        size = get_kernel_size(zernike_pol, len2pixels, alpha, wavelength, NA)
     else:
         size = kernel_size
     # Auto definition of the required PSF size is complicated for the different PSFs forms (e.g., vertical coma with different amplitudes)
@@ -358,7 +368,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         size += 1
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Print note about calculation duration
-    if size > 21 and not suppress_warns:
+    if size > 25 and not suppress_warns and not airy_pattern:
         if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
             print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")
         else:
@@ -415,8 +425,13 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if normalize_values:
         kernel /= np.max(kernel)
     # Provide warning in the case if kernel size not sufficient for representation of the calculated kernel
-    if kernel[0, 0] > np.max(kernel)/100 and not suppress_warns:
-        __warn_message = f"The calculated size for PSF ({size}) isn't sufficient for its proper representation"
+    k_size, k_size = kernel.shape
+    kernel_max_zero_col = np.max(kernel[:, 0]); kernel_max_zero_row = np.max(kernel[0, :])
+    kernel_max_end_col = np.max(kernel[:, k_size-1]); kernel_max_end_row = np.max(kernel[k_size-1, :])
+    kernel_border_max = np.max([kernel_max_zero_col, kernel_max_zero_row, kernel_max_end_col, kernel_max_end_row])
+    if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
+        __warn_message = (f"The calculated size for PSF ({size}) isn't sufficient for its proper representation, "
+                          + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
         warnings.warn(__warn_message)
     # Plotting the calculated kernel
     if show_kernel:
@@ -597,7 +612,8 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 
 
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral', 'get_kernel_size']
+__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral',
+           'get_kernel_size', 'um_char', 'lambda_char', 'get_bumped_circle']
 
 # %% Tests
 if __name__ == '__main__':

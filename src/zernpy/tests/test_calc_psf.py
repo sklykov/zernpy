@@ -10,6 +10,8 @@ For running collected here tests, it's enough to run the command "pytest" from t
 
 """
 import numpy as np
+from pathlib import Path
+import os
 
 # Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
@@ -22,7 +24,7 @@ else:
 
 # Testing functions
 def test_psf_kernel_calc():
-    NA = 0.65; wavelength = 0.55; pixel_size = wavelength / 5.5; ampl = -0.4  # Common physical properties
+    NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.4  # Common physical properties
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
     airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
@@ -58,3 +60,15 @@ def test_zernpsf_usage():
     except ValueError:
         pass
     assert test_init, print("Wrong kernel size assigned but no ValueError thrown")
+
+
+def test_save_load_zernpsf():
+    zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
+    NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.185  # Common physical properties
+    zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+    zpsf2.calculate_psf_kernel(normalized=True)
+    zpsf2.save_json(overwrite=True)  # save in the standard location (package folder)
+    assert Path(zpsf2.json_file_path).is_file(), "File hasn't been saved in the standard location"
+    if Path(zpsf2.json_file_path).is_file():
+        zpsf2.read_json()  # test reading of the stored in json file information
+        os.remove(path=str(Path(zpsf2.json_file_path).absolute()))  # remove saved file for not cluttering folder

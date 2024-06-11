@@ -1,4 +1,4 @@
-### zernpy - Python package for calculation real-valued Zernike polynomials and assotiated 2D PSF kernels
+### zernpy - Python package for calculation real-valued Zernike polynomials and associated 2D PSF kernels
 
 #### Project description and references
 This project is intended for calculation of Zernike polynomials' parameters / real values / properties using exact (analytical) and recursive equations.   
@@ -104,10 +104,11 @@ Note that the function ***generate_polynomials(...)*** returns tuple with OSA in
 The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase distribution for the focal point (no Z-axis dependency). The used references are listed in the docstring of the **calculate_psf_kernel()** method.   
 The sample of calculated PSF for Vertical Trefoil:    
 ![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")    
-Initialization and usage of the class instance:    
+Initialization and usage of the class instance (basic usage with default calculation parameters, such as the kernel size):    
 ```python  # code block for Python code
 from zernpy import ZernPSF
-zpsf = ZernPSF(ZernPol(m=-2, n=2))
-zpsf.set_physical_properties(NA, wavelength, expansion_coeff, pixel_physical_size)
-
+zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
+zpsf.set_physical_properties(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+kernel = zpsf.calculate_psf_kernel(normalized=True)  # get the kernel as the square normalized matrix
 ```
+Check the API documentation for other available methods.

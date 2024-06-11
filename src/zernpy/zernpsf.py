@@ -10,7 +10,6 @@ import numpy as np
 from pathlib import Path
 import warnings
 import matplotlib.pyplot as plt
-# from functools import partial
 from math import pi
 import time
 
@@ -135,7 +134,8 @@ class ZernPSF:
         self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
         self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         if self.kernel_size == 1:  # default value
-            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha, wavelength=self.wavelength)
+            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
+                                               wavelength=self.wavelength, NA=self.NA)
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
     def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int) -> None:
@@ -262,7 +262,7 @@ class ZernPSF:
 
         """
         if self.airy:
-            fig_title = f"Airy pattern with {round(self.expansion_coeff, 2)} expansion coeff."
+            fig_title = f"Airy pattern with {round(self.expansion_coeff, 2)} expansion coeff. {id_str}"
         else:
             fig_title = (f"{self.zernpol.get_mn_orders()} {self.zernpol.get_polynomial_name(True)}: "
                          + f"{round(self.expansion_coeff, 2)} expansion coeff. {id_str}")
@@ -494,25 +494,67 @@ class ZernPSF:
 
 # %% Test as the main script
 if __name__ == "__main__":
+    plt.close("all")  # close all opened before figures
     # zpsf1 = ZernPSF(ZernPol(m=0, n=0)); kernel1 = zpsf1.calculate_psf_kernel(suppress_warns=True); zpsf1.plot_kernel()  # Airy
-    check_other_pols = False  # flag for checking some other polynomials PSFs
-    zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.25
-    # ampl = 0.85  # for saving the plot of the kernel
-    zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/6.5)
-    zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
-    kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf2.plot_kernel("for loop")
+    check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
+    check_airy = False; check_common_psf = False; check_faster_airy = False
+    check_test_conditions = False; check_test_conditions2 = True
+
+    # Common PSF for testing
+    if check_common_psf:
+        zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.25
+        # ampl = 0.85  # for saving the plot of the kernel
+        zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
+        zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
+        kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf2.plot_kernel("for loop")
     # zpsf2.initialize_parallel_workers(); kernel2 = zpsf2.get_kernel_parallel(); zpsf2.plot_kernel("parallel"); zpsf2.deinitialize_workers()
 
-    # Another Zernike polynomial
+    # Another Zernike polynomial, big NA
     if check_other_pols:
         zpsf3 = ZernPSF(ZernPol(m=0, n=4))
         zpsf3.set_physical_props(NA=1.25, wavelength=wavelength_um, expansion_coeff=0.4, pixel_physical_size=wavelength_um/5.25)
         zpsf3.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf3.plot_kernel()
 
+    # Another Zernike polynomial, average to small NA and wavelength
+    if check_small_na_wl:
+        NA = 0.45; wavelength = 0.4; pixel_size = wavelength / 5.25; ampl = 0.18
+        zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
+        zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+        zpsf2.calculate_psf_kernel(normalized=True); zpsf2.plot_kernel()
+
+    if check_airy:
+        NA = 0.12; wavelength = 0.8; pixel_size = wavelength / 4.0; ampl = 1.25
+        zp4 = ZernPol(m=0, n=0); zpsf4 = ZernPSF(zp4)  # piston for the Airy pattern
+        zpsf4.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+        zpsf4.calculate_psf_kernel(normalized=True); zpsf4.plot_kernel("Plus")
+        zpsf4.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=-ampl, pixel_physical_size=pixel_size)
+        zpsf4.calculate_psf_kernel(normalized=True); zpsf4.plot_kernel("Minus")
+
+    if check_faster_airy:  # For set the test for pytest library
+        NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.4
+        zp4 = ZernPol(m=0, n=0); zpsf4 = ZernPSF(zp4)  # piston for the Airy pattern
+        zpsf4.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+        zpsf4.calculate_psf_kernel(normalized=True); zpsf4.plot_kernel()
+
+    if check_test_conditions:
+        NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 5.0; ampl = 0.55
+        zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
+        zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)  # normal assignment
+        zpsf6.set_calculation_props(kernel_size=zpsf6.kernel_size, n_integration_points_r=250, n_integration_points_phi=300)  # normal assignment
+        zpsf6.calculate_psf_kernel(normalized=True); zpsf6.plot_kernel()
+
+    if check_test_conditions2:
+        zp7 = ZernPol(m=1, n=3); zpsf7 = ZernPSF(zp7)  # horizontal coma
+        NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.185  # Common physical properties
+        zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+        zpsf7.calculate_psf_kernel(normalized=True); zpsf7.plot_kernel()
+
     # Utilities tests (visualize, save, read)
-    # zpsf2.visualize_convolution()  # Visualize convolution on the disk image
+    zpsf7.visualize_convolution()  # Visualize convolution on the disk image
     # default_path = Path(__file__).parent.joinpath("saved_psfs").absolute()  # default path for storing JSON files
     # zpsf2.save_json(abs_path=default_path, overwrite=True)  # save calculated PSF kernel along with metadata
-    zpsf2.save_json(overwrite=True)  # save calculated PSF kernel along with metadata
+    # zpsf2.save_json(overwrite=True)  # save calculated PSF kernel along with metadata in the standard location
+    # standard_path = Path.home().joinpath("Desktop")  # saving json on the Desktop
+    # zpsf2.save_json(overwrite=True, abs_path=standard_path)
     # saved_test_file_path = default_path.joinpath("psf_(-3, 3)_-0.25.json")
-    zpsf2.read_json()  # for testing reading
+    # zpsf2.read_json()  # for testing reading
