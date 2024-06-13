@@ -2,27 +2,31 @@
 /* floating string for copy comment this and insert specific inline comment */ 
 
 /* Activate scroll bar showing */
-body{
-    overflow-y: scroll;  /* Allows scrolling vertically of the content of the entire page is overflow */ 
+body {
+    /* overflow-y: scroll;   */  /* Allows scrolling vertically of the content of the entire page is overflow */ 
+    line-height: 1.4em;  /* add additional vertical gaps between lines */
+    overflow-wrap: break-word;
 }
 
 /* This container allows to locate main body and navigation bar on the left side */
-.flexboxContainer{ 
+.flexboxContainer { 
     display: flex;  /* allows to set elements respectively to each other */ 
     flex-direction: row;  /* Explicitly designate main axis for the flexbox layout */
     /* justify-content: space-evenly; */  /* It automatically populate the content evenly for 2 elements */
+    width: 98.5%; align-items: flex-start; justify-content: center;
 }
 
 /* Styling for left-side navigation bar */
-.navbar{
+.navbar {
     /* Navigation bar - takes width according to the content, height = all page height */ 
-    margin: 0.25em; padding: 0.2rem;  /* Just experimenting with different size measure values */
+    margin: 0.25em; padding: 0.25rem;  /* Just experimenting with different size measure values */
     /* flex: auto; */ /* Switched off for preventing populate width more for than the content of this element */ 
     text-align: center; background-color: lightgray;
     font-size: 1rem; font-family: Verdana, Tahoma, sans-serif;
     /* z-index: 1;  */
     position: relative;
     display: flex; flex-direction: column;
+    width: 8%; height: 98%;
 }
 
 /* Styling of all links in the navigation bar (all descendants) */
@@ -36,15 +40,23 @@ body{
 .link:link{color: darkblue;} .link:visited{color: blueviolet;}
 
 /* Styling for the main body with text */
-.mainBody{
+.mainBody {
     flex: 1 auto; /* Automatically populate the content of the element for the remaining space in page */
     font-size: 1rem; font-family: Arial, Helvetica, sans-serif;
     margin: 0.25em;
     position: relative;
 }
 
-.header{
+.header {
     text-align: center; margin: 0.25em;
+}
+
+.contentContainer {
+    margin-left: 0.5em;
+}
+
+.paragraph-header {
+    margin-left: 0.25em; margin-bottom: 0.45em;
 }
 
 /* Provide special styles for small screen sizes (cell phones, test on Google Chrome) */

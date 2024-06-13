@@ -16,9 +16,18 @@
     <nav class="pdoc">
         <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
         <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
-        <div>
+        <div>            <a class="pdoc-button module-list-button" href="../index.html">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
+  <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
+</svg>                &nbsp;
+                Module Index
+            </a>
+
             <img src="../for_favicon.png" class="logo" alt="project logo"/>
 
+            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+                   pattern=".+" required>
 
 
 
@@ -103,30 +112,24 @@
 
             </li>
             <li>
-                    <a class="function" href="#generate_polynomials">generate_polynomials</a>
-            </li>
-            <li>
-                    <a class="function" href="#generate_random_phases">generate_random_phases</a>
-            </li>
-            <li>
-                    <a class="function" href="#generate_phases_image">generate_phases_image</a>
+                    <a class="function" href="#fit_polynomials_vectors">fit_polynomials_vectors</a>
             </li>
             <li>
                     <a class="function" href="#fit_polynomials">fit_polynomials</a>
             </li>
             <li>
-                    <a class="function" href="#fit_polynomials_vectors">fit_polynomials_vectors</a>
+                    <a class="function" href="#generate_phases_image">generate_phases_image</a>
             </li>
             <li>
-                    <a class="function" href="#compare_performances">compare_performances</a>
+                    <a class="function" href="#generate_random_phases">generate_random_phases</a>
             </li>
             <li>
-                    <a class="function" href="#check_conformity">check_conformity</a>
+                    <a class="function" href="#generate_polynomials">generate_polynomials</a>
             </li>
     </ul>
 
 
-            <footer>zernpy ver. 0.0.12, 2023 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.13, 2024 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -144,9 +147,7 @@ zernpy<wbr>.zernikepol    </h1>
 
 <p>Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.</p>
 
-<p>@author: Sergei Klykov, @year: 2023 </p>
-
-<p>@licence: MIT</p>
+<p>@author: Sergei Klykov, @year: 2024, @licence: MIT</p>
 </div>
 
                 
@@ -1137,107 +1138,47 @@ Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.</li>
 
                             </div>
                 </section>
-                <section id="generate_polynomials">
+                <section id="fit_polynomials_vectors">
                     <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">generate_polynomials</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+        <span class="name">fit_polynomials_vectors</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span>,</span><span class="param">	<span class="n">phases_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">radii_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">thetas_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
 
         
     </div>
-    <a class="headerlink" href="#generate_polynomials"></a>
+    <a class="headerlink" href="#fit_polynomials_vectors"></a>
     
-            <div class="docstring"><p>Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).</p>
+            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.</p>
+
+<p>1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
+of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
-<li><strong>max_order</strong> (int, optional):
-Maximum overall radial order (n) for generated Zernike list (pyramid). The default is 10.</li>
+<li><strong>polynomials</strong> (tuple):
+Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.</li>
+<li><strong>phases_vector</strong> (numpy.ndarray):
+Recorded phases.</li>
+<li><strong>radii_vector</strong> (numpy.ndarray):
+Related radii - 1st polar coordinates for the recorded phases.</li>
+<li><strong>thetas_vector</strong> (numpy.ndarray):
+Related angles (thetas) - 2nd polar coordinates for the recorded phases.</li>
+<li><strong>round_digits</strong> (int, optional):
+Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Raised if max_order &lt; 1, because it should be not less than 0.</li>
+<li><strong>AttributeError</strong>: Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1)).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>tuple</strong>: It composes generated ZernPol instances (Zernike polynomials) ordered using OSA indexing scheme.</li>
-</ul>
-</div>
-
-
-                </section>
-                <section id="generate_random_phases">
-                    <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">generate_random_phases</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#generate_random_phases"></a>
-    
-            <div class="docstring"><p>Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.</p>
-
-<h6 id="parameters">Parameters</h6>
-
-<ul>
-<li><strong>max_order</strong> (int, optional):
-Maximum radial order of generated Zernike polynomials. The default is 4.</li>
-<li><strong>img_width</strong> (int, optional):
-Width of generated image. The default is 513.</li>
-<li><strong>img_height</strong> (int, optional):
-Height of generated image. The default is 513.</li>
-<li><strong>round_digits</strong> (int, optional):
-Round digits for polynomials amplitudes generation (numpy.round(...) function call). The default is 4.</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>tuple</strong>: Consisting of:
-2D phase profile image with provided width and height;
-1D numpy.ndarray containing randomly selected polynomials amplitudes;
-tuple with generated Zernike polynomials.</li>
-</ul>
-</div>
-
-
-                </section>
-                <section id="generate_phases_image">
-                    <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">generate_phases_image</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">polynomials_amplitudes</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#generate_phases_image"></a>
-    
-            <div class="docstring"><p>Generate phases image (profile) for provided set of polynomials with provided coefficients (amplitudes).</p>
-
-<h6 id="parameters">Parameters</h6>
-
-<ul>
-<li><strong>polynomials</strong> (tuple, optional):
-Initialized ZernPol instances for generation of phases as the sum of all stored in this tuple polynomials. The default is ().</li>
-<li><strong>polynomials_amplitudes</strong> (tuple, optional):
-Amplitudes of polynomials provided in the tuple 'polynomials'. The default is ().</li>
-<li><strong>img_width</strong> (int, optional):
-Width of generated image. The default is 513.</li>
-<li><strong>img_height</strong> (int, optional):
-Height of generated image. The default is 513.</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>phases_image</strong> (np.ndarray):
-2D image with phases calculated as the sum of provided polynomials.</li>
+<li><strong>zernike_coefficients</strong> (numpy.ndarray):
+1D numpy.ndarray with the fitted coefficients of Zernike polynomials.</li>
 </ul>
 </div>
 
@@ -1296,106 +1237,293 @@ meaning and type as explained before.</li>
 
 
                 </section>
-                <section id="fit_polynomials_vectors">
+                <section id="generate_phases_image">
                     <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">fit_polynomials_vectors</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span>,</span><span class="param">	<span class="n">phases_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">radii_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">thetas_vector</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+        <span class="name">generate_phases_image</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">polynomials_amplitudes</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
 
         
     </div>
-    <a class="headerlink" href="#fit_polynomials_vectors"></a>
+    <a class="headerlink" href="#generate_phases_image"></a>
     
-            <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.</p>
-
-<p>1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
-of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.</p>
+            <div class="docstring"><p>Generate phases image (profile) for provided set of polynomials with provided coefficients (amplitudes).</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
-<li><strong>polynomials</strong> (tuple):
-Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.</li>
-<li><strong>phases_vector</strong> (numpy.ndarray):
-Recorded phases.</li>
-<li><strong>radii_vector</strong> (numpy.ndarray):
-Related radii - 1st polar coordinates for the recorded phases.</li>
-<li><strong>thetas_vector</strong> (numpy.ndarray):
-Related angles (thetas) - 2nd polar coordinates for the recorded phases.</li>
+<li><strong>polynomials</strong> (tuple, optional):
+Initialized ZernPol instances for generation of phases as the sum of all stored in this tuple polynomials. The default is ().</li>
+<li><strong>polynomials_amplitudes</strong> (tuple, optional):
+Amplitudes of polynomials provided in the tuple 'polynomials'. The default is ().</li>
+<li><strong>img_width</strong> (int, optional):
+Width of generated image. The default is 513.</li>
+<li><strong>img_height</strong> (int, optional):
+Height of generated image. The default is 513.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>phases_image</strong> (np.ndarray):
+2D image with phases calculated as the sum of provided polynomials.</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="generate_random_phases">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">generate_random_phases</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#generate_random_phases"></a>
+    
+            <div class="docstring"><p>Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>max_order</strong> (int, optional):
+Maximum radial order of generated Zernike polynomials. The default is 4.</li>
+<li><strong>img_width</strong> (int, optional):
+Width of generated image. The default is 513.</li>
+<li><strong>img_height</strong> (int, optional):
+Height of generated image. The default is 513.</li>
 <li><strong>round_digits</strong> (int, optional):
-Round digits for returned polynomials amplitudes (numpy.round(...) function call). The default is 4.</li>
+Round digits for polynomials amplitudes generation (numpy.round(...) function call). The default is 4.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>tuple</strong>: Consisting of:
+2D phase profile image with provided width and height;
+1D numpy.ndarray containing randomly selected polynomials amplitudes;
+tuple with generated Zernike polynomials.</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="generate_polynomials">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">generate_polynomials</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#generate_polynomials"></a>
+    
+            <div class="docstring"><p>Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>max_order</strong> (int, optional):
+Maximum overall radial order (n) for generated Zernike list (pyramid). The default is 10.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>AttributeError</strong>: Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1)).</li>
+<li><strong>ValueError</strong>: Raised if max_order &lt; 1, because it should be not less than 0.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>zernike_coefficients</strong> (numpy.ndarray):
-1D numpy.ndarray with the fitted coefficients of Zernike polynomials.</li>
-</ul>
-</div>
-
-
-                </section>
-                <section id="compare_performances">
-                    <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">compare_performances</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">min_order</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">tuple</span>:</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#compare_performances"></a>
-    
-            <div class="docstring"><p>Compare performances of radial polynomials calculation by using recursive and exact equations.</p>
-
-<p>Comparison achieved by simple measuring of time in msec needed for calculation of all radial
-polynomials from minimal radial order up to maximum radial order returned as tuple.</p>
-
-<h6 id="parameters">Parameters</h6>
-
-<ul>
-<li><strong>min_order</strong> (int):
-Minimum radial order of used polynomials (n).</li>
-<li><strong>max_order</strong> (int):
-Maximum radial order of used polynomials (n).</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>tuple</strong>: Composed by time for recursive calculation and time for exact calculation.</li>
-</ul>
-</div>
-
-
-                </section>
-                <section id="check_conformity">
-                    <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">check_conformity</span><span class="signature pdoc-code condensed">(<span class="return-annotation">):</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#check_conformity"></a>
-    
-            <div class="docstring"><p>Test initialization parameters and transform between indices consistency.</p>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>None.</strong></li>
+<li><strong>tuple</strong>: It composes generated ZernPol instances (Zernike polynomials) ordered using OSA indexing scheme.</li>
 </ul>
 </div>
 
 
                 </section>
     </main>
-</body>
+<script>
+    function escapeHTML(html) {
+        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
+    }
+
+    const originalContent = document.querySelector("main.pdoc");
+    let currentContent = originalContent;
+
+    function setContent(innerHTML) {
+        let elem;
+        if (innerHTML) {
+            elem = document.createElement("main");
+            elem.classList.add("pdoc");
+            elem.innerHTML = innerHTML;
+        } else {
+            elem = originalContent;
+        }
+        if (currentContent !== elem) {
+            currentContent.replaceWith(elem);
+            currentContent = elem;
+        }
+    }
+
+    function getSearchTerm() {
+        return (new URL(window.location)).searchParams.get("search");
+    }
+
+    const searchBox = document.querySelector(".pdoc input[type=search]");
+    searchBox.addEventListener("input", function () {
+        let url = new URL(window.location);
+        if (searchBox.value.trim()) {
+            url.hash = "";
+            url.searchParams.set("search", searchBox.value);
+        } else {
+            url.searchParams.delete("search");
+        }
+        history.replaceState("", "", url.toString());
+        onInput();
+    });
+    window.addEventListener("popstate", onInput);
+
+
+    let search, searchErr;
+
+    async function initialize() {
+        try {
+            search = await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve(window.pdocSearch);
+                script.onerror = (e) => reject(e);
+                script.src = "../search.js";
+                document.getElementsByTagName("head")[0].appendChild(script);
+            });
+        } catch (e) {
+            console.error("Cannot fetch pdoc search index");
+            searchErr = "Cannot fetch search index.";
+        }
+        onInput();
+
+        document.querySelector("nav.pdoc").addEventListener("click", e => {
+            if (e.target.hash) {
+                searchBox.value = "";
+                searchBox.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    function onInput() {
+        setContent((() => {
+            const term = getSearchTerm();
+            if (!term) {
+                return null
+            }
+            if (searchErr) {
+                return `<h3>Error: ${searchErr}</h3>`
+            }
+            if (!search) {
+                return "<h3>Searching...</h3>"
+            }
+
+            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+
+            const results = search(term);
+
+            let html;
+            if (results.length === 0) {
+                html = `No search results for '${escapeHTML(term)}'.`
+            } else {
+                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
+            }
+            for (let result of results.slice(0, 10)) {
+                let doc = result.doc;
+                let url = `../${doc.modulename.replaceAll(".", "/")}.html`;
+                if (doc.qualname) {
+                    url += `#${doc.qualname}`;
+                }
+
+                let heading;
+                switch (result.doc.kind) {
+                    case "function":
+                        if (doc.fullname.endsWith(".__init__")) {
+                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
+                        } else {
+                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
+                        }
+                        break;
+                    case "class":
+                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
+                        if (doc.bases)
+                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
+                        heading += `:`;
+                        break;
+                    case "variable":
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        if (doc.annotation)
+                            heading += `<span class="annotation">${doc.annotation}</span>`;
+                        if (doc.default_value)
+                            heading += `<span class="default_value">${doc.default_value}</span>`;
+                        break;
+                    default:
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        break;
+                }
+                html += `
+                        <section class="search-result">
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
+                        <div class="docstring">${doc.doc}</div>
+                        </section>
+                    `;
+
+            }
+            return html;
+        })());
+    }
+
+    if (getSearchTerm()) {
+        initialize();
+        searchBox.value = getSearchTerm();
+        onInput();
+    } else {
+        searchBox.addEventListener("focus", initialize, {once: true});
+    }
+
+    searchBox.addEventListener("keydown", e => {
+        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
+            let focused = currentContent.querySelector(".search-result.focused");
+            if (!focused) {
+                currentContent.querySelector(".search-result").classList.add("focused");
+            } else if (
+                e.key === "ArrowDown"
+                && focused.nextElementSibling
+                && focused.nextElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.nextElementSibling.classList.add("focused");
+                focused.nextElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "ArrowUp"
+                && focused.previousElementSibling
+                && focused.previousElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.previousElementSibling.classList.add("focused");
+                focused.previousElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "Enter"
+            ) {
+                focused.querySelector("a").click();
+            }
+        }
+    });
+</script></body>
 </html>

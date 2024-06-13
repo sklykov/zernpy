@@ -1,6 +1,6 @@
 [project]
 name = "zernpy"
-version = "0.0.12"
+version = "0.0.13"
 authors = [
     {name = "Sergei Klykov"},
     {email = "sergej.klykow@gmail.com"}
@@ -18,8 +18,9 @@ classifiers = [
 dependencies = [
     "numpy",
     "matplotlib",
+	"scipy",
 ]
-keywords = ["zernike-polynomials"]
+keywords = ["zernike-polynomials", "zernike-psf"]
 
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
 # But the the links themselves are mapped / parced by the PyPi website
