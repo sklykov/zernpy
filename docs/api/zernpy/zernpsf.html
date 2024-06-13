@@ -114,7 +114,23 @@ zernpy<wbr>.zernpsf    </h1>
     </div>
     <a class="headerlink" href="#ZernPSF"></a>
     
-            <div class="docstring"><p>PSF (2D) associated with Zernike polynomial.</p>
+            <div class="docstring"><p>The PSF (2D) calculated for image (focal) plane of a microscopic system assuming that the phase profile is described
+by the Zernike polynomial. In other words, the PSF describing the image of point source formed by the microscopic system. </p>
+
+<p>Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
+the references to the diffraction integral used for calculations. </p>
+
+<h6 id="references">References</h6>
+
+<p>[1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  </p>
+
+<p>[2] <a href="https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations">https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations</a>  </p>
+
+<p>[3] <a href="https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf">https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf</a>   </p>
+
+<p>[4] <a href="https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations">https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations</a>  </p>
+
+<p>[5] <a href="https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]">https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]</a></p>
 </div>
 
 
@@ -225,10 +241,10 @@ Number of integration points used for calculation diffraction integral on the po
 The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of imaging system (micro-objective). </p>
 
 <p>The order of integration and used equations in short:
-1st - integration going on radius p, using trapezoidal rule: p<em>(alpha</em>zernike_pol.polynomial_value(p, phi) - r<em>p</em>np.cos(phi - theta))*1j </p>
+1st - integration going on radius p, using trapezoidal rule: p*(alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j </p>
 
 <p>2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as final output, it
-provides as the np.power(np.abs(integral_sum), 2)<em>integral_normalization, there integral_normalization = 1.0/(pi</em>pi) - the square of
+provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization = 1.0/(pi * pi) - the square of
 the module of the diffraction integral (complex value), i.e. intensity as the PSF value. </p>
 
 <p>For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. </p>

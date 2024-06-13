@@ -18,8 +18,9 @@ classifiers = [
 dependencies = [
     "numpy",
     "matplotlib",
+	"scipy",
 ]
-keywords = ["zernike-polynomials"]
+keywords = ["zernike-polynomials", "zernike-psf"]
 
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
 # But the the links themselves are mapped / parced by the PyPi website

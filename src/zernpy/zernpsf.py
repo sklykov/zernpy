@@ -31,7 +31,21 @@ __docformat__ = "numpydoc"
 
 # %% PSF class
 class ZernPSF:
-    """PSF (2D) associated with Zernike polynomial."""
+    """
+    The PSF (2D) calculated for image (focal) plane of a microscopic system assuming that the phase profile is described
+    by the Zernike polynomial. In other words, the PSF describing the image of point source formed by the microscopic system. \n
+    Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
+    the references to the diffraction integral used for calculations. \n
+
+    References
+    ----------
+    [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  \n
+    [2] https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations  \n
+    [3] https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf   \n
+    [4] https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations  \n
+    [5] https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]  \n
+
+    """
 
     # Class predefined values along with their types for providing reference how the default values computed
     kernel: np.ndarray = np.ones(shape=(1, 1)); kernel_size: int = 1  # by default, single point as the 2D matrix [[1.0]]
@@ -203,9 +217,9 @@ class ZernPSF:
         Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of imaging system (micro-objective). \n
         The order of integration and used equations in short:
-        1st - integration going on radius p, using trapezoidal rule: p*(alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j \n
+        1st - integration going on radius p, using trapezoidal rule: p\*(alpha\*zernike_pol.polynomial_value(p, phi) - r\*p\*np.cos(phi - theta))\*1j \n
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as final output, it
-        provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization = 1.0/(pi*pi) - the square of
+        provides as the np.power(np.abs(integral_sum), 2)\*integral_normalization, there integral_normalization = 1.0/(pi \* pi) - the square of
         the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n
