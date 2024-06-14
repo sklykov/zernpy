@@ -226,7 +226,33 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
 
 # %% Testing various speeding up calculation approaches
 def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int,
-                             paralleljobs: Parallel = None) -> float:
+                             paralleljobs=None) -> float:
+    """
+    Calculate PSF point for the kernel using Parallel class from the joblib library.
+
+    Parameters
+    ----------
+    zernike_pol : ZernPol
+        Zernike polynomial definition as the ZernPol() class.
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    alpha : float, optional
+        Amplitude of the polynomial.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+    n_int_phi_points : int
+        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
+    paralleljobs : Parallel (from joblib import Parallel), optional
+        Parallel class for parallelizing the computation jobs using joblib backend. The default is None.
+
+    Returns
+    -------
+    float
+        |U|**2 - the module and square of the amplitude, intensity as the PSF value.
+
+    """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
     # below - wrapping the callable function with the fixed arguments for using in the paralleled framework call
     radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta, alpha=alpha, n_int_r_points=n_int_r_points)
