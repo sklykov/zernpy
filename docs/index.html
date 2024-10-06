@@ -30,10 +30,11 @@
 
   <body>
     <!-- Make flexbox with breakpoint rule: for md and more, set elements in columns, for md and less - in rows -->
-    <div class="flex flex-col lg:flex-row">
-      <!-- Navigation panel, for lg and more: elements in rows, for less - in columns -->
+    <main class="flex flex-col lg:flex-row">
+      <!-- Navigation panel, for lg and more: elements composed in rows, for less - in columns -->
       <nav
-        class="flex flex-row flex-wrap lg:flex-col justify-evenly lg:justify-around content-center bg-zinc-500 text-center p-2"
+        class="flex flex-row flex-wrap lg:flex-col justify-evenly lg:justify-around content-center bg-zinc-500 text-center p-2
+        text-lg font-serif"
       >
         <a
           class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:amber-350 mx-3 my-2 lg:my-2 lg:mx-4"
@@ -61,17 +62,20 @@
         </a>
       </nav>
 
-      <!-- Main content of the webpage -->
-      <main class="mainBody">
-        <div class="contentContainer">
-          <header>
-            <h3 class="header">Welcome!</h3>
-            <div class="header">
-              I am pleased that you've found it interesting to take a look on my
-              Python library <strong>"zernpy"</strong>.
-            </div>
-            <hr />
+      <!-- Main content of the webpage, position - relative for placing an image on the background -->
+      <div class="relative font-sans">  
+
+        <div class="contentContainer m-1">
+          
+          <!-- Gradually implement Tailwind styling, one element after another -->
+          <header class="text-center bg-slate-200/80 p-2 my-1 me-2">
+            <h3 class="uppercase font-mono font-bold text-2xl">Welcome!</h3>
+            <p class="text-xl">
+              I am pleased that you are visiting this page with a few details about the
+              Python library <strong>"zernpy"</strong>
+            </p>
           </header>
+
           <section>
             <div>
               <h4 class="paragraph-header">Installation instructions</h4>
@@ -225,8 +229,8 @@
         <!-- Below - image element that used for setting it as the background image -->
         <div class="bgImage"></div>
         <!-- Footer with some info -->
-        <footer id="page_footer">2022-2024 S.K., MIT licensed</footer>
-      </main>
-    </div>
+        <footer id="page_footer" class="ms-2 p-1 text-base">2022-2024 S.K., MIT licensed</footer>
+      </div>
+    </main>
   </body>
 </html>
