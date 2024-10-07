@@ -217,9 +217,10 @@ class ZernPSF:
         Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of imaging system (micro-objective). \n
         The order of integration and used equations in short:
-        1st - integration going on radius p, using trapezoidal rule: p\*(alpha\*zernike_pol.polynomial_value(p, phi) - r\*p\*np.cos(phi - theta))\*1j \n
+        1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022azernike_pol.polynomial_value(p, phi) -
+                                                                             r\u2022p\u2022cos(phi - theta))\u20221j \n
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as final output, it
-        provides as the np.power(np.abs(integral_sum), 2)\*integral_normalization, there integral_normalization = 1.0/(pi \* pi) - the square of
+        provides as the np.power(np.abs(integral_sum), 2)\u2022integral_normalization, there integral_normalization = 1.0/(pi \u002a pi) - the square of
         the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n

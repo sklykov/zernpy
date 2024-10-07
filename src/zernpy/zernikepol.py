@@ -16,6 +16,7 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 import random
 import time
+from typing import Union
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -348,7 +349,7 @@ class ZernPol:
             raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
 
     # %% Polynomial values calculation in various forms
-    def polynomial_value(self, r, theta, use_exact_eq: bool = False):
+    def polynomial_value(self, r: Union[float, np.ndarray], theta: Union[float, np.ndarray], use_exact_eq: bool = False):
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
