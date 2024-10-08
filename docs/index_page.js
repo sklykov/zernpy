@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Register event for tracing the new selected value of indexing type for Zernike polynomial from index.html
     selector.addEventListener("change", () => {
-        conversionReport.textContent = "Click button on the left to get here conversions";
+        conversionReport.textContent = 'Click "Get Indices/Orders" to get the conversion between indices';
         console.log("Selected type of polynomial specification: " + selector.value); 
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         nOrder = -1; mOrder = -1; osaIndex = -1; nollIndex = -1; fringeIndex = -1;  // set inconsistent values as defaults
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
             case "m,n":
                 nOrder = nOrderInput.value; mOrder = mOrderInput.value;
                 ordersLabel.innerText = "orders"; firstOrderLabel.innerText = "n =";
-                secondOrderLabel.style.visibility = "visible"; secondInputOrder.style.visibility = "visible"; 
+                secondOrderLabel.style.display = "inline"; secondInputOrder.style.display = "inline"; 
                 notOrdersSelected = false; selectedNollOrFringe = false; 
                 if (nOrder === -1 || mOrder === -1) {
                     nollIndex = 0; mOrder = 0; // Set the appropriate default value
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
          // The code below is executed if the orders m,n not selected and common for all cases then selected OSA / Noll / Fringe
         if (notOrdersSelected){
-            ordersLabel.innerText = "index"; secondOrderLabel.style.visibility = "hidden"; secondInputOrder.style.visibility = "hidden"; 
+            ordersLabel.innerText = "index"; secondOrderLabel.style.display = "none"; secondInputOrder.style.display = "none"; 
         }
         // The code for selected cases "noll" or "fringe", except "m,n"
         if (selectedNollOrFringe){
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Register update of nOrder / OSA, Noll, Fringe indices (value is used for both cases: n order and the specific index)
     nOrderInput.addEventListener("change", () =>{
-        conversionReport.textContent = "Click button on the left to get here conversions";
+        conversionReport.textContent = 'Click "Get Indices/Orders" to get the conversion between indices';
         let isNumber = validateOrderN(); 
         // console.log("Validation result: " + isNumber);
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector

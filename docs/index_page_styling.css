@@ -1,75 +1,11 @@
- /* This class contains all the text inside */
- .contentContainer{
-    z-index: 1; position: relative; /* Position relative needed for z-index choosing*/
-}
 /* Below - setting the background image for the page */
 .bgImage{
     background-image: url('half_pyramid_zerns.png');
     background-position-x: left; 
-    /* background-position: center; */
-    /* background-repeat: no-repeat; */
     background-repeat: repeat;
     background-size: contain;
     width: 100%; height: 100%;
-    opacity: 0.25; 
+    opacity: 0.20; 
     position: absolute; top: 0; left: 0; /* Allows to manipulate the position inside of mainBody */
     z-index: 0;  /* NOTE this z-index because setting absolute position and opacity put their own rules in z-indexing */  
-    /* background-color: yellow; */
-}
-/* Styling with inline elements with code */
-.commandCode{
-    font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial; font-size: 0.98em;
-}
-/* Style for each text string */
-.textString{
-    margin: 0.25em;
-}
-#page_footer{
-    font-size: 0.9rem; font-family: 'Courier New', Courier, monospace; padding-top: 4em;
-}
-/* Inline elements means various elements (inputs, buttons, selector) placed on the single line on the page */
-.input-element{
-    margin-left: 0.2em; margin-right: 0.2em; font-size: 0.95em;
-}
-/* Labels placed on the single line on the page */
-.label-element{
-    margin-left: 0.25em; margin-right: 0.15em;
-}
-/* Specific style for placeholder for conversions */
-#conversionString{
-    margin-left: 0.25em; border: 1.5px solid blue; padding: 0.32em; border-radius: 1em; background-color: whitesmoke;
-    font-size: 0.98rem;
-}
-/* Initial style for some div-s */
-#selectorElement, #getIndicesBtn, #ordersElement{
-        display: inline-block;
-    }
-
-/* Adaptive rules, media queries */
-/* Rearrange elements for opening website on screens 750px <= width <= 1220px */
-@media screen and (max-width: 1220px) and (min-width: 750px){
-    .inputsOrdersConversion{
-        display: flex; flex-direction: row;
-    }
-    #selectorElement, #getIndicesBtn, #ordersElement{
-        display: inline-block;
-    }
-    .label-element, .input-element{
-        margin-top: 0.25em; margin-bottom: 0.25em;
-    }
-    #conversionString{
-        display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.96em;
-    }
-}
-/* Rearrange elements for opening website on mobile phones */
-@media screen and (max-width: 749px){
-    #selectorElement, #getIndicesBtn, #ordersElement{
-        display: block;
-    }
-    #conversionString{
-        display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.94em;
-    }
-    .label-element, .input-element{
-        margin: 0.25em 0.05em;
-    }
 }
