@@ -1,0 +1,18 @@
+/* Setting images in the pyramidal order */
+.imagesContainer {
+    position: relative;
+    /* Makes the child to select position relative to it */
+    width: inherit;
+    height: fit-content;
+    font-size: 0; /* This setting removes additional whitespaces between images in this container */
+}
+
+.ZernProfile {
+    width: 100px;
+    height: 100px;
+    display: inline-block;
+    position: absolute;
+    /* Padding = 0 and margins = 0 removes additional white spaces between inline blocks */
+    padding: 0;
+    margin: 0;
+}

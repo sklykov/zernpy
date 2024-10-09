@@ -1,8 +1,6 @@
-"use strict";  // enables more strict behavior of JS
+"use strict";
 
-// the way of adding the Event listener - to guarantee that the page and all elements are available
 document.addEventListener("DOMContentLoaded", function () {
-    // console.log("Index Page loaded");
 
     // Set explicitly default values for indexing scheme and m,n associated orders and save handlers to them
     const nOrderInput = document.getElementById("firstInputOrder"); nOrderInput.value = 0;
@@ -17,6 +15,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const selector = document.getElementsByName("Index type")[0];  // get the selected HTML element by name
     selector.selectedIndex = 0;  // set the default option to selected HTML element
     const conversionReport = document.getElementById("conversionString");
+    const pageBody = document.querySelector("body");
+
+    // Defining and fix not filling the entire page if the body's height is less then the screen size
+    // Not found the same solution in Tailwind list of classes, it isn't universal to set as the default h-screen class, 
+    // because in this case for mobile devices the body will overflow their screens
+    let hW = window.innerHeight; let hBody = pageBody.offsetHeight; 
+    if (hW > hBody) {
+        pageBody.classList.add("h-screen");  // force body to fill the entire screen if there is not enough content even
+    }
 
     // Variables for storing values
     let nOrder = 0; let mOrder = 0; let osaIndex = -1; let nollIndex = -1; let fringeIndex = -1;

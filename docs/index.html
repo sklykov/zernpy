@@ -1,8 +1,6 @@
 <!DOCTYPE html>
-<!-- This designates that this is HTML 5 file (W3 schools) -->
+<!-- Standard HTML 5 file structure -->
 <html lang="en">
-  <!-- Root element of an HTML page (W3 schools) -->
-
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -18,10 +16,10 @@
     <!-- Load page specific script -->
     <script src="index_page.js"></script>
 
-    <!-- Page specific styling -->
+    <!-- Page specific styling (only background image styling remained) -->
     <link rel="stylesheet" href="./index_page_styling.css" />
 
-    <!-- Load external overall applicable stylesheets -->
+    <!-- Single stylesheet for 2 pages: index and about (e.g., ".link" class) -->
     <link rel="stylesheet" href="./index_about_styling.css" />
 
     <!-- Add Tailwind using CDN, local installation through npm is used only for getting autocompletion -->
@@ -30,31 +28,31 @@
 
   <body>
     <!-- Make flexbox with breakpoint rule: for md and more, set elements in columns, for md and less - in rows -->
-    <main class="flex flex-col lg:h-dvh lg:flex-row">
+    <main class="flex flex-col h-full lg:flex-row leading-relaxed">
       <!-- Navigation panel, for lg and more: elements composed in rows, for less - in columns -->
       <nav
-        class="flex flex-row flex-wrap lg:flex-col lg:justify-start lg:space-y-28 lg:space-x-0 justify-around content-center space-x-4 bg-zinc-500 text-center p-2 text-lg font-serif"
+        class="flex flex-wrap flex-col sm:flex-row lg:flex-col lg:justify-start lg:space-y-28 space-x-4 lg:space-x-0 justify-around content-center bg-teal-900 text-center p-2 text-lg font-serif"
       >
         <a
-          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:amber-350 lg:mt-24"
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:mt-24 lg:px-3 hidden md:block"
           href="#"
         >
-          Home
+          Main
         </a>
         <a
-          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:amber-350"
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
           href="./api/zernpy/zernikepol.html"
         >
           API of <em class="font-mono"> zernikepol </em> module
         </a>
         <a
-          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:amber-350"
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
           href="./api/zernpy/zernpsf.html"
         >
           API of <em class="font-mono"> zernpsf </em> module
         </a>
         <a
-          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:amber-350"
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
           href="./about.html"
         >
           About
@@ -62,19 +60,19 @@
       </nav>
 
       <!-- Main content of the webpage, position - relative for placing an image on the background -->
-      <div class="relative font-sans">
-        <div class="relative z-10 m-1">
+      <div class="flex flex-col grow justify-between font-sans relative z-10">
+        <div>
           <!-- Gradually implement Tailwind styling, one element after another -->
-          <header class="text-center 2xl:text-left bg-slate-200/80 p-2 m-1">
-            <h3 class="uppercase font-mono font-bold text-2xl">Welcome!</h3>
-            <p class="text-xl">
+          <header class="text-center 2xl:text-left bg-slate-400/50 px-4 py-3">
+            <h3 class="mx-3 uppercase font-mono font-bold text-2xl">Welcome!</h3>
+            <p class="text-xl mx-3">
               I am pleased that you are visiting this page with a few details
               about the Python library <strong>"zernpy"</strong>
             </p>
           </header>
 
-          <article class="mt-2 font-medium">
-            <section class="m-1 p-1 xl:size-11/12 2xl:size-5/6">
+          <article class="font-medium px-4 py-2 m-2 space-y-4">
+            <section class="xl:size-11/12 2xl:size-5/6">
               <h4 class="text-left text-xl font-semibold mb-1">
                 Brief Installation instructions
               </h4>
@@ -86,7 +84,7 @@
                 >
               </p>
               <p class="text-justify text-lg">
-                For updating the already install package use the command:
+                For updating the already installed package use the command:
                 <code class="font-mono italic font-bold">
                   pip install --upgrade zernpy
                 </code>
@@ -97,19 +95,20 @@
               </p>
               <p class="text-justify text-lg">
                 The requirements for installation: Python version >= 3.8,
-                libraries <em>numpy</em>, <em>matplotlib</em> and
-                <em>scipy</em>. Check the
+                libraries <em class="font-mono font-bold">NumPy</em>,
+                <em>Matplotlib</em> and <em>SciPy</em>. Check the
                 <a
                   class="link font-semibold"
                   href="https://pypi.org/project/zernpy/"
                   target="_blank"
                   >webpage</a
                 >
-                of this library on the PyPi package index.
+                of this library on the PyPi package index for more details about
+                the package.
               </p>
             </section>
 
-            <section class="m-1 p-1 xl:size-11/12 2xl:size-5/6">
+            <section class="xl:size-11/12 2xl:size-5/6">
               <h4 class="text-left text-xl font-semibold mb-1">
                 Import and class initialization
               </h4>
@@ -144,7 +143,7 @@
               </p>
             </section>
 
-            <section class="m-1 p-1 xl:size-11/12 2xl:size-5/6">
+            <section class="xl:size-11/12 2xl:size-5/6">
               <h4 class="text-left text-xl font-semibold mb-1">
                 Calculation methods
               </h4>
@@ -164,33 +163,43 @@
               </p>
               <p class="text-justify text-lg">
                 For accessing the full list of implemented methods for
-                <em>ZernPol</em> class (Zernike polynomial) and
-                <em>ZernPSF</em> class (calculation 2D PSF for formed by the
-                microscopic systems associated with the phase profile described
-                by the Zernike polynomial) please follow the link to the API
-                Dictionary on the left navigation tab.
+                <em class="font-mono italic font-bold">ZernPol</em> class
+                (Zernike polynomial abstraction) and
+                <em class="font-mono italic font-bold">ZernPSF</em> class
+                (calculation 2D PSF for formed by the microscopic systems
+                associated with the phase profile described by a Zernike
+                polynomial) please follow the link to the API Dictionary on the
+                navigation tab.
               </p>
             </section>
 
-            <section class="m-1 p-1 xl:size-11/12 2xl:size-5/6">
+            <section class="xl:size-11/12 2xl:size-5/6">
               <h4 class="text-left text-xl font-semibold mb-1">
                 Development Note
               </h4>
               <p class="text-justify text-lg">
                 This page, along with the "About" page, are also used to
                 showcase my skills in frontend development. This one was styled
-                using Tailwind classes. Thus, not everything on this page is
-                meant solely to reveal the features of the implemented library.
+                using Tailwind classes. Thus, not all content and functionality
+                on these pages are meant solely to reveal the features of the
+                implemented 'zernpy' library.
+              </p>
+              <p class="text-justify text-lg">
+                Originally, this page had been developed using pure CSS styling.
+                After finishing the dedicated development branch, almost all
+                styling on this page is achieved by using Tailwind classes added
+                through CDN.
               </p>
             </section>
 
-            <section class="m-1 p-1 xl:size-11/12 2xl:size-5/6">
+            <section class="xl:size-11/12 2xl:size-5/6">
               <h4 class="text-left text-xl font-semibold mb-1">
-                Definition of Zernike polynomial
+                Definition of a Zernike polynomial using various indexing
+                schemes
               </h4>
               <p class="text-justify text-lg">
                 Specify below the index (indices) for Zernike polynomial
-                specification (see all listed indices
+                specification (see all listed schemes
                 <a
                   class="link font-semibold"
                   href="https://en.wikipedia.org/wiki/Zernike_polynomials"
@@ -202,7 +211,10 @@
               <div
                 class="flex flex-col sm:flex-row flex-wrap items-center my-2 text-lg"
               >
-                <div class="inline-flex text-center items-center mr-2 my-2">
+                <!-- Select indexing scheme -->
+                <div
+                  class="inline-flex text-center items-center mr-2 my-2 z-10"
+                >
                   <label class="mr-2"> Select the indexing type: </label>
                   <select
                     class="bg-slate-300 px-1 py-1 round"
@@ -215,8 +227,9 @@
                   </select>
                 </div>
 
+                <!-- Orders selector -->
                 <div
-                  class="inline-flex text-center items-center ml-2 mr-6 my-2"
+                  class="inline-flex text-center items-center ml-2 mr-6 my-2 z-10"
                 >
                   <span class="mr-2" id="ordersLabel"> Orders: </span>
                   <label
@@ -261,7 +274,8 @@
                   />
                 </div>
 
-                <div class="my-2 mr-6">
+                <!-- Button for calculation -->
+                <div class="my-2 mr-6 z-10">
                   <input
                     class="py-1 px-2 bg-green-800 text-stone-100 rounded-lg hover:bg-green-700 hover:text-stone-50"
                     type="button"
@@ -270,7 +284,8 @@
                   />
                 </div>
 
-                <div class="my-2 text-center">
+                <!-- Info string for getting the conversion -->
+                <div class="my-2 text-center z-10">
                   <span
                     id="conversionString"
                     class="py-1 px-2 bg-indigo-950 text-stone-50 rounded"
@@ -286,9 +301,7 @@
         <!-- Below - image element that used for setting it as the background image -->
         <div class="bgImage"></div>
         <!-- Footer with some info -->
-        <footer
-          class="2xl:mt-28 xl:mt-24 lg:mt-20 mt-4 mb-4 p-1 text-lg font-medium text-center"
-        >
+        <footer class="m-2 p-2 text-lg font-medium text-center">
           2022-2024 S.K., MIT licensed
         </footer>
       </div>
