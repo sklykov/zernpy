@@ -1,0 +1,12 @@
+/* Below - setting the background image for the page */
+.bgImage {
+    background-image: url('half_pyramid_zerns.png');
+    background-position-x: left; 
+    background-repeat: repeat;
+    background-size: contain;
+    width: 100%; height: 100%;
+    opacity: 0.20; 
+    /* Allows to manipulate the position inside of mainBody */
+    position: absolute; top: 0; left: 0;
+    z-index: 0;  /* NOTE this z-index because setting absolute position and opacity put their own rules in z-indexing */  
+}

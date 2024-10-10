@@ -1,197 +1,310 @@
-<!DOCTYPE html> <!-- This designates that this is HTML 5 file (W3 schools) -->
-<html lang="en">  <!-- Root element of an HTML page (W3 schools) -->
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="S.K.">
-    <meta name="licensed" content="MIT">
+<!DOCTYPE html>
+<!-- Standard HTML 5 file structure -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="S.K." />
+    <meta name="licensed" content="MIT" />
 
     <title>Project "zernpy"</title>
 
     <!-- Favicon specification from the local file -->
-    <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon">
+    <link rel="icon" href="favicon_zernpy.ico" type="image/x-icon" />
 
-    <!-- Load page specific script --> 
+    <!-- Load page specific script -->
     <script src="index_page.js"></script>
 
-    <!-- Load external overall applicable stylesheets -->
-    <link rel="stylesheet" href="index_about_styling.css">
+    <!-- Page specific styling (only background image styling remained) -->
+    <link rel="stylesheet" href="./index_page_styling.css" />
 
-    <!-- Page-specific styles -->
-    <style>
-        /* This class contains all the text inside */
-        .contentContainer{
-            z-index: 1; position: relative; /* Position relative needed for z-index choosing*/
-        }
-        /* Below - setting the background image for the page */
-        .bgImage{
-            background-image: url('half_pyramid_zerns.png');
-            background-position-x: left; 
-            /* background-position: center; */
-            /* background-repeat: no-repeat; */
-            background-repeat: repeat;
-            background-size: contain;
-            width: 100%; height: 100%;
-            opacity: 0.25; 
-            position: absolute; top: 0; left: 0; /* Allows to manipulate the position inside of mainBody */
-            z-index: 0;  /* NOTE this z-index because setting absolute position and opacity put their own rules in z-indexing */  
-            /* background-color: yellow; */
-        }
-        /* Styling with inline elements with code */
-        .commandCode{
-            font-style: italic; font-weight: bold; font-family: 'Consolas', 'Trebuchet MS', Arial; font-size: 0.98em;
-        }
-        /* Style for each text string */
-        .textString{
-            margin: 0.25em;
-        }
-        #page_footer{
-            font-size: 0.9rem; font-family: 'Courier New', Courier, monospace; padding-top: 4em;
-        }
-        /* Inline elements means various elements (inputs, buttons, selector) placed on the single line on the page */
-        .input-element{
-            margin-left: 0.2em; margin-right: 0.2em; font-size: 0.95em;
-        }
-        /* Labels placed on the single line on the page */
-        .label-element{
-            margin-left: 0.25em; margin-right: 0.15em;
-        }
-        /* Specific style for placeholder for conversions */
-        #conversionString{
-            margin-left: 0.25em; border: 1.5px solid blue; padding: 0.32em; border-radius: 1em; background-color: whitesmoke;
-            font-size: 0.98rem;
-        }
-        /* Initial style for some div-s */
-        #selectorElement, #getIndicesBtn, #ordersElement{
-                display: inline-block;
-            }
-        /* Rearrange elements for opening website on screens 750px <= width <= 1220px */
-        @media screen and (max-width: 1220px) and (min-width: 750px){
-            .inputsOrdersConversion{
-                display: flex; flex-direction: row;
-            }
-            #selectorElement, #getIndicesBtn, #ordersElement{
-                display: inline-block;
-            }
-            .label-element, .input-element{
-                margin-top: 0.25em; margin-bottom: 0.25em;
-            }
-            #conversionString{
-                display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.96em;
-            }
-        }
-        /* Rearrange elements for opening website on mobile phones */
-        @media screen and (max-width: 749px){
-            #selectorElement, #getIndicesBtn, #ordersElement{
-                display: block;
-            }
-            #conversionString{
-                display: block; max-width: fit-content; margin-top: 0.35em; font-size: 0.94em;
-            }
-            .label-element, .input-element{
-                margin: 0.25em 0.05em;
-            }
-        }
-    </style>
-</head>
+    <!-- Single stylesheet for 2 pages: index and about (e.g., ".link" class) -->
+    <link rel="stylesheet" href="./index_about_styling.css" />
 
-<body>
-    <!-- Overall div element - for the flexbox aligning -->
-    <div class="flexboxContainer">
+    <!-- Add Tailwind using CDN, local installation through npm is used only for getting autocompletion -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
 
-        <!-- Navigation panel, some elements and inspiration get from W3 Schools, better use <nav> element -->
-        <nav class="navbar">
-            <a class="link" href="index.html"> Main </a>
-            <a class="link" href="./api/zernpy/zernikepol.html"> API of <em> zernikepol </em> module </a>
-            <a class="link" href="./api/zernpy/zernpsf.html"> API of <em> zernpsf </em> module </a>
-            <a class="link" href="about.html"> About </a>
-        </nav>
+  <body>
+    <!-- Make flexbox with breakpoint rule: for md and more, set elements in columns, for md and less - in rows -->
+    <main class="flex flex-col h-full lg:flex-row leading-relaxed">
+      <!-- Navigation panel, for lg and more: elements composed in rows, for less - in columns -->
+      <nav
+        class="flex flex-wrap flex-col sm:flex-row lg:flex-col lg:justify-start lg:space-y-28 space-x-4 lg:space-x-0 justify-around content-center bg-teal-900 text-center p-2 text-lg font-serif"
+      >
+        <a
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:mt-24 lg:px-3 hidden md:block"
+          href="#"
+        >
+          Main
+        </a>
+        <a
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
+          href="./api/zernpy/zernikepol.html"
+        >
+          API of <em class="font-mono"> zernikepol </em> module
+        </a>
+        <a
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
+          href="./api/zernpy/zernpsf.html"
+        >
+          API of <em class="font-mono"> zernpsf </em> module
+        </a>
+        <a
+          class="text-amber-200 visited:text-amber-300 underline hover:no-underline hover:text-amber-400 lg:px-3"
+          href="./about.html"
+        >
+          About
+        </a>
+      </nav>
 
-        <!-- Main content of the webpage -->
-        <main class="mainBody">
-            <div class="contentContainer">
-                <header>
-                    <h3 class="header"> Welcome! </h3>
-                    <div class="header">
-                        I am pleased that you've found it interesting to take a look on my Python library <strong>"zernpy"</strong>. 
-                    </div>
-                    <hr>
-                </header>
-                <section>
-                    <div>
-                        <h4 class="paragraph-header"> Installation instructions </h4>
-                        <p class="textString">
-                            The straightforward way to install the library - to use the following command for the <em> pip </em> package installer:
-                            <code class="commandCode"> pip install zernpy </code> <br>
-                            For updating the already install package use the command: 
-                            <code class="commandCode"> pip install --upgrade zernpy </code> or <code class="commandCode"> pip install -U zernpy </code> <br>
-                            The requirements for installation: Python version >= 3.8, libraries <em>numpy</em>, <em>matplotlib</em> and <em>scipy</em>. 
-                            Check the <a class="link" href="https://pypi.org/project/zernpy/" target="_blank">webpage</a> of this library on the PyPi package index.
-                        </p>
-                    </div>
-                    <div>
-                        <h4 class="paragraph-header"> Import and class initialization </h4>
-                        <p class="textString">
-                            The basic import command for accessing Zernike polynomial class: <code class="commandCode"> from zernpy import ZernPol </code> <br>
-                            Initialization of the <em>ZernPol</em> class instance: <code class="commandCode">zp = ZernPol(m=-2, n=2) </code> <br>
-                            This instance gives an access to the calculation methods related to the Zernike polynomials properties. <br>
-                            Other acceptable initialization parameters names: <span style="font-style:italic"> osa_index / noll_index / fringe_index </span> or 
-                            for shortness <span style="font-style:italic">osa / noll / fringe</span>, e.g.:
-                            <code class="commandCode">zp = ZernPol(osa_index=3)</code> or <code class="commandCode">zp = ZernPol(osa=3)</code>
-                        </p>
-                    </div>
-                    <div>
-                        <h4 class="paragraph-header"> Calculation methods </h4>
-                        <p class="textString">
-                            For getting information about this library, please, refer to the API Dictionary tab and README section from 
-                            <a class="link" href="https://pypi.org/project/zernpy/">page</a>, or on the 
-                            <a class="link" href="https://github.com/sklykov/zernpy">repository</a>.  <br>
-                            For accessing the full list of implemented methods for <em>ZernPol</em> class (Zernike polynomial) and <em>ZernPSF</em> class 
-                            (calculation 2D PSF for formed by the microscopic systems associated with the phase profile described by the Zernike polynomial) 
-                            please follow the link to the API Dictionary on the left navigation tab. <br>
-                            This and "About" pages are also used for honing my skills in Frontend development. 
-                            Thus, not everything on this page is intended solely to reveal the features of the implemented library.
-                        </p>
-                    </div>
-                    <div>
-                        <h4> Definition of Zernike polynomial </h4>
-                        <div>
-                            <div class="textString">
-                                Specify below the index (indices) for Zernike polynomial specification
-                                (see all listed indices <a class="link" href="https://en.wikipedia.org/wiki/Zernike_polynomials">here</a>).
-                            </div>
-                            <div id="inputsOrdersConversion">
-                                <div id="selectorElement"> 
-                                    <label class="label-element"> Select the indexing type: </label>
-                                    <select class="input-element" name="Index type">
-                                        <option value="m,n" selected>Radial, Angular</option>  <!-- selected="selected" for setting it as the default value -->
-                                        <option value="osa">OSA/ANSI</option>
-                                        <option value="noll">Noll</option>
-                                        <option value="fringe">Fringe</option>
-                                    </select>
-                                </div>
-                                <div id="ordersElement">
-                                    <span class="label-element" id="ordersLabel"> orders: </span>
-                                    <label class="label-element" tag="n_order_label" id="firstOrderLabel"> n = </label>
-                                    <input class="input-element" type="number" tag="n_order" name="n" min="0" max="50" size="4" minlength="1" maxlength="3" value="0" id="firstInputOrder">
-                                    <label class="label-element" tag="m_order_label" id="secondOrderLabel"> m = </label>
-                                    <input class="input-element" type="number" tag="m_order" name="m" min="-50" max="50" size="4" minlength="1" maxlength="3" value="0" id="secondInputOrder">
-                                </div>
-                                <input class="input-element" type="button" value="Get Indices/Orders" id="getIndicesBtn">
-                                <span id="conversionString"> Click "Get Indices/Orders" to get here conversion </span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <!-- Below - image element that used for setting it as the background image -->
-            <div class="bgImage"></div> 
-            <!-- Footer with some info -->
-            <footer id="page_footer"> 2022-2024 S.K., MIT licensed </footer>
-        </main>
-    </div>  
-</body>
+      <!-- Main content of the webpage, position - relative for placing an image on the background -->
+      <div class="flex flex-col grow justify-between font-sans relative z-10">
+        <div>
+          <!-- Gradually implement Tailwind styling, one element after another -->
+          <header class="text-center 2xl:text-left bg-slate-400/50 px-4 py-3">
+            <h3 class="mx-3 uppercase font-mono font-bold text-2xl">Welcome!</h3>
+            <p class="text-xl mx-3">
+              I am pleased that you are visiting this page with a few details
+              about the Python library <strong>"zernpy"</strong>
+            </p>
+          </header>
 
+          <article class="font-medium px-4 py-2 m-2 space-y-4">
+            <section class="xl:size-11/12 2xl:size-5/6">
+              <h4 class="text-left text-xl font-semibold mb-1">
+                Brief Installation instructions
+              </h4>
+              <p class="text-justify text-lg">
+                The straightforward way to install the library is to use the
+                following command for the <em> pip </em> package installer:
+                <code class="font-mono italic font-bold">
+                  pip install zernpy</code
+                >
+              </p>
+              <p class="text-justify text-lg">
+                For updating the already installed package use the command:
+                <code class="font-mono italic font-bold">
+                  pip install --upgrade zernpy
+                </code>
+                or
+                <code class="font-mono italic font-bold">
+                  pip install -U zernpy
+                </code>
+              </p>
+              <p class="text-justify text-lg">
+                The requirements for installation: Python version >= 3.8,
+                libraries <em class="font-mono font-bold">NumPy</em>,
+                <em>Matplotlib</em> and <em>SciPy</em>. Check the
+                <a
+                  class="link font-semibold"
+                  href="https://pypi.org/project/zernpy/"
+                  target="_blank"
+                  >webpage</a
+                >
+                of this library on the PyPi package index for more details about
+                the package.
+              </p>
+            </section>
+
+            <section class="xl:size-11/12 2xl:size-5/6">
+              <h4 class="text-left text-xl font-semibold mb-1">
+                Import and class initialization
+              </h4>
+              <p class="text-justify text-lg">
+                The basic import command for accessing Zernike polynomial class:
+                <code class="font-mono italic font-bold">
+                  from zernpy import ZernPol
+                </code>
+              </p>
+              <p class="text-justify text-lg">
+                Initialization of the <em>ZernPol</em> class instance:
+                <code class="font-mono italic font-bold">
+                  zp = ZernPol(m=-2, n=2)
+                </code>
+              </p>
+              <p class="text-justify text-lg">
+                This instance gives an access to the calculation methods related
+                to the Zernike polynomials properties. Other acceptable
+                initialization parameters names:
+                <span class="italic">
+                  osa_index / noll_index / fringe_index
+                </span>
+                or for shortness
+                <span class="italic">osa / noll / fringe</span>, e.g.:
+                <code class="font-mono italic font-bold"
+                  >zp = ZernPol(osa_index=3)</code
+                >
+                or
+                <code class="font-mono italic font-bold"
+                  >zp = ZernPol(osa=3)</code
+                >
+              </p>
+            </section>
+
+            <section class="xl:size-11/12 2xl:size-5/6">
+              <h4 class="text-left text-xl font-semibold mb-1">
+                Calculation methods
+              </h4>
+              <p class="text-justify text-lg">
+                For getting information about this library, please, refer to the
+                API Dictionary tab and README section from
+                <a
+                  class="link font-semibold"
+                  href="https://pypi.org/project/zernpy/"
+                  >page</a
+                >, or on the
+                <a
+                  class="link font-semibold"
+                  href="https://github.com/sklykov/zernpy"
+                  >repository</a
+                >
+              </p>
+              <p class="text-justify text-lg">
+                For accessing the full list of implemented methods for
+                <em class="font-mono italic font-bold">ZernPol</em> class
+                (Zernike polynomial abstraction) and
+                <em class="font-mono italic font-bold">ZernPSF</em> class
+                (calculation 2D PSF for formed by the microscopic systems
+                associated with the phase profile described by a Zernike
+                polynomial) please follow the link to the API Dictionary on the
+                navigation tab.
+              </p>
+            </section>
+
+            <section class="xl:size-11/12 2xl:size-5/6">
+              <h4 class="text-left text-xl font-semibold mb-1">
+                Development Note
+              </h4>
+              <p class="text-justify text-lg">
+                This page, along with the "About" page, are also used to
+                showcase my skills in frontend development. This one was styled
+                using Tailwind classes. Thus, not all content and functionality
+                on these pages are meant solely to reveal the features of the
+                implemented 'zernpy' library.
+              </p>
+              <p class="text-justify text-lg">
+                Originally, this page had been developed using pure CSS styling.
+                After finishing the dedicated development branch, almost all
+                styling on this page is achieved by using Tailwind classes added
+                through CDN.
+              </p>
+            </section>
+
+            <section class="xl:size-11/12 2xl:size-5/6">
+              <h4 class="text-left text-xl font-semibold mb-1">
+                Definition of a Zernike polynomial using various indexing
+                schemes
+              </h4>
+              <p class="text-justify text-lg">
+                Specify below the index (indices) for Zernike polynomial
+                specification (see all listed schemes
+                <a
+                  class="link font-semibold"
+                  href="https://en.wikipedia.org/wiki/Zernike_polynomials"
+                  >here</a
+                >).
+              </p>
+
+              <!-- Element with selectors -->
+              <div
+                class="flex flex-col sm:flex-row flex-wrap items-center my-2 text-lg"
+              >
+                <!-- Select indexing scheme -->
+                <div
+                  class="inline-flex text-center items-center mr-2 my-2 z-10"
+                >
+                  <label class="mr-2"> Select the indexing type: </label>
+                  <select
+                    class="bg-slate-300 px-1 py-1 round"
+                    name="Index type"
+                  >
+                    <option value="m,n" selected>Radial, Angular</option>
+                    <option value="osa">OSA/ANSI</option>
+                    <option value="noll">Noll</option>
+                    <option value="fringe">Fringe</option>
+                  </select>
+                </div>
+
+                <!-- Orders selector -->
+                <div
+                  class="inline-flex text-center items-center ml-2 mr-6 my-2 z-10"
+                >
+                  <span class="mr-2" id="ordersLabel"> Orders: </span>
+                  <label
+                    class="ml-2 mr-1"
+                    tag="n_order_label"
+                    id="firstOrderLabel"
+                  >
+                    n =
+                  </label>
+                  <input
+                    class="bg-indigo-950 text-sky-100 round p-2 text-base ml-0 mr-2 rounded focus:bg-indigo-900 focus:border-indigo-500"
+                    type="number"
+                    tag="n_order"
+                    name="n"
+                    min="0"
+                    max="50"
+                    size="2"
+                    minlength="1"
+                    maxlength="2"
+                    value="0"
+                    id="firstInputOrder"
+                  />
+                  <label
+                    class="ml-1 mr-1"
+                    tag="m_order_label"
+                    id="secondOrderLabel"
+                  >
+                    m =
+                  </label>
+                  <input
+                    class="bg-indigo-950 text-sky-100 round p-2 text-base ml-0 rounded focus:bg-indigo-900 focus:border-indigo-500"
+                    type="number"
+                    tag="m_order"
+                    name="m"
+                    min="-50"
+                    max="50"
+                    size="2"
+                    minlength="1"
+                    maxlength="2"
+                    value="0"
+                    id="secondInputOrder"
+                  />
+                </div>
+
+                <!-- Button for calculation -->
+                <div class="my-2 mr-6 z-10">
+                  <input
+                    class="py-1 px-2 bg-green-800 text-stone-100 rounded-lg hover:bg-green-700 hover:text-stone-50"
+                    type="button"
+                    value="Get Indices/Orders"
+                    id="getIndicesBtn"
+                  />
+                </div>
+
+                <!-- Info string for getting the conversion -->
+                <div class="my-2 text-center z-10">
+                  <span
+                    id="conversionString"
+                    class="py-1 px-2 bg-indigo-950 text-stone-50 rounded"
+                  >
+                    Click "Get Indices/Orders" to get the conversion between
+                    indices
+                  </span>
+                </div>
+              </div>
+            </section>
+          </article>
+        </div>
+        <!-- Below - image element that used for setting it as the background image -->
+        <div class="bgImage"></div>
+        <!-- Footer with some info -->
+        <footer class="m-2 p-2 text-lg font-medium text-center">
+          2022-2024 S.K., MIT licensed
+        </footer>
+      </div>
+    </main>
+  </body>
 </html>

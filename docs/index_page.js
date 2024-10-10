@@ -1,8 +1,6 @@
-"use strict";  // enables more strict behavior of JS
+"use strict";
 
-// the way of adding the Event listener - to guarantee that the page and all elements are available
 document.addEventListener("DOMContentLoaded", function () {
-    // console.log("Index Page loaded");
 
     // Set explicitly default values for indexing scheme and m,n associated orders and save handlers to them
     const nOrderInput = document.getElementById("firstInputOrder"); nOrderInput.value = 0;
@@ -17,6 +15,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const selector = document.getElementsByName("Index type")[0];  // get the selected HTML element by name
     selector.selectedIndex = 0;  // set the default option to selected HTML element
     const conversionReport = document.getElementById("conversionString");
+    const pageBody = document.querySelector("body");
+
+    // Defining and fix not filling the entire page if the body's height is less then the screen size
+    // Not found the same solution in Tailwind list of classes, it isn't universal to set as the default h-screen class, 
+    // because in this case for mobile devices the body will overflow their screens
+    let hW = window.innerHeight; let hBody = pageBody.offsetHeight; 
+    if (hW > hBody) {
+        pageBody.classList.add("h-screen");  // force body to fill the entire screen if there is not enough content even
+    }
 
     // Variables for storing values
     let nOrder = 0; let mOrder = 0; let osaIndex = -1; let nollIndex = -1; let fringeIndex = -1;
@@ -25,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Register event for tracing the new selected value of indexing type for Zernike polynomial from index.html
     selector.addEventListener("change", () => {
-        conversionReport.textContent = "Click button on the left to get here conversions";
+        conversionReport.textContent = 'Click "Get Indices/Orders" to get the conversion between indices';
         console.log("Selected type of polynomial specification: " + selector.value); 
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
         nOrder = -1; mOrder = -1; osaIndex = -1; nollIndex = -1; fringeIndex = -1;  // set inconsistent values as defaults
@@ -34,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
             case "m,n":
                 nOrder = nOrderInput.value; mOrder = mOrderInput.value;
                 ordersLabel.innerText = "orders"; firstOrderLabel.innerText = "n =";
-                secondOrderLabel.style.visibility = "visible"; secondInputOrder.style.visibility = "visible"; 
+                secondOrderLabel.style.display = "inline"; secondInputOrder.style.display = "inline"; 
                 notOrdersSelected = false; selectedNollOrFringe = false; 
                 if (nOrder === -1 || mOrder === -1) {
                     nollIndex = 0; mOrder = 0; // Set the appropriate default value
@@ -64,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
          // The code below is executed if the orders m,n not selected and common for all cases then selected OSA / Noll / Fringe
         if (notOrdersSelected){
-            ordersLabel.innerText = "index"; secondOrderLabel.style.visibility = "hidden"; secondInputOrder.style.visibility = "hidden"; 
+            ordersLabel.innerText = "index"; secondOrderLabel.style.display = "none"; secondInputOrder.style.display = "none"; 
         }
         // The code for selected cases "noll" or "fringe", except "m,n"
         if (selectedNollOrFringe){
@@ -76,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Register update of nOrder / OSA, Noll, Fringe indices (value is used for both cases: n order and the specific index)
     nOrderInput.addEventListener("change", () =>{
-        conversionReport.textContent = "Click button on the left to get here conversions";
+        conversionReport.textContent = 'Click "Get Indices/Orders" to get the conversion between indices';
         let isNumber = validateOrderN(); 
         // console.log("Validation result: " + isNumber);
         selectedPolynomialType = selector.value;  // update value each time from the HTML selector
