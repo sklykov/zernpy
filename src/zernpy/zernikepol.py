@@ -401,7 +401,7 @@ class ZernPol:
         # Checking that angles lie in the range [0, 2*pi] and their type
         theta = ZernPol._check_angles(theta)
         # Checking coincidence of shapes if theta and r are arrays
-        if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
+        if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))):
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
         # Calculation using imported function from submodule depending on radial order, use different eq.
@@ -1272,13 +1272,14 @@ class ZernPol:
 
         """
         # Trying to convert known (list, tuple) data types into numpy, if they provided as input
-        if not isinstance(radii, np.ndarray) and not isinstance(radii, float):
+        # !!! Check other files for similar check, that failed in long stack of calls and fixed with the following:
+        if not isinstance(radii, type(np.zeros(1))) and not isinstance(radii, float):
             if isinstance(radii, list) or isinstance(radii, tuple):
                 radii = np.asarray(radii)  # convert list or tuple to np.array
             else:
                 radii = float(radii)  # attempt to convert r to float number, will raise ValueError if it's impossible
         # Checking that radii or radius lie in the range [0.0, 1.0]
-        if isinstance(radii, np.ndarray):
+        if isinstance(radii, type(np.zeros(1))):
             if np.min(radii) < 0.0 or np.max(radii) > 1.0:
                 raise ValueError("Minimal or maximal value of radii laying outside unit circle [0.0, 1.0]")
         elif isinstance(radii, float):
@@ -1311,13 +1312,13 @@ class ZernPol:
 
         """
         # Check input parameter type and attempt to convert to acceptable types
-        if not isinstance(angles, np.ndarray) and not isinstance(angles, float):
+        if not isinstance(angles, type(np.zeros(1))) and not isinstance(angles, float):
             if isinstance(angles, list) or isinstance(angles, tuple):
                 angles = np.asarray(angles)  # convert list or tuple to np.array
             else:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
         # Checking that angles lie in the range [0, 2*pi]
-        if isinstance(angles, np.ndarray):
+        if isinstance(angles, type(np.zeros(1))):
             if np.max(angles) - np.min(angles) > 2.0*np.pi:
                 _warn_message_ = "Theta angles defined in range outside of interval [0.0, 2.0*pi]"
                 warnings.warn(_warn_message_)

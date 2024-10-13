@@ -17,12 +17,12 @@ from typing import Union, Sequence
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
     from calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
-                                        convolute_img_psf, get_bumped_circle, save_psf, read_psf)
+                                        convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
     from zernikepol import ZernPol
     from utils.intmproc import DispenserManager
 else:
     from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
-                                         convolute_img_psf, get_bumped_circle, save_psf, read_psf)
+                                         convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
     from .zernikepol import ZernPol
     from .utils.intmproc import DispenserManager
 
@@ -160,8 +160,8 @@ class ZernPSF:
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
         try:
-            l = len(expansion_coeff)
-            if l == 0 or l != len(self.polynomials):
+            coeffs_len = len(expansion_coeff)
+            if coeffs_len == 0 or coeffs_len != len(self.polynomials):
                 raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
             else:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
@@ -169,7 +169,7 @@ class ZernPSF:
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
                 if max_module_coeff / wavelength > 10.0:
                     self.__warn_message = (f"Max abs. expansion coefficient supposed to be less than 10*{lambda_char} - an amplitude of "
-                                           + "Zernike polynomial. Otherwise, the kernel size should be too big for sufficient PSF representation")
+                                           + "a polynomial. Otherwise, the kernel size should be too big for sufficient PSF representation")
                     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.amplitudes = self.coefficients / self.wavelength
         except TypeError:
@@ -260,13 +260,14 @@ class ZernPSF:
 
         Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References. \n
         Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
-        The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of imaging system (micro-objective). \n
+        The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
+        an imaging system (micro-objective). \n
         The order of integration and used equations in short:
         1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022azernike_pol.polynomial_value(p, phi) -
                                                                              r\u2022p\u2022cos(phi - theta))\u20221j \n
-        2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as final output, it
-        provides as the np.power(np.abs(integral_sum), 2)\u2022integral_normalization, there integral_normalization = 1.0/(pi \u002a pi) -
-        the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
+        2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
+        output, it provides as the np.power(np.abs(integral_sum), 2)\u2022integral_normalization, there integral_normalization =
+        1.0/(pi \u002a pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n
         Note that the Nijboer's approximation for calculation of diffraction integral also has been tested, but the results is not in agreement
@@ -307,6 +308,11 @@ class ZernPSF:
                                          wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                          test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                          n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points)
+        elif len(self.polynomials) > 0:
+            self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
+                                               wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
+                                               kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
+                                               n_int_phi_points=self.n_int_phi_points)
         else:
             self.kernel = None
         return self.kernel
@@ -325,6 +331,7 @@ class ZernPSF:
         None.
 
         """
+        fig_title = ""  # default value
         if self.zernpol is not None:
             if self.airy:
                 fig_title = f"Airy pattern with {round(self.expansion_coeff, 2)} expansion coeff. {id_str}"
@@ -396,7 +403,7 @@ class ZernPSF:
 
         """
         if abs_path is None:
-            abs_path = Path(self.json_file_path).joinpath("saved_psfs")  # default folder for storing the saved JSON files (root for the package)
+            abs_path = Path(self.json_file_path).joinpath("saved_psfs")  # default folder for storing saved JSON files (root for the package)
         if not Path.exists(abs_path):
             abs_path = ""  # the folder "saved_psfs" will be created in the root of the package
         if isinstance(abs_path, Path):
@@ -531,7 +538,8 @@ class ZernPSF:
 
         """
         if self.kernel_size < 3 and self.zernpol is not None:
-            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha, wavelength=self.wavelength)
+            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
+                                               wavelength=self.wavelength)
         if self.zernpol is None:
             self.kernel_size = 3
         self.kernel = np.zeros(shape=(self.kernel_size, self.kernel_size)); i_center = self.kernel_size//2; j_center = self.kernel_size//2
@@ -571,7 +579,7 @@ if __name__ == "__main__":
     # zpsf1 = ZernPSF(ZernPol(m=0, n=0)); kernel1 = zpsf1.calculate_psf_kernel(suppress_warns=True); zpsf1.plot_kernel()  # Airy
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
     check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False
-    check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = True
+    check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = True; check_several_pols = False
 
     # Common PSF for testing
     if check_common_psf:
@@ -621,7 +629,7 @@ if __name__ == "__main__":
         NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 5.0; ampl = 0.55
         zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
         zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)  # normal assignment
-        zpsf6.set_calculation_props(kernel_size=zpsf6.kernel_size, n_integration_points_r=250, n_integration_points_phi=300)  # normal assignment
+        zpsf6.set_calculation_props(kernel_size=zpsf6.kernel_size, n_integration_points_r=250, n_integration_points_phi=300)
         zpsf6.calculate_psf_kernel(normalized=True); zpsf6.plot_kernel()
 
     if check_test_conditions2:
@@ -632,5 +640,7 @@ if __name__ == "__main__":
 
     # Test calculation of a PSF for several polynomials
     if check_several_pols:
-        zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.26, 0.15, 0.2)
-        zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/5.2)
+        zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.36, 0.25, 0.4)
+        zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/4.75)
+        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True)
+        zpsf8.plot_kernel()
