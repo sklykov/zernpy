@@ -52,7 +52,7 @@ class ZernPSF:
     kernel: np.ndarray = np.ones(shape=(1, 1)); kernel_size: int = 1  # by default, single point as the 2D matrix [[1.0]]
     NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5  # in um (or other physical unit)
     zernpol: ZernPol = ZernPol(m=0, n=0)  # by default, Piston as the zero case (Airy pattern)
-    polynomials: Sequence[ZernPol] = ()  # empty tuple with instances of ZernPol classes
+    polynomials = ()  # empty tuple - holder for provided Sequence with instances of ZernPol
     __physical_props_set: bool = False  # flag for saving that physical properties have been provided
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
@@ -62,7 +62,8 @@ class ZernPSF:
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
     k: float = 2.0*pi/wavelength  # angular frequency
     json_file_path: str = str(Path(__file__).parent.absolute())  # default path to the saved file with calculated kernel and metadata
-    coefficients: np.ndarray = None; amplitudes = np.ndarray = None  # for storing amplitudes of polynomials
+    coefficients: np.ndarray = None; amplitudes: np.ndarray = None  # for storing amplitudes of polynomials
+    # Dev. Note: always carefully check the definition of variables above, since the error in their definition may cause hard traceable bug
 
     def __init__(self, zernpol: Union[ZernPol, Sequence[ZernPol]]):
         """
@@ -83,28 +84,36 @@ class ZernPSF:
         ZernPSF() class instance.
 
         """
-        if isinstance(zernpol, ZernPol):
+        if not hasattr(zernpol, '__len__') and isinstance(zernpol, ZernPol):
             self.zernpol = zernpol; m, n = self.zernpol.get_mn_orders()
             if m == 0 and n == 0:
                 self.airy = True
             else:
                 self.airy = False
-        else:
-            try:
-                l = len(zernpol)
-                if l == 0:
-                    raise ValueError("Provided empty Sequence")
+        elif hasattr(zernpol, '__len__'):
+            seq_length = len(zernpol)
+            # Empty sequence as the input not acceptable
+            if seq_length == 0:
+                raise ValueError("Provided empty Sequence")
+            # Single element should be unpacked and used
+            elif seq_length == 1:
+                self.zernpol = zernpol[0]; m, n = self.zernpol.get_mn_orders()
+                if m == 0 and n == 0:
+                    self.airy = True
                 else:
-                    all_are_polls = True
-                    for pol in zernpol:
-                        if not isinstance(pol, ZernPol):
-                            all_are_polls = False; break
-                    if all_are_polls:
-                        self.polynomials = zernpol; self.zernpol = None
-                    else:
-                        raise ValueError("Not all objects in Sequence are instances of ZernPol class")
-            except TypeError:
-                raise ValueError("ZernPSF class required ZernPol class instances or Sequence with ZernPol instances as the input")
+                    self.airy = False
+            # Several polynomials provided
+            else:
+                all_are_polls = True
+                for pol in zernpol:
+                    if not isinstance(pol, ZernPol):
+                        all_are_polls = False; break
+                if all_are_polls:
+                    self.polynomials = zernpol; self.zernpol = None
+                else:
+                    raise ValueError("Not all objects in Sequence are instances of ZernPol class")
+        else:
+            ValueError("ZernPSF class required single ZernPol instance or Sequence (class with __len__ attr.) with instances as the input")
 
     # %% Set properties
     def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
@@ -159,42 +168,47 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        try:
+        if hasattr(expansion_coeff, '__len__'):
             coeffs_len = len(expansion_coeff)
             if coeffs_len == 0 or coeffs_len != len(self.polynomials):
-                raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
+                if coeffs_len == 1:
+                    expansion_coeff = float(expansion_coeff[0])
+                    # Sanity check for the expansion coefficient of the polynomial
+                    self.__warn_message = sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+                    if len(self.__warn_message) > 0:
+                        warnings.warn(self.__warn_message); self.__warn_message = ""
+                    self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
+                else:
+                   raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
             else:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
-                if max_module_coeff / wavelength > 10.0:
-                    self.__warn_message = (f"Max abs. expansion coefficient supposed to be less than 10*{lambda_char} - an amplitude of "
-                                           + "a polynomial. Otherwise, the kernel size should be too big for sufficient PSF representation")
+                self.__warn_message = sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
+                if len(self.__warn_message) > 0:
                     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.amplitudes = self.coefficients / self.wavelength
-        except TypeError:
+        else:
             # explicitly conversion to float for raising implicit conversion errors if not valid type provided
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
-            if abs(expansion_coeff) / wavelength > 10.0:
-                self.__warn_message = (f"Expansion coefficient supposed to be less than 10*{lambda_char} - an amplitude of Zernike polynomial"
-                                       + "Otherwise, the kernel size should be too big for sufficient PSF representation")
+            self.__warn_message = sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+            if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
-        # Kernel size estimation (could be changed explicilty in the method 'set_calculation_props')
-        if self.kernel_size == 1:  # default value
-            if self.zernpol is not None:  # for single polynomial
-                self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
-                                                   wavelength=self.wavelength, NA=self.NA)
-            else:
-                max_kernel_size = 0
-                for pol in self.polynomials:
-                    kernel_size = get_kernel_size(zernike_pol=pol, len2pixels=self.pixel_size, alpha=self.alpha,
-                                                  wavelength=self.wavelength, NA=self.NA)
-                    if max_kernel_size < kernel_size:
-                        max_kernel_size = kernel_size
-                self.kernel_size = max_kernel_size
+        # Kernel size estimation (could be changed explicilty in the method 'set_calculation_props'). Redefine it for each call
+        if self.zernpol is not None:  # for single polynomial
+            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
+                                               wavelength=self.wavelength, NA=self.NA)
+        else:
+            max_kernel_size = 0
+            for pol in self.polynomials:
+                kernel_size = get_kernel_size(zernike_pol=pol, len2pixels=self.pixel_size, alpha=self.alpha,
+                                              wavelength=self.wavelength, NA=self.NA)
+                if max_kernel_size < kernel_size:
+                    max_kernel_size = kernel_size
+            self.kernel_size = max_kernel_size
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
     def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int) -> None:
@@ -302,6 +316,11 @@ class ZernPSF:
         if not self.__physical_props_set and not suppress_warnings:
             self.__warn_message = "Physical properties for calculation haven't been set, the default values will be used"
             warnings.warn(self.__warn_message); self.__warn_message = ""
+        # For providing performance verbose report
+        if verbose_info:
+            t1 = time.perf_counter()  # for explicit showing of performance
+            if self.kernel_size*self.kernel_size >= 301:
+                print("Kernel calculation started...")
         # Calculation using the vectorised form
         if self.zernpol is not None:
             self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
@@ -313,8 +332,13 @@ class ZernPSF:
                                                wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                n_int_phi_points=self.n_int_phi_points)
-        else:
-            self.kernel = None
+        if verbose_info:
+            passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
+            print("--------------------------------------------")
+            if passed_time_ms > 1000:
+                print(f"Overall kernel calculation takes: {round(passed_time_ms/1000.0, 2)} sec.")
+            else:
+                print(f"Overall kernel calculation takes: {passed_time_ms} ms.")
         return self.kernel
 
     def plot_kernel(self, id_str: str = ""):
@@ -572,21 +596,50 @@ class ZernPSF:
         if self.__ParallelCalc is not None:
             self.__ParallelCalc.close()
 
+# %% Utility functions
+def sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_check: bool = False) -> str:
+    """
+    Sanity check of the divided by wavelength expansion coefficient.
+
+    Parameters
+    ----------
+    normalized_coefficient : float
+        abs(expansion_coeff) / wavelength.
+    max_coeff_check : bool, optional
+        If this check happening for maximum abs. coefficient. The default is False.
+
+    Returns
+    -------
+    str
+        Warning message.
+
+    """
+    if normalized_coefficient > 10.0:
+        if not max_coeff_check:
+            return (f"\nExpansion coefficient supposed to be less than 10*{lambda_char} - an amplitude of a polynomial. "
+                    + "Otherwise, the kernel size should be too big for sufficient PSF representation")
+        else:
+            return (f"\nMax abs. expansion coefficient supposed to be less than 10*{lambda_char} - an amplitude of a polynomial. "
+                    + "Otherwise, the kernel size should be too big for sufficient PSF representation")
+    else:
+        return ""
+
 
 # %% Test as the main script
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
     # zpsf1 = ZernPSF(ZernPol(m=0, n=0)); kernel1 = zpsf1.calculate_psf_kernel(suppress_warns=True); zpsf1.plot_kernel()  # Airy
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
-    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False
-    check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = True; check_several_pols = False
+    check_airy = False; check_common_psf = True; check_io_kernel = False; check_parallel_calculation = False
+    check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = True
+    check_edge_conditions = False
 
     # Common PSF for testing
     if check_common_psf:
         zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.43
         zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
         zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
-        kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf2.plot_kernel("for loop")
+        kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=True); zpsf2.plot_kernel("for loop")
         zpsf2.visualize_convolution()  # Visualize convolution on the disk image
         if check_io_kernel:
             # default_path = Path(__file__).parent.joinpath("saved_psfs").absolute()  # default path for storing JSON files
@@ -602,7 +655,7 @@ if __name__ == "__main__":
     if check_other_pols:
         zpsf3 = ZernPSF(ZernPol(m=0, n=4))
         zpsf3.set_physical_props(NA=1.25, wavelength=wavelength_um, expansion_coeff=0.4, pixel_physical_size=wavelength_um/5.25)
-        zpsf3.calculate_psf_kernel(suppress_warnings=False, verbose_info=False); zpsf3.plot_kernel()
+        zpsf3.calculate_psf_kernel(suppress_warnings=False, verbose_info=True); zpsf3.plot_kernel()
 
     # Another Zernike polynomial, average to small NA and wavelength
     if check_small_na_wl:
@@ -641,6 +694,11 @@ if __name__ == "__main__":
     # Test calculation of a PSF for several polynomials
     if check_several_pols:
         zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.36, 0.25, 0.4)
-        zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/4.75)
-        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True)
-        zpsf8.plot_kernel()
+        zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/4.5)
+        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel()
+    # Test some edge conditions - e.g., specifying 1 polynomial in a list with huge coefficient
+    if check_edge_conditions:
+        zp4 = ZernPol(m=3, n=3); pols2 = [zp4]; coeff = (5.1)
+        zpsf9 = ZernPSF(pols2); zpsf9.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeff, pixel_physical_size=0.5/4.75)
+        zpsf9.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=(-0.67), pixel_physical_size=0.5/4.75)
+        zpsf9.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf9.plot_kernel()

@@ -1272,14 +1272,13 @@ class ZernPol:
 
         """
         # Trying to convert known (list, tuple) data types into numpy, if they provided as input
-        # !!! Check other files for similar check, that failed in long stack of calls and fixed with the following:
-        if not isinstance(radii, type(np.zeros(1))) and not isinstance(radii, float):
-            if isinstance(radii, list) or isinstance(radii, tuple):
+        if not isinstance(radii, np.ndarray) and not isinstance(radii, float):
+            if isinstance(radii, list) or isinstance(radii, tuple) or isinstance(radii, set):
                 radii = np.asarray(radii)  # convert list or tuple to np.array
             else:
                 radii = float(radii)  # attempt to convert r to float number, will raise ValueError if it's impossible
         # Checking that radii or radius lie in the range [0.0, 1.0]
-        if isinstance(radii, type(np.zeros(1))):
+        if isinstance(radii, np.ndarray):
             if np.min(radii) < 0.0 or np.max(radii) > 1.0:
                 raise ValueError("Minimal or maximal value of radii laying outside unit circle [0.0, 1.0]")
         elif isinstance(radii, float):
@@ -1312,13 +1311,13 @@ class ZernPol:
 
         """
         # Check input parameter type and attempt to convert to acceptable types
-        if not isinstance(angles, type(np.zeros(1))) and not isinstance(angles, float):
-            if isinstance(angles, list) or isinstance(angles, tuple):
+        if not isinstance(angles, np.ndarray) and not isinstance(angles, float):
+            if isinstance(angles, list) or isinstance(angles, tuple) or isinstance(angles, set):
                 angles = np.asarray(angles)  # convert list or tuple to np.array
             else:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
         # Checking that angles lie in the range [0, 2*pi]
-        if isinstance(angles, type(np.zeros(1))):
+        if isinstance(angles, np.ndarray):
             if np.max(angles) - np.min(angles) > 2.0*np.pi:
                 _warn_message_ = "Theta angles defined in range outside of interval [0.0, 2.0*pi]"
                 warnings.warn(_warn_message_)

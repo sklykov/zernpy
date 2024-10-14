@@ -18,6 +18,7 @@ from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
 from functools import partial
+from typing import Union
 # import time
 
 # Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
@@ -66,7 +67,7 @@ def airy_ref_pattern(r: float):
 
 
 # %% PSF pixel value calc.
-def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p, theta: float, r: float) -> np.array:
+def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.array:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -413,6 +414,9 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if not joblib_installed or not test_parallel:
         if verbose:
             calculated_points = 0  # for explicit showing of performance
+            show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
+            if 100 < size*size < 301:
+                show_each_tenth_point = True; checking_point = 10
         for i in range(size):
             for j in range(size):
                 if verbose:
@@ -431,7 +435,12 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                         kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                         if verbose:
                             calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
-                            print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                            if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                                if calculated_points == checking_point:
+                                    checking_point += 10
+                            elif (not show_each_tenth_point and not size*size >= 301):
+                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
                 else:
                     kernel[i, j] = airy_ref_pattern(distance)
     elif joblib_installed and test_parallel:
@@ -460,7 +469,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     kernel_max_end_col = np.max(kernel[:, k_size-1]); kernel_max_end_row = np.max(kernel[k_size-1, :])
     kernel_border_max = np.max([kernel_max_zero_col, kernel_max_zero_row, kernel_max_end_col, kernel_max_end_row])
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
-        __warn_message = (f"The calculated size for PSF ({size}) isn't sufficient for its proper representation, "
+        __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
         warnings.warn(__warn_message)
     # Plotting the calculated kernel
@@ -476,7 +485,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
 
 
 # %% PSF calculation for several polynomials
-def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float, p, theta: float, r: float) -> np.array:
+def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float, p: float, theta: float, r: float) -> np.array:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -488,7 +497,7 @@ def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float,
         Zernike amplitudes (the expansion coefficients) in physical units.
     phi : float
         Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
-    p : numpy.array or float
+    p : float
         Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
     theta : floats
         Angle on the image coordinates.
@@ -545,7 +554,7 @@ def radial_integral_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
     fa = diffraction_integral_r_pols(polynomials, amplitudes, phi, 0.0, theta, r)
     fb = diffraction_integral_r_pols(polynomials, amplitudes, phi, 1.0, theta, r)
     ang_int = np.sum(diffraction_integral_r_pols(polynomials, amplitudes, phi, p, theta, r)) + 0.5*(fa + fb)
-    return h_p*(ang_int)
+    return h_p*ang_int
 
 
 def get_psf_point_r_pols(polynomials, amplitudes: np.ndarray, r: float, theta: float, n_int_r_points: int, n_int_phi_points: int) -> float:
@@ -587,8 +596,8 @@ def get_psf_point_r_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
 
 
 def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float, wavelength: float, NA: float, kernel_size: int,
-                         n_int_r_points: int = 320, n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None,
-                         normalize_values: bool = False, fig_id: str = "", suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
+                         n_int_r_points: int = 320, n_int_phi_points: int = 300, normalize_values: bool = False,
+                         suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix with the PSF mask values.
 
@@ -642,12 +651,16 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
-        __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
+        __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
         warnings.warn(__warn_message)
-    # Calculate the PSF kernel for usage in convolution operation
+    # Verbose info preparation
     if verbose:
         calculated_points = 0  # for explicit showing of performance
+        show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
+        if 100 < size*size < 301:
+            show_each_tenth_point = True; checking_point = 10
+    # Calculate the PSF kernel for usage in convolution operation
     for i in range(size):
         for j in range(size):
             if verbose:
@@ -661,10 +674,13 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
             # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
             kernel[i, j] = get_psf_point_r_pols(polynomials, amplitudes, distance, theta, n_int_r_points, n_int_phi_points)
             if verbose:
-                calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
-                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
-            else:
-                kernel[i, j] = airy_ref_pattern(distance)
+                calculated_points += 1; passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
+                if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                    if calculated_points == checking_point:
+                        checking_point += 10
+                elif (not show_each_tenth_point and not size*size >= 301):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -674,16 +690,9 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     kernel_max_end_col = np.max(kernel[:, k_size-1]); kernel_max_end_row = np.max(kernel[k_size-1, :])
     kernel_border_max = np.max([kernel_max_zero_col, kernel_max_zero_row, kernel_max_end_col, kernel_max_end_row])
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
-        __warn_message = (f"The calculated size for PSF ({size}) isn't sufficient for its proper representation, "
+        __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
         warnings.warn(__warn_message)
-    # Plotting the calculated kernel
-    if show_kernel:
-        if fig_title is not None and len(fig_title) > 0:
-            plt.figure(fig_title, figsize=(6, 6))
-        else:
-            plt.figure(f"Profile for #{len(polynomials)} polynomials {fig_id}", figsize=(6, 6))
-        plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
     return kernel
 
 
@@ -879,7 +888,8 @@ if __name__ == '__main__':
     show_convolution_results = False  # check result of convolution of several kernel with the disk
 
     # Definition of some Zernike polynomials for further tests
-    pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4); pol9 = (-4, 4)
+    pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4)
+    pol9 = (-4, 4); pol7z = ZernPol(m=pol7[0], n=pol7[1])
     pol1z = ZernPol(m=pol1[0], n=pol1[1]); pol2z = ZernPol(m=pol2[0], n=pol2[1]); pol3z = ZernPol(m=pol3[0], n=pol3[1])
 
     if check_zero_case:
@@ -928,15 +938,14 @@ if __name__ == '__main__':
         # Generate the ideal centralized circle with the blurred edges
         radius = 4.0; sample = get_bumped_circle(radius); plt.figure("Sample disk"); m_center, n_center = sample.shape
         m_center = m_center // 2; n_center = n_center // 2; axes_img = plt.imshow(sample, cmap=plt.cm.viridis, origin='upper')
-        plt.tight_layout()
-        axes_img.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
+        plt.tight_layout(); axes_img.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
         # Visualize results of convolution with various PSFs
         kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.7, wavelength=wavelength,
                                   NA=NA, normalize_values=True, show_kernel=True)
         conv_def = convolute_img_psf(img=sample, psf_kernel=kern_def, scale2original=True)
         plt.figure("Defocused"); axes_img2 = plt.imshow(conv_def, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
         axes_img2.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
-        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=-0.45, wavelength=wavelength,
+        kern_coma = get_psf_kernel(pol7z, len2pixels=pixel_size, alpha=-0.45, wavelength=wavelength,
                                    NA=NA, normalize_values=True, show_kernel=True)
         conv_coma = convolute_img_psf(img=sample, psf_kernel=kern_coma, scale2original=True)
         plt.figure("*Coma"); axes_img3 = plt.imshow(conv_coma, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
