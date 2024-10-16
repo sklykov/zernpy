@@ -12,16 +12,18 @@ import matplotlib.pyplot as plt
 import warnings
 from math import pi
 import time
-# import time
+from typing import Union
 
 # %% Checking and import the numba library for speeding up the calculation
 global numba_installed
 try:
-    from numba import jit
+    from numba import njit
     numba_installed = True
 except ModuleNotFoundError:
     numba_installed = False
 
+
+# %% Local (package-scoped) imports - result in TypingError (Cannot determine Numba type of <class 'function'>)
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -30,18 +32,143 @@ lambda_char = "\u03BB"  # Unicode char code for lambda (wavelength)
 pi_char = "\u03C0"  # Unicode char code for pi
 
 
-# %% Reference - Airy profile for Z(0, 0) ('airy_ref_pattern' cannot be compiled, deleted)
+# %% Airy profile for Z(0, 0) ('airy_ref_pattern' cannot be compiled, deleted)
+
+# %% Exchange ZernPol class call to calculation functions
+@njit
+def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float, np.ndarray]) -> np.ndarray:
+    """
+    Provide composed Zernike polynomial value calculation for compilation by numba.
+
+    Parameters
+    ----------
+    orders : tuple
+        Orders of a Zernike polynomial.
+    r : Union[float, np.ndarray]
+        Radial values from an unit circle (range [0.0, 1.0]).
+    theta : Union[float, np.ndarray]
+        Angle for polar coordinates.
+
+    Returns
+    -------
+    np.ndarray
+        Polynomial value(-s).
+
+    """
+    m, n = orders  # transfer definition of a polynomial
+    # Normalization factor
+    if m == 0:
+        norm = np.sqrt(n + 1)
+    else:
+        norm = np.sqrt(2*(n + 1))
+    # Triangular function (cannot be used as the import from a module)
+    if m >= 0:
+        triangular = np.cos(m*theta)
+    else:
+        triangular = -np.sin(m*theta)
+    # Radial function exact definition for compilation (cannot be used as the import from a module)
+    # 0th order
+    if (m == 0) and (n == 0):
+        radial = np.power(r, 0)
+    # 1st order
+    elif ((m == -1) and (n == 1)) or ((m == 1) and (n == 1)):
+        radial = r
+    # 2nd order
+    elif ((m == -2) and (n == 2)) or ((m == 2) and (n == 2)):
+        radial = np.power(r, 2)  # r^2
+    elif (m == 0) and (n == 2):
+        radial = 2.0*np.power(r, 2) - 1.0  # 2r^2 - 1
+    # 3rd order
+    elif ((m == -3) and (n == 3)) or ((m == 3) and (n == 3)):
+        radial = np.power(r, 3)  # r^3
+    elif ((m == -1) and (n == 3)) or ((m == 1) and (n == 3)):
+        radial = 3.0*np.power(r, 3) - 2.0*r  # 3r^3 - 2r
+    # 4th order
+    elif ((m == -4) and (n == 4)) or ((m == 4) and (n == 4)):
+        radial = np.power(r, 4)  # r^4
+    elif ((m == -2) and (n == 4)) or ((m == 2) and (n == 4)):
+        radial = 4.0*np.power(r, 4) - 3.0*np.power(r, 2)  # 4r^4 - 3r^2
+    elif (m == 0) and (n == 4):
+        radial = 6.0*np.power(r, 4) - 6.0*np.power(r, 2) + 1.0  # 6r^4 - 6r^2 + 1
+    # 5th order
+    elif ((m == -5) and (n == 5)) or ((m == 5) and (n == 5)):
+        radial = np.power(r, 5)  # r^5
+    elif ((m == -3) and (n == 5)) or ((m == 3) and (n == 5)):
+        radial = 5.0*np.power(r, 5) - 4.0*np.power(r, 3)  # 5r^5 - 4r^3
+    elif ((m == -1) and (n == 5)) or ((m == 1) and (n == 5)):
+        radial = 10.0*np.power(r, 5) - 12.0*np.power(r, 3) + 3.0*r  # 10r^5 - 12r^3 + 3r
+    # 6th order
+    elif ((m == -6) and (n == 6)) or ((m == 6) and (n == 6)):
+        radial = np.power(r, 6)  # r^6
+    elif ((m == -4) and (n == 6)) or ((m == 4) and (n == 6)):
+        radial = 6.0*np.power(r, 6) - 5.0*np.power(r, 4)  # 6r^6 - 5r^4
+    elif ((m == -2) and (n == 6)) or ((m == 2) and (n == 6)):
+        radial = 15.0*np.power(r, 6) - 20.0*np.power(r, 4) + 6.0*np.power(r, 2)  # 15r^6 - 20r^4 + 6r^2
+    elif (m == 0) and (n == 6):
+        radial = 20.0*np.power(r, 6) - 30.0*np.power(r, 4) + 12.0*np.power(r, 2) - 1.0  # 20r^6 - 30r^4 + 12r^2 - 1
+    # 7th order
+    elif ((m == -7) and (n == 7)) or ((m == 7) and (n == 7)):
+        radial = np.power(r, 7)  # r^7
+    elif ((m == -5) and (n == 7)) or ((m == 5) and (n == 7)):
+        radial = 7.0*np.power(r, 7) - 6.0*np.power(r, 5)  # 7r^7 - 6r^5
+    elif ((m == -3) and (n == 7)) or ((m == 3) and (n == 7)):
+        radial = 21.0*np.power(r, 7) - 30.0*np.power(r, 5) + 10.0*np.power(r, 3)  # 21r^7 - 30r^5 + 10r^3
+    elif ((m == -1) and (n == 7)) or ((m == 1) and (n == 7)):
+        radial = 35.0*np.power(r, 7) - 60.0*np.power(r, 5) + 30.0*np.power(r, 3) - 4.0*r  # 35r^7 - 60r^5 + 30r^3 - 4r
+    # 8th order
+    elif ((m == -6) and (n == 8)) or ((m == 6) and (n == 8)):
+        radial = 8.0*np.power(r, 8) - 7.0*np.power(r, 6)  # 8r^8 - 7r^6
+    elif ((m == -4) and (n == 8)) or ((m == 4) and (n == 8)):
+        radial = 28.0*np.power(r, 8) - 42.0*np.power(r, 6) + 15.0*np.power(r, 4)  # 28r^8 - 42r^6 + 15r^4
+    elif ((m == -2) and (n == 8)) or ((m == 2) and (n == 8)):
+        # 56r^8 - 105r^6 + 60r^4 - 10r^2
+        radial = 56.0*np.power(r, 8) - 105.0*np.power(r, 6) + 60.0*np.power(r, 4) - 10.0*np.power(r, 2)
+    elif (m == 0) and (n == 8):
+        # 70r^8 - 140r^6 + 90r^4 - 20r^2 + 1
+        radial = 70.0*np.power(r, 8) - 140.0*np.power(r, 6) + 90.0*np.power(r, 4) - 20.0*np.power(r, 2) + 1.0
+    # 9th order
+    elif ((m == -7) and (n == 9)) or ((m == 7) and (n == 9)):
+        radial = 9.0*np.power(r, 9) - 8.0*np.power(r, 7)  # 9r^9 - 8r^7
+    elif ((m == -5) and (n == 9)) or ((m == 5) and (n == 9)):
+        radial = 36.0*np.power(r, 9) - 56.0*np.power(r, 7) + 21.0*np.power(r, 5)  # 36r^9 - 56r^7 + 21r^5
+    elif ((m == -3) and (n == 9)) or ((m == 3) and (n == 9)):
+        # 84r^9 - 168r^7 + 105r^5 - 20r^3
+        radial = 84.0*np.power(r, 9) - 168.0*np.power(r, 7) + 105.0*np.power(r, 5) - 20.0*np.power(r, 3)
+    elif ((m == -1) and (n == 9)) or ((m == 1) and (n == 9)):
+        # 126r^9 - 280r^7 + 210r^5 - 60r^3 + 5r
+        radial = 126.0*np.power(r, 9) - 280.0*np.power(r, 7) + 210.0*np.power(r, 5) - 60.0*np.power(r, 3) + 5.0*r
+    # 10th order
+    elif ((m == -8) and (n == 10)) or ((m == 8) and (n == 10)):
+        radial = 10.0*np.power(r, 10) - 9.0*np.power(r, 8)  # 10r^10 - 9r^8
+    elif ((m == -6) and (n == 10)) or ((m == 6) and (n == 10)):
+        radial = 45.0*np.power(r, 10) - 72.0*np.power(r, 8) + 28.0*np.power(r, 6)  # 45r^10 - 72r^8 + 28r^6
+    elif ((m == -4) and (n == 10)) or ((m == 4) and (n == 10)):
+        # 120r^10 - 252r^8 + 168r^6 - 35r^4
+        radial = 120.0*np.power(r, 10) - 252.0*np.power(r, 8) + 168.0*np.power(r, 6) - 35.0*np.power(r, 4)
+    elif ((m == -2) and (n == 10)) or ((m == 2) and (n == 10)):
+        # 210r^10 - 504r^8 + 420r^6 - 140r^4 + 15r^2
+        radial = 210.0*np.power(r, 10) - 504.0*np.power(r, 8) + 420.0*np.power(r, 6) - 140.0*np.power(r, 4) + 15.0*np.power(r, 2)
+    elif (m == 0) and (n == 10):
+        # 252r^10 - 630r^8 + 560r^6 - 210r^4 + 30r^2 - 1
+        radial = 252.0*np.power(r, 10) - 630.0*np.power(r, 8) + 560.0*np.power(r, 6) - 210.0*np.power(r, 4) + 30.0*np.power(r, 2) - 1.0
+    elif n > 7 and abs(m) == n:  # equation for high order polynomials (equal orders)
+        return np.power(r, n)
+    elif n > 10 and abs(m) == n-2:  # equation for high order polynomials (orders with abs(m) == n-2)
+        return float(n)*np.power(r, n) - float(n-1)*np.power(r, n-2)
+    # Polynomial value as the multiplication of calculated above components
+    return norm*triangular*radial
+
 
 # %% PSF pixel value calc.
-@jit  # gives TypingError (run for details)
-def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p, theta: float, r: float) -> np.array:
+@njit
+def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.ndarray:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
     Parameters
     ----------
-    zernike_pol : ZernPol
-        Zernike polynomial definition as the ZernPol() class.
+    orders : (m, n)
+        Orders of a Zernike polynomial.
     alpha : float
         Amplitude of the polynomial (RMS).
     phi : float
@@ -64,18 +191,19 @@ def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p, theta: floa
         Values of the diffraction integral.
 
     """
-    phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
+    phase_arg = (alpha*zernpol_value(orders, p, phi) - r*p*np.cos(phi - theta))*1j
     return np.exp(phase_arg)*p
 
 
-def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: float, n_int_r_points: int) -> complex:
+@njit
+def radial_integral_comp(orders: tuple, r: float, theta: float, phi: float, alpha: float, n_int_r_points: int) -> complex:
     """
     Make integration of the diffraction integral on the radius of the entrance pupil.
 
     Parameters
     ----------
-    zernike_pol : ZernPol
-        Zernike polynomial definition as the ZernPol() class.
+    orders : (m, n)
+        Orders of a Zernike polynomial.
     r : float
         Radius on the image coordinates.
     theta : float
@@ -94,59 +222,23 @@ def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: floa
 
     """
     # Integration on the pupil angle. Vectorized form of the trapezoidal rule
-    h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
-    fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r)
-    fb = diffraction_integral_r(zernike_pol, alpha, phi, 1.0, theta, r)
-    ang_int = np.sum(diffraction_integral_r(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
+    h_p = 1.0/n_int_r_points; p = np.arange(h_p, 1.0, h_p)
+    fa = diffraction_integral_r_comp(orders, alpha, phi, 0.0, theta, r)
+    fb = diffraction_integral_r_comp(orders, alpha, phi, 1.0, theta, r)
+    ang_int = np.sum(diffraction_integral_r_comp(orders, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
     return h_p*ang_int
 
 
-def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
-    """
-    Get the point for calculation of PSF depending on the image polar coordinates.
-
-    Parameters
-    ----------
-    zernike_pol : ZernPol
-        Zernike polynomial definition as the ZernPol() class.
-    r : float
-        Radius on the image coordinates.
-    theta : float
-        Angle on the image coordinates.
-    alpha : float, optional
-        Amplitude of the polynomial.
-    n_int_r_points : int
-        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
-    n_int_phi_points : int
-        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
-
-    Returns
-    -------
-    float
-        |U|**2 - the module and square of the amplitude, intensity as the PSF value.
-
-    """
-    # Integration on the pupil radius using Simpson equation
-    h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    for i in range(2, n_int_phi_points-2, 2):
-        phi = i*h_phi; even_sum += radial_integral(zernike_pol, r, theta, phi, alpha, n_int_r_points)
-    for i in range(1, n_int_phi_points-1, 2):
-        phi = i*h_phi; odd_sum += radial_integral(zernike_pol, r, theta, phi, alpha, n_int_r_points)
-    yA = radial_integral(zernike_pol, r, theta, 0.0, alpha, n_int_r_points)
-    yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha, n_int_r_points)
-    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
-    return np.power(np.abs(integral_sum), 2)*integral_normalization
-
-
 # %% Testing various speeding up calculation approaches
-def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
+@njit
+def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
     """
     Calculate PSF point for the kernel using Parallel class from the joblib library.
 
     Parameters
     ----------
-    zernike_pol : ZernPol
-        Zernike polynomial definition as the ZernPol() class.
+    orders : (m, n)
+        Orders of a Zernike polynomial.
     r : float
         Radius on the image coordinates.
     theta : float
@@ -167,28 +259,27 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
 
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    even_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
+    even_sums = [radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
     even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
-    odd_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
+    odd_sums = [radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
     odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
-    yA = radial_integral(zernike_pol, r, theta, 0.0, alpha, n_int_r_points)
-    yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha, n_int_r_points)
+    yA = radial_integral_comp(orders, r, theta, 0.0, alpha, n_int_r_points)
+    yB = radial_integral_comp(orders, r, theta, 2.0*pi, alpha, n_int_r_points)
     integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
     return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
 # %% PSF kernel calc. (accelerated)
-def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
+def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.ndarray], wavelength: float, NA: float, n_int_r_points: int = 320,
                         n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
-                        kernel_size: int = 3, fig_id: str = "",
-                        test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
+                        kernel_size: int = 3, fig_id: str = "", suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
-    Calculate centralized matrix with the PSF mask values.
+    Calculate centralized matrix (kernel) with the PSF mask values.
 
     Parameters
     ----------
-    zernike_pol : ZernPol
+    zernike_pol : ZernPol or Sequence[ZernPol]
         The instance of ZernPol() class required for calculation of Zernike polynomial values.
     len2pixels : float
         Relation between length in physical units (the same as the provided wavelength) and pixels.
@@ -204,25 +295,24 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength
     n_int_phi_points : int, optional
         Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
     show_kernel : bool, optional
-        Plot the calculated kernel interactively. The default is True.
+        Plot the calculated kernel interactively. The default is False.
     fig_title : str, optional
         Custom figure title. The default is None.
     normalize_values : bool, optional
         Normalize all values in the sense that the max kernel value = 1.0. The default is False.
-    airy_pattern : bool, optional
-        Plot the Airy pattern for the provided parameters. The default is False.
     kernel_size : int, optional
-        Custom kernel size, if not provided, then the size will be estimated based on the parameters. The default is 0.
-    test_parallel : bool, optional
-        Testing joblib library for speeding up calculations. The default is False.
+        Custom kernel size, if not provided, then the size will be estimated based on the parameters. The default is 3.
     fig_id : str, optional
         Some string id for the figure title. The default is "".
-    test_vectorized : bool, optional
-        For using vectorized calculations instead of simple for loops. The default is False.
     suppress_warns : bool, optional
         Flag for suppressing any thrown warnings. The default is False.
     verbose: bool, optional
-        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
+        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it. The default is False.
+
+    Raises
+    ------
+    ValueError
+        If the Zernike polynomial has the radial order > 10 and (abs(m) != n or abs(m) != n-2).
 
     Returns
     -------
@@ -231,18 +321,28 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength
 
     """
     # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
-    alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
+    k = 2.0*pi/wavelength  # Calculate angular frequency (k)
     size = kernel_size
     # Make kernel with odd sizes for precisely centering the kernel (in the center of an image)
     if size % 2 == 0:
         size += 1
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
-    # Print note about calculation duration
-    if size > 30 and not suppress_warns:
-        if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
-            print(f"Note that the estimated kernel size: {size}x{size}. Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")
-        else:
-            print(f"Note that the estimated kernel size: {size}x{size}, calculation may take from several dozens of seconds to minutes")
+    # Get the orders of polynomial and check if the equation for compilation was implemented
+    single_polynomial_provided = False  # flag for using single polynomial functions
+    if not hasattr(zernike_pol, "__len__") and isinstance(alpha, float):
+        alpha /= wavelength  # normalize to wavelength (physical units)
+        m, n = zernike_pol.get_mn_orders(); single_polynomial_provided = True
+        if n > 10 and (abs(m) != n or abs(m) != n-2):
+            raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
+    else:
+        if not isinstance(alpha, np.ndarray):
+            alpha = np.asarray(alpha)
+        polynomials_orders = []  # for checking and providing for further compilation polynomials in a tuple
+        for pol in zernike_pol:
+            m, n = pol.get_mn_orders(); polynomials_orders.append((m, n))
+            if n > 10 and (abs(m) != n or abs(m) != n-2):
+                raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
+        polynomials_orders = tuple(polynomials_orders)  # convert list to tuple
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
@@ -253,7 +353,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength
     if verbose:
         calculated_points = 0  # for explicit showing of performance
         show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
-        if 100 < size*size < 301:
+        if 100 < size*size < 651:
             show_each_tenth_point = True; checking_point = 10
     for i in range(size):
         for j in range(size):
@@ -266,18 +366,18 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength
             theta = np.arctan2((i - i_center), (j - j_center))
             theta += np.pi  # shift angles to the range [0, 2pi]
             # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
-            if not test_vectorized:
-                kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+            if single_polynomial_provided:
+                kernel[i, j] = get_psf_point_r_comp((m, n), distance, theta, alpha, n_int_r_points, n_int_phi_points)
             else:
-                kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
-                if verbose:
-                    calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
-                    if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
-                        print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
-                        if calculated_points == checking_point:
-                            checking_point += 10
-                    elif (not show_each_tenth_point and not size*size >= 301):
-                        print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                kernel[i, j] = get_psf_point_r_pols_comp(polynomials_orders, alpha, distance, theta, n_int_r_points, n_int_phi_points)
+            if verbose:
+                calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
+                if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms", flush=True)
+                    if calculated_points == checking_point:
+                        checking_point += 10
+                elif (not show_each_tenth_point and not size*size >= 651):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms", flush=True)
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -295,10 +395,160 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: float, wavelength
         if fig_title is not None and len(fig_title) > 0:
             plt.figure(fig_title, figsize=(6, 6))
         else:
-            plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}",
-                       figsize=(6, 6))
+            if not hasattr(zernike_pol, "__len__"):
+                plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}",
+                           figsize=(6, 6))
+            else:
+                plt.figure(f"Sum of provided #{len(zernike_pol)} of polynomials {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
     return kernel
+
+
+# %% PSF calc. for several polynomials
+@njit
+def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: float) -> float:
+    """
+    Wrap calculation of polynomials values sum for compilation.
+
+    Parameters
+    ----------
+    polynomials_orders : tuple
+        DESCRIPTION.
+    amplitudes : np.ndarray
+        DESCRIPTION.
+    p : float
+        Value from the calling function.
+    phi : float
+        Value from the calling function.
+
+    Returns
+    -------
+    sum_pols : float
+        Sum of polynomials values in the polar coordinates point.
+
+    """
+    for i, orders in enumerate(polynomials_orders):
+        if i == 0:
+            sum_pols = amplitudes[i]*zernpol_value(orders, p, phi)
+        else:
+            sum_pols += amplitudes[i]*zernpol_value(orders, p, phi)
+    return sum_pols
+
+
+@njit
+def diffraction_integral_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, phi: float,
+                                     p: float, theta: float, r: float) -> float:
+    """
+    Diffraction integral function for the formed image point (see the references as the sources of the equation).
+
+    Parameters
+    ----------
+    polynomials_orders : tuple
+        Tuple with several orders of Zernike polynomials.
+    amplitudes : np.ndarray
+        Amplitudes of polynomials (RMS).
+    phi : float
+        Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
+    p : numpy.array or float
+        Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
+    theta : floats
+        Angle on the image coordinates.
+    r : float
+        Radius on the image coordinates.
+
+    References
+    ----------
+    [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968
+    [2] https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf
+
+    Returns
+    -------
+    numpy.ndarray
+        Values of the diffraction integral.
+
+    """
+    phase_arg = (pol_sums(polynomials_orders, amplitudes, p, phi) - r*p*np.cos(phi - theta))*1j
+    return np.exp(phase_arg)*p
+
+
+@njit
+def radial_integral_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, r: float, theta: float,
+                              phi: float, n_int_r_points: int) -> complex:
+    """
+    Make integration of the diffraction integral on the radius of the entrance pupil.
+
+    Parameters
+    ----------
+    polynomials_orders : tuple
+        Tuple with several orders of Zernike polynomials.
+    amplitudes : np.ndarray
+        Amplitudes of polynomials (RMS).
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    phi : float
+        Angle on the pupil coordinates.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+
+    Returns
+    -------
+    complex
+        Complex amplitude of the field as result of integration on the pupil radius coordinate.
+
+    """
+    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    h_p = 1.0/n_int_r_points; p = np.arange(h_p, 1.0, h_p)
+    fa = diffraction_integral_r_pols_comp(polynomials_orders, amplitudes, phi, 0.0, theta, r)
+    fb = diffraction_integral_r_pols_comp(polynomials_orders, amplitudes, phi, 1.0, theta, r)
+    ang_int = np.sum(diffraction_integral_r_pols_comp(polynomials_orders, amplitudes, phi, p, theta, r)) + 0.5*(fa + fb)
+    return h_p*ang_int
+
+
+@njit
+def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, r: float, theta: float,
+                              n_int_r_points: int, n_int_phi_points: int) -> float:
+    """
+    Calculate PSF point for the kernel using Parallel class from the joblib library.
+
+    Parameters
+    ----------
+    polynomials_orders : tuple
+        Tuple with several orders of Zernike polynomials.
+    amplitudes : np.ndarray
+        Amplitudes of polynomials (RMS).
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    alpha : float, optional
+        Amplitude of the polynomial.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+    n_int_phi_points : int
+        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
+    paralleljobs : Parallel (from joblib import Parallel), optional
+        Parallel class for parallelizing the computation jobs using joblib backend. The default is None.
+
+    Returns
+    -------
+    float
+        |U|**2 - the module and square of the amplitude, intensity as the PSF value.
+
+    """
+    h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
+    even_sums = [radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                 for i in range(2, n_int_phi_points-2, 2)]
+    even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
+    odd_sums = [radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                for i in range(1, n_int_phi_points-1, 2)]
+    odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    # Simpson integration rule implementation
+    yA = radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, 0.0, n_int_r_points)
+    yB = radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, 2.0*pi, n_int_r_points)
+    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
+    return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
 # %% Define standard exports from this module
@@ -316,8 +566,24 @@ if __name__ == '__main__':
     pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
     pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
 
-    # Flags for performing tests
+    # Flags for testing various scenarious
+    test_single_polynomial = False; test_few_polynomials = True
 
-    # Definition of some Zernike polynomials for further tests
-    kernel0 = get_psf_kernel_comp(ZernPol(m=0, n=0), pixel_size*0.7, alpha=1.5, wavelength=wavelength, NA=NA,
-                                  show_kernel=True, kernel_size=11)
+    # Testing implemented calculations for single polynomial
+    if test_single_polynomial:
+        get_psf_kernel_comp(ZernPol(m=0, n=0), pixel_size*0.7, alpha=1.5, wavelength=wavelength, NA=NA, normalize_values=True,
+                            show_kernel=True, kernel_size=11, verbose=True)
+        print("*******************************************")
+        get_psf_kernel_comp(ZernPol(m=0, n=4), pixel_size*0.7, alpha=0.75, wavelength=wavelength, NA=NA, normalize_values=True,
+                            show_kernel=True, kernel_size=21, verbose=True)
+    # For several (calculated their sum)
+    if test_few_polynomials:
+        # First, checking below sequentially all functions to be compileable
+        # pols = ((-2, 2), (1, 3)); ampls = np.asarray([-0.4, 0.6])
+        # diffraction_integral_r_pols_comp(pols, ampls, phi=0.2, p=0.1, theta=0.3, r=0.5)
+        # radial_integral_pols_comp(pols, ampls, r=0.5, theta=0.3, phi=1.01, n_int_r_points=300)
+        # get_psf_point_r_pols_comp(pols, ampls, r=0.5, theta=0.3, n_int_r_points=250, n_int_phi_points=320)
+        # Second, test all at once for calling the function
+        zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.86, 0.4, 0.7)
+        get_psf_kernel_comp(pols, pixel_size*0.7, alpha=coeffs, wavelength=wavelength, NA=NA, normalize_values=True,
+                            show_kernel=True, kernel_size=24, verbose=True)

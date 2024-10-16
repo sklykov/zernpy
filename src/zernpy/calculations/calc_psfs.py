@@ -308,7 +308,7 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     size_ext = 0   # additional size depending on some parameters below
     if m == 0 and n == 0:  # Airy
         if 0.25 < NA < 1.0:
-            multiplier = 4.5*(1.0 - NA)
+            multiplier = 5.0*(1.0 - NA) + 1.5
         else:
             multiplier = 4.5 + 2.5*sqrt(1.0 / NA)
     else:
@@ -336,7 +336,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                    airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
                    test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
-    Calculate centralized matrix with the PSF mask values.
+    Calculate centralized matrix (kernel) with the PSF mask values.
 
     Parameters
     ----------
@@ -356,7 +356,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     n_int_phi_points : int, optional
         Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
     show_kernel : bool, optional
-        Plot the calculated kernel interactively. The default is True.
+        Plot the calculated kernel interactively. The default is False.
     fig_title : str, optional
         Custom figure title. The default is None.
     normalize_values : bool, optional
@@ -374,7 +374,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     suppress_warns : bool, optional
         Flag for suppressing any thrown warnings. The default is False.
     verbose: bool, optional
-        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
+        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it. The default is False.
 
     Returns
     -------
@@ -485,7 +485,8 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
 
 
 # %% PSF calculation for several polynomials
-def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float, p: float, theta: float, r: float) -> np.array:
+def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float, p: Union[float, np.ndarray],
+                                theta: float, r: float) -> np.ndarray:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -497,7 +498,7 @@ def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float,
         Zernike amplitudes (the expansion coefficients) in physical units.
     phi : float
         Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
-    p : float
+    p : float or np.ndarray
         Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
     theta : floats
         Angle on the image coordinates.
@@ -515,9 +516,12 @@ def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float,
         Values of the diffraction integral.
 
     """
-    sum_polynomial_values = 0.0
+    # NOTE: the manual for loop should be implemented, because sum can be calculated for float 'p' and for np.ndarray 'p'
     for i, zernike_pol in enumerate(polynomials):
-        sum_polynomial_values += amplitudes[i]*zernike_pol.polynomial_value(p, phi)
+        if i == 0:
+            sum_polynomial_values = amplitudes[i]*zernike_pol.polynomial_value(p, phi)
+        else:
+            sum_polynomial_values += amplitudes[i]*zernike_pol.polynomial_value(p, phi)
     phase_arg = (sum_polynomial_values - r*p*np.cos(phi - theta))*1j
     return np.exp(phase_arg)*p
 
