@@ -15,12 +15,11 @@ import time
 from typing import Union
 
 # %% Checking and import the numba library for speeding up the calculation
-global numba_installed
+methods_compiled = False  # flag for storing if the methods compiled
 try:
     from numba import njit
-    numba_installed = True
 except ModuleNotFoundError:
-    numba_installed = False
+    pass
 
 
 # %% Local (package-scoped) imports - result in TypingError (Cannot determine Numba type of <class 'function'>)
@@ -321,11 +320,14 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
 
     """
     # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
-    k = 2.0*pi/wavelength  # Calculate angular frequency (k)
-    size = kernel_size
+    size = kernel_size; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
     # Make kernel with odd sizes for precisely centering the kernel (in the center of an image)
     if size % 2 == 0:
         size += 1
+    # Provide performance tip if the provided kernel size is quite big for calculations
+    if size > 45 and not suppress_warns:
+        __warn_message = f"Calculation of provided {size} will take more than 20 seconds"
+        warnings.warn(__warn_message); __warn_message = ""
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Get the orders of polynomial and check if the equation for compilation was implemented
     single_polynomial_provided = False  # flag for using single polynomial functions
@@ -348,7 +350,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message); __warn_message = ""
     # Calculate the PSF kernel for usage in convolution operation
     if verbose:
         calculated_points = 0  # for explicit showing of performance
@@ -551,8 +553,21 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
     return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
+# %% Utility functions
+def set_methods_compiled():
+    """
+    Reset the flag by external call.
+
+    Returns
+    -------
+    None.
+
+    """
+    global methods_compiled; methods_compiled = True
+
+
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel_comp']
+__all__ = ['get_psf_kernel_comp', 'methods_compiled', 'set_methods_compiled']
 
 # %% Tests
 if __name__ == '__main__':

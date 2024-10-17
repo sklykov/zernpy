@@ -13,11 +13,12 @@ import matplotlib.pyplot as plt
 from math import pi
 import time
 from typing import Union, Sequence
+from importlib.metadata import version
 
 # Check if numba library installed for importing compilable methods
 try:
     import numba
-    numba_installed = True
+    numba_installed = True; numba_version = version('numba'); numba_ver_n = numba_version.split('.')
 except ModuleNotFoundError:
     numba_installed = False
 
@@ -28,14 +29,14 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from zernikepol import ZernPol
     from utils.intmproc import DispenserManager
     if numba_installed:
-        from calculations.calc_psfs_numba import get_psf_kernel_comp
+        from calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
 else:
     from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
                                          convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
     from .zernikepol import ZernPol
     from .utils.intmproc import DispenserManager
     if numba_installed:
-        from .calculations.calc_psfs_numba import get_psf_kernel_comp
+        from .calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -280,7 +281,7 @@ class ZernPSF:
 
     # %% Calculation
     def calculate_psf_kernel(self, suppress_warnings: bool = False, normalized: bool = True, verbose_info: bool = False,
-                             accelerate: bool = False) -> np.ndarray:
+                             accelerated: bool = False) -> np.ndarray:
         """
         Calculate PSF kernel using the specified or default calculation parameters and physical values. \n
 
@@ -309,7 +310,7 @@ class ZernPSF:
             Flag to return normalized PSF values to max=1.0. The default is True.
         verbose_info : bool, optional
             Flag to print out each step completion report and measured elapsed time in ms. The default is False.
-        accelerate : bool, optional
+        accelerated : bool, optional
             Flag to accelerate the calculations by using numba library for scripts compilation. The default is False.
 
         References
@@ -337,21 +338,35 @@ class ZernPSF:
                 print("Kernel calculation started...")
         # Calculation using the vectorised form
         if self.zernpol is not None:
-            if not accelerate:
+            if not accelerated:
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                              test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points)
             else:
+                if not suppress_warnings and not methods_compiled:
+                    self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
+                                           + " consider to run function 'force_get_psf_compilation()' before")
+                    warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.kernel = get_psf_kernel_comp(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
-                                                  n_int_phi_points=self.n_int_phi_points)
+                                                  suppress_warns=suppress_warnings, n_int_phi_points=self.n_int_phi_points)
         elif len(self.polynomials) > 0:
-            self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
-                                               wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
-                                               kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
-                                               n_int_phi_points=self.n_int_phi_points)
+            if not accelerated:
+                self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
+                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
+                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
+                                                   n_int_phi_points=self.n_int_phi_points)
+            else:
+                if not suppress_warnings and not methods_compiled:
+                    self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
+                                           + " consider to run function 'force_get_psf_compilation()' before")
+                    warnings.warn(self.__warn_message); self.__warn_message = ""
+                self.kernel = get_psf_kernel_comp(zernike_pol=self.polynomials, len2pixels=self.pixel_size, alpha=self.amplitudes,
+                                                  wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
+                                                  kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
+                                                  suppress_warns=suppress_warnings, n_int_phi_points=self.n_int_phi_points)
         if verbose_info:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
             print("--------------------------------------------")
@@ -359,6 +374,7 @@ class ZernPSF:
                 print(f"Overall kernel calculation takes: {round(passed_time_ms/1000.0, 2)} sec.")
             else:
                 print(f"Overall kernel calculation takes: {passed_time_ms} ms.")
+            print("")
         return self.kernel
 
     def plot_kernel(self, id_str: str = ""):
@@ -455,6 +471,7 @@ class ZernPSF:
         if self.kernel_size == 1:
             self.__warn_message = "Kernel most likely hasn't been calculated, the kernel size == 1 - default value"
             warnings.warn(self.__warn_message); self.__warn_message = ""
+        # TODO: add save / read data for several polynomials
         if self.zernpol is not None:
             self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
                                            expansion_coefficient=self.expansion_coeff, pixel_size=self.pixel_size,
@@ -646,23 +663,54 @@ def sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_
         return ""
 
 
-def force_get_psf_compilation():
+def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None]:
     """
     Force compilation of computing functions for round and ellipse 'precise' shaped objects.
 
+    verbose_report : bool, optional
+        Flag for printing out the elapsed for compilation time. The default is False.
+
     Returns
     -------
-    None.
+    None or tuple with 2 used ZernPSF instances depending on 'numba_installed' flag.
 
     """
     if numba_installed:
+        if verbose_report:
+            print("Precompilation started..."); t1 = time.perf_counter()  # for explicit showing of performance
+        # Check the version of numba for guarantee working of compilation calls
+        try:
+            if int(numba_ver_n[0]) == 0:
+                if int(numba_ver_n[1]) <= 57:
+                    if int(numba_ver_n[2]) < 1:
+                        __warn_message = "\nRecommended numba version for compilation >= 0.57.1"; warnings.warn(__warn_message)
+        except ValueError:
+            __warn_message = "\nCannot parse 'numba' version, expected in format 'x.yy.zz' - all integers"; warnings.warn(__warn_message)
+        # Compilation of methods for single polynomial PSF calculation
         NA = 0.98; wavelength = 0.55; pixel_size = wavelength / 4.0; ampl = 1.0
-        zp_prc = ZernPol(m=0, n=0); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern
+        zp_prc = ZernPol(m=0, n=0); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
         zpsf_prc.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-        zpsf_prc.calculate_psf_kernel(normalized=True, accelerate=True)
+        zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        zpsf_prc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=verbose_report)
+        # Compilation of methods for multiple polynomials PSF calculation
+        zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.2, 0.15, 0.1)
+        zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.35, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.5)
+        zpsf_mpc.kernel_size = 1; zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True,
+                                                                verbose_info=verbose_report)
+        set_methods_compiled()  # setting the flag implicitly in the module
+        global methods_compiled; methods_compiled = True  # setting copied variable in this script
+        if verbose_report:
+            passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
+            if passed_time_ms > 1000:
+                print(f"Precompilation takes: {round(passed_time_ms/1000.0, 2)} sec.")
+            else:
+                print(f"Precompilation takes: {passed_time_ms} ms.")
+            print("--------------------------------------------")
+        return (zpsf_prc, zpsf_mpc)
     else:
-        __warn_message = "Acceleration isn't possible because 'numba' library not installed in the current environment"
+        __warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
         warnings.warn(__warn_message)
+        return None
 
 
 # %% Test as the main script
@@ -672,7 +720,8 @@ if __name__ == "__main__":
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
     check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False
     check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
-    check_edge_conditions = False; test_acceleration = True
+    check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
+    prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
 
     # Common PSF for testing
     if check_common_psf:
@@ -743,5 +792,21 @@ if __name__ == "__main__":
         zpsf9.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=(-0.67), pixel_physical_size=0.5/4.75)
         zpsf9.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf9.plot_kernel()
     # Test acceleration by using numba library utilities
-    if test_acceleration:
+    if test_acceleration_single_pol:
+        force_get_psf_compilation(); NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.6; ampl = -0.16
+        zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
+        zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+        kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True, verbose_info=True); zpsf6.plot_kernel("Accelerated")
+        kernel_norm = zpsf6.calculate_psf_kernel(normalized=True); zpsf6.plot_kernel("Normal")
+    if test_acceleration_few_pol:
         force_get_psf_compilation()
+        zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.12, 0.15, 0.1)
+        zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.35, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.5)
+        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel("Normal")
+        composed_kernel_acc = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True); zpsf8.plot_kernel("Accelerated")
+    if prepare_pic_readme:
+        force_get_psf_compilation(verbose_report=True)
+        zp1 = ZernPol(m=-1, n=3); zp2 = ZernPol(m=2, n=4); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (0.5, 0.21, 0.15)
+        zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=0.65, wavelength=0.6, expansion_coeff=coeffs, pixel_physical_size=0.6/5.0)
+        zpsf_pic.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True)
+        zpsf_pic.plot_kernel("Vert. Coma Vert. 2nd Astigmatism Spherical")

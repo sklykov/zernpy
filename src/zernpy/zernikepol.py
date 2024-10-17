@@ -1112,7 +1112,8 @@ class ZernPol:
                     plot_sum_fig(zern_surface, r, theta, "", color_map)
 
     @staticmethod
-    def gen_zernikes_surface(coefficients: Sequence[float], polynomials: Sequence, r_step: float = 0.01, theta_rad_step: float = round(np.pi/180, 7),
+    def gen_zernikes_surface(coefficients: Sequence[float], polynomials: Sequence, r_step: float = 0.01,
+                             theta_rad_step: float = round(np.pi/180, 7),
                              equal_n_coordinates: bool = False, n_points: int = 250) -> zernikes_surface:
         """
         Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.
@@ -1334,7 +1335,7 @@ class ZernPol:
 # %% Independent functions defs.
 def generate_polynomials(max_order: int = 10) -> tuple:
     """
-    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).
+    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with Piston(m=0,n=0).
 
     Parameters
     ----------

@@ -16,7 +16,7 @@ import os
 # Importing the written in the modules test functions for letting pytest library their automatic exploration
 if __name__ != "__main__":
     from ..calculations.calc_psfs import (get_psf_kernel)
-    from ..zernpsf import ZernPSF
+    from ..zernpsf import ZernPSF, force_get_psf_compilation
     from ..zernikepol import ZernPol
 else:
     from zernpy import ZernPol
@@ -24,7 +24,7 @@ else:
 
 # Testing functions
 def test_psf_kernel_calc():
-    NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.4  # Common physical properties
+    NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.28  # Common physical properties
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
     airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
@@ -64,7 +64,7 @@ def test_zernpsf_usage():
 
 def test_save_load_zernpsf():
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
-    NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.185  # Common physical properties
+    NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.16  # Common physical properties
     zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     zpsf2.calculate_psf_kernel(normalized=True)
     zpsf2.save_json(overwrite=True)  # save in the standard location (package folder)
@@ -72,3 +72,14 @@ def test_save_load_zernpsf():
     if Path(zpsf2.json_file_path).is_file():
         zpsf2.read_json()  # test reading of the stored in json file information
         os.remove(path=str(Path(zpsf2.json_file_path).absolute()))  # remove saved file for not cluttering folder
+
+
+def test_numba_compilation():
+    force_get_psf_compilation()  # force compilation of computation methods
+    # Test the difference between accelerated and not accelerated calculation methods
+    NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.6; ampl = -0.16
+    zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
+    zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+    kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)
+    kernel_norm = zpsf6.calculate_psf_kernel(normalized=True)
+    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-5), "Accelerated and not one calculation of kernel methods have significant differences"

@@ -316,12 +316,14 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
         if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
             multiplier += 0.5*sqrt(n - abs(m))
         elif abs(m) > 0 and n % 2 == 0:
-            multiplier = 1.35*sqrt(n)
+            multiplier = 1.45*sqrt(n)
         if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
             size_ext += int(round(sqrt(n+abs(m)))) + 1
     if abs(alpha) >= 0.5:
-        multiplier *= sqrt(2.45*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        multiplier *= sqrt(2.5*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        size_ext += 2  # enlarge kernel size additionally for high amplitude
     elif abs(alpha) >= 0.25:
+        size_ext += 1  # add one more line for kernel (prevent automatic warnings)
         multiplier *= sqrt(4.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
     # Estimation below based on the provided physical properties
     size = int(round((multiplier*wavelength)/len2pixels, 0)) + 1 + size_ext
@@ -937,7 +939,6 @@ if __name__ == '__main__':
 
     if check_warnings:
         kern_def = get_psf_kernel(pol3z, len2pixels=1.0, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-
     if show_convolution_results:
         # Generate the ideal centralized circle with the blurred edges
         radius = 4.0; sample = get_bumped_circle(radius); plt.figure("Sample disk"); m_center, n_center = sample.shape
