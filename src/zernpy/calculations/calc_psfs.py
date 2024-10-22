@@ -731,7 +731,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
 
 
 # %% Save and read the calculated PSF matrices
-def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: float,
+def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: Union[float, np.ndarray],
              kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str = None,
              overwrite: bool = True, additional_file_name: str = None) -> str:
     """
@@ -747,16 +747,16 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Wavelength used for the PSF calculation (in physical units).
     pixel_size : float
         Pixel size (in physical units same to wavelength) used for the PSF calculation.
-    expansion_coefficient : float
-        Amplitude (in other words) of the polynomial.
+    expansion_coefficient : float or np.ndarray
+        Amplitude(-s) (in other words) of the polynomial(-s).
     kernel_size : int
         Size of the PSF kernel.
     n_int_points_r : int
         Number of the used integration points on r.
     n_int_points_phi : int
         Number of the used integration points on phi.
-    zernike_pol : tuple or ZernPol()
-        Tuple as the (m, n) orders or an instance of ZernPol() class.
+    zernike_pol : ZernPol instance or Sequence[ZernPol]
+        Zernike polynomial(-s).
     folder_path : str, optional
         Absolute path to the folder where the file will be saved. The default is None.
     overwrite : bool, optional
@@ -770,7 +770,12 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Absolute path to the file.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    single_pol_used = False; osa_indices = []  # flag for saving different parameters
+    if not hasattr(zernike_pol, '__len__'):
+        (m, n) = define_orders(zernike_pol); single_pol_used = True  # get polynomial orders
+    else:
+        for zernpol in zernike_pol:
+            osa_indices.append(zernpol.get_indices()[1])
     # Checking the provided folder or creating the folder for storing files
     if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
         working_folder = Path(__file__).cwd(); saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
@@ -782,14 +787,25 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
             saved_psfs_folder = Path(folder_path)
     # Save provided PSF kernel with the provided parameters
     if additional_file_name is not None and len(additional_file_name) > 0:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
+        if single_pol_used:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
+        else:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{additional_file_name}_{expansion_coefficient}.json")
     else:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
+        if single_pol_used:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
+        else:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{expansion_coefficient}.json")
+    # Data composing for recording
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
     data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
-    data4serialization["Pixel Size"] = pixel_size; data4serialization["Expansion Coefficient"] = expansion_coefficient
-    data4serialization["Kernel Size"] = kernel_size; data4serialization["# of integration points R"] = n_int_points_r
-    data4serialization["# of integration points angle"] = n_int_points_phi
+    data4serialization["Pixel Size"] = pixel_size; data4serialization["Kernel Size"] = kernel_size
+    data4serialization["# of integration points R"] = n_int_points_r; data4serialization["# of integration points angle"] = n_int_points_phi
+    if single_pol_used:
+        data4serialization["Expansion Coefficient"] = expansion_coefficient; data4serialization["Polynomial"] = zernike_pol.get_indices()[1]
+    else:
+        data4serialization["Amplitudes"] = expansion_coefficient.tolist(); data4serialization["Polynomials"] = osa_indices
+    # File presence check and recording
     if json_file_path.exists() and not overwrite:
         _warn_message = "The file already exists, the content won't be overwritten."; warnings.warn(_warn_message)
     if not json_file_path.exists() or (json_file_path.exists() and overwrite):

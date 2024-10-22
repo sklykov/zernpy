@@ -64,13 +64,18 @@ def test_zernpsf_usage():
 
 def test_save_load_zernpsf():
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
+    zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional classes for testing reading and reassigning values
     NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.16  # Common physical properties
     zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-    zpsf2.calculate_psf_kernel(normalized=True)
+    zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=200, n_integration_points_phi=180)
+    zpsf3.set_physical_props(NA=1.0, wavelength=0.6, expansion_coeff=-0.1, pixel_physical_size=0.05)
+    zpsf2.calculate_psf_kernel(normalized=True)  # normal calculation of a kernel
     zpsf2.save_json(overwrite=True)  # save in the standard location (package folder)
     assert Path(zpsf2.json_file_path).is_file(), "File hasn't been saved in the standard location"
     if Path(zpsf2.json_file_path).is_file():
-        zpsf2.read_json()  # test reading of the stored in json file information
+        zpsf3.read_json(zpsf2.json_file_path)  # test reading of the stored in json file information
+        assert (zpsf2.NA == zpsf3.NA and zpsf2.zernpol == zpsf3.zernpol and zpsf2.n_int_phi_points == zpsf3.n_int_phi_points
+                and zpsf2.expansion_coeff == zpsf3.expansion_coeff), "Saved and Read PSFs have differences, check I/O operations"
         os.remove(path=str(Path(zpsf2.json_file_path).absolute()))  # remove saved file for not cluttering folder
 
 

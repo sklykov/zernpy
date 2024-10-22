@@ -30,6 +30,8 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from utils.intmproc import DispenserManager
     if numba_installed:
         from calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
+    else:
+        methods_compiled = False
 else:
     from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
                                          convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
@@ -37,6 +39,8 @@ else:
     from .utils.intmproc import DispenserManager
     if numba_installed:
         from .calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
+    else:
+        methods_compiled = False
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -337,13 +341,14 @@ class ZernPSF:
             if self.kernel_size*self.kernel_size >= 301:
                 print("Kernel calculation started...")
         # Calculation using the vectorised form
+        global numba_installed  # access the flag
         if self.zernpol is not None:
             if not accelerated:
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                              test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points)
-            else:
+            elif numba_installed:
                 if not suppress_warnings and not methods_compiled:
                     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
                                            + " consider to run function 'force_get_psf_compilation()' before")
@@ -358,7 +363,7 @@ class ZernPSF:
                                                    wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                    kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                    n_int_phi_points=self.n_int_phi_points)
-            else:
+            elif numba_installed:
                 if not suppress_warnings and not methods_compiled:
                     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
                                            + " consider to run function 'force_get_psf_compilation()' before")
@@ -471,12 +476,17 @@ class ZernPSF:
         if self.kernel_size == 1:
             self.__warn_message = "Kernel most likely hasn't been calculated, the kernel size == 1 - default value"
             warnings.warn(self.__warn_message); self.__warn_message = ""
-        # TODO: add save / read data for several polynomials
-        if self.zernpol is not None:
+        if self.zernpol is not None:  # single polynomial saving
             self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
                                            expansion_coefficient=self.expansion_coeff, pixel_size=self.pixel_size,
                                            kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
                                            n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol,
+                                           overwrite=overwrite, folder_path=abs_path)
+        elif len(self.polynomials) > 0:  # saving several polynomials
+            self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
+                                           expansion_coefficient=self.coefficients, pixel_size=self.pixel_size,
+                                           kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
+                                           n_int_points_phi=self.n_int_phi_points, zernike_pol=self.polynomials,
                                            overwrite=overwrite, folder_path=abs_path)
 
     def read_json(self, abs_path: Union[str, Path] = None):
@@ -497,10 +507,11 @@ class ZernPSF:
             abs_path = self.json_file_path
         elif isinstance(abs_path, Path):
             abs_path = str(abs_path)
-        json_data = read_psf(abs_path)
+        json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
-            l: float; na: float; a: float; ps: float; read_props = 0
+            l: float; na: float; a: float; ampls: np.ndarray; pols: list; ps: float; read_props = 0
             for key, item in json_data.items():
+                # Calculation properties + calculated kernel
                 if key == "PSF Kernel":
                     self.kernel = np.asarray(item); read_props += 1
                 elif key == "Kernel Size":
@@ -516,12 +527,30 @@ class ZernPSF:
                     l = item; read_props += 1
                 elif key == "Expansion Coefficient":
                     a = item; read_props += 1
+                elif key == "Amplitudes":
+                    a = np.asarray(item); read_props += 1
                 elif key == "Pixel Size":
                     ps = item; read_props += 1
+                # Getting and reassigning used polynomial(-s)
+                elif key == "Polynomial":
+                    osa_index = item; self.zernpol = ZernPol(osa=osa_index)
+                elif key == "Polynomials":
+                    osa_indices = item; pols = []; pols_len = len(osa_indices)
+                    if pols_len == 1:
+                        self.zernpol = ZernPol(osa=osa_indices[0])
+                        if osa_indices[0] == 0:
+                            self.airy = True
+                        else:
+                            self.airy = False
+                    else:
+                        for index in osa_indices:
+                            pols.append(ZernPol(osa=index))
+                        self.polynomials = pols; self.zernpol = None; self.airy = False
+            # Assign read physical properties
             if read_props == 8:
                 self.set_physical_props(NA=na, wavelength=l, expansion_coeff=a, pixel_physical_size=ps)
             else:
-                self.__warn_message = "Provided json file doesn't contain all necessary keys"
+                self.__warn_message = "Provided json file doesn't contain all necessary keys for physical / calculation properties"
                 warnings.warn(self.__warn_message); self.__warn_message = ""
         else:
             self.__warn_message = "Provided path doesn't contain valid JSON data"
@@ -716,26 +745,26 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
 # %% Test as the main script
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
-    # zpsf1 = ZernPSF(ZernPol(m=0, n=0)); kernel1 = zpsf1.calculate_psf_kernel(suppress_warns=True); zpsf1.plot_kernel()  # Airy
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
     check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False
     check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
+    test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
 
     # Common PSF for testing
     if check_common_psf:
-        zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.43
+        zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.43
         zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
+        zpsf1.set_physical_props(NA=0.5, wavelength=0.6, expansion_coeff=0.25, pixel_physical_size=wavelength_um/5.5)
         zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
+        zpsf1.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=220, n_integration_points_phi=360)
         kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=True); zpsf2.plot_kernel("for loop")
         zpsf2.visualize_convolution()  # Visualize convolution on the disk image
         if check_io_kernel:
             # default_path = Path(__file__).parent.joinpath("saved_psfs").absolute()  # default path for storing JSON files
-            standard_path = Path.home().joinpath("Desktop")  # saving json on the Desktop
             zpsf2.save_json(overwrite=True, abs_path=standard_path)
-            saved_test_file_path = standard_path.joinpath("psf_(-3, 3)_-0.25.json")
-            zpsf2.read_json()  # for testing reading
+            zpsf1.read_json(zpsf2.json_file_path)  # for testing reading and assigning values to ZernPSF class (substitution)
         if check_parallel_calculation:
             zpsf2.initialize_parallel_workers(); kernel2 = zpsf2.get_kernel_parallel()
             zpsf2.plot_kernel("parallel"); zpsf2.deinitialize_workers()
@@ -780,11 +809,16 @@ if __name__ == "__main__":
         zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
         zpsf7.calculate_psf_kernel(normalized=True); zpsf7.plot_kernel()
 
-    # Test calculation of a PSF for several polynomials
+    # Test calculation of a PSF for several polynomials and I/O operations (see flags)
     if check_several_pols:
         zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.36, 0.25, 0.4)
         zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/4.5)
         composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel()
+        if test_io_few_pols:
+            zpsf14 = ZernPSF(ZernPol(osa=19)); zpsf14.set_physical_props(NA=0.1, wavelength=0.4, expansion_coeff=0.82, pixel_physical_size=0.05)
+            zpsf8.save_json(overwrite=True, abs_path=standard_path)  # save calculated kernel
+            zpsf14.read_json(zpsf8.json_file_path)
+
     # Test some edge conditions - e.g., specifying 1 polynomial in a list with huge coefficient
     if check_edge_conditions:
         zp4 = ZernPol(m=3, n=3); pols2 = [zp4]; coeff = (5.1)
