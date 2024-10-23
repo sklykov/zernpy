@@ -333,7 +333,12 @@ class ZernPSF:
         if len(self.__warn_message) > 0 and not suppress_warnings:
             warnings.warn(self.__warn_message)
         if not self.__physical_props_set and not suppress_warnings:
-            self.__warn_message = "Physical properties for calculation haven't been set, the default values will be used"
+            self.__warn_message = "\nPhysical properties for calculation haven't been set, the default values will be used"
+            warnings.warn(self.__warn_message); self.__warn_message = ""
+        # Check if accelerated flag set to True but no numba installed
+        global numba_installed  # access the flag
+        if accelerated and not numba_installed and not suppress_warnings:
+            self.__warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
             warnings.warn(self.__warn_message); self.__warn_message = ""
         # For providing performance verbose report
         if verbose_info:
@@ -341,9 +346,8 @@ class ZernPSF:
             if self.kernel_size*self.kernel_size >= 301:
                 print("Kernel calculation started...")
         # Calculation using the vectorised form
-        global numba_installed  # access the flag
         if self.zernpol is not None:
-            if not accelerated:
+            if not accelerated or (accelerated and not numba_installed):
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                              test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
@@ -358,7 +362,7 @@ class ZernPSF:
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                   suppress_warns=suppress_warnings, n_int_phi_points=self.n_int_phi_points)
         elif len(self.polynomials) > 0:
-            if not accelerated:
+            if not accelerated or (accelerated and not numba_installed):
                 self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
                                                    wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                    kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
@@ -751,6 +755,7 @@ if __name__ == "__main__":
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
+    check_accelaration_flag = True  # for testing fallback calculation with the wrong flag for calculate PSF kernel
 
     # Common PSF for testing
     if check_common_psf:
@@ -844,3 +849,9 @@ if __name__ == "__main__":
         zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=0.65, wavelength=0.6, expansion_coeff=coeffs, pixel_physical_size=0.6/5.0)
         zpsf_pic.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True)
         zpsf_pic.plot_kernel("Vert. Coma Vert. 2nd Astigmatism Spherical")
+    if check_accelaration_flag:
+        zp16 = ZernPol(m=-1, n=3); zp18 = ZernPol(m=2, n=4); pols10 = (zp16, zp18); coeffs10 = (-0.1, 0.13); zpsf_acc = ZernPSF(pols10)
+        zpsf_norm = ZernPSF(pols10); zpsf_acc.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
+        zpsf_norm.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
+        kern_acc = zpsf_acc.calculate_psf_kernel(normalized=True, accelerated=True); kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True)
+        kern_diff = np.round(kern_acc - kern_norm, 9)  # for checking the difference in calculations

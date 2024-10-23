@@ -83,8 +83,9 @@ def test_numba_compilation():
     force_get_psf_compilation()  # force compilation of computation methods
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.6; ampl = -0.16
-    zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
+    zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6); zpsf7 = ZernPSF(zp6)  # defocus
     zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-    kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)
-    kernel_norm = zpsf6.calculate_psf_kernel(normalized=True)
-    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-5), "Accelerated and not one calculation of kernel methods have significant differences"
+    zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
+    kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
+    kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
+    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not one calculation of kernel methods have significant differences"
