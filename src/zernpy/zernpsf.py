@@ -24,7 +24,7 @@ except ModuleNotFoundError:
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
+    from calculations.calc_psfs import (get_psf_kernel, lambda_char, radial_integral_s, radial_integral, get_kernel_size,
                                         convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
     from zernikepol import ZernPol
     from utils.intmproc import DispenserManager
@@ -33,7 +33,7 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     else:
         methods_compiled = False
 else:
-    from .calculations.calc_psfs import (get_psf_kernel, lambda_char, um_char, radial_integral_s, radial_integral, get_kernel_size,
+    from .calculations.calc_psfs import (get_psf_kernel, lambda_char, radial_integral_s, radial_integral, get_kernel_size,
                                          convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
     from .zernikepol import ZernPol
     from .utils.intmproc import DispenserManager
@@ -49,8 +49,9 @@ __docformat__ = "numpydoc"
 # %% PSF class
 class ZernPSF:
     """
-    The PSF (2D) calculated for image (focal) plane of a microscopic system assuming that the phase profile is described
-    by the Zernike polynomial. In other words, the PSF describing the image of point source formed by the microscopic system. \n
+    The PSF (2D) class for focal plane of a microscopic system assuming that the phase profile is described by the Zernike polynomial.
+
+    In other words, the PSF describing the image of point source formed by the microscopic system. \n
     Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
     the references to the diffraction integral used for calculations. \n
 
@@ -77,7 +78,7 @@ class ZernPSF:
     __ParallelCalc: DispenserManager = None; __integration_params: list = []  # for speeding up the calculations using several Processes
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
     k: float = 2.0*pi/wavelength  # angular frequency
-    json_file_path: str = str(Path(__file__).parent.absolute())  # default path to the saved file with calculated kernel and metadata
+    json_file_path: str = ""  # shifted to the __init__ method to prevent putting path to API doc (by pydoc)
     coefficients: np.ndarray = None; amplitudes: np.ndarray = None  # for storing amplitudes of polynomials
     # Dev. Note: always carefully check the definition of variables above, since the error in their definition may cause hard traceable bug
 
@@ -100,6 +101,7 @@ class ZernPSF:
         ZernPSF() class instance.
 
         """
+        self.json_file_path = str(Path(__file__).parent.absolute())  # initialize default path as the root folder containing the script
         if not hasattr(zernpol, '__len__') and isinstance(zernpol, ZernPol):
             self.zernpol = zernpol; m, n = self.zernpol.get_mn_orders()
             if m == 0 and n == 0:
@@ -133,7 +135,7 @@ class ZernPSF:
 
     # %% Set properties
     def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
-        f"""
+        """
         Set parameters in physical units.
 
         Parameters
@@ -141,7 +143,7 @@ class ZernPSF:
         NA : float
             Numerical aperture of an objective, assumed usage of microscopic ones.
         wavelength : float
-            Wavelength of monochromatic light ({lambda_char}) used for imaging in physical units (e.g., as {um_char}).
+            Wavelength of monochromatic light (\u03BB) used for imaging in physical units (e.g., as \u00B5m).
         expansion_coeff : float | Sequence[float]
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
@@ -158,7 +160,7 @@ class ZernPSF:
 
         References
         ----------
-        [1] https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy
+        [1] https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy \n
         [2] https://www.edinst.com/de/blog/the-rayleigh-criterion-for-microscope-resolution/
 
         Returns
@@ -190,17 +192,17 @@ class ZernPSF:
                 if coeffs_len == 1:
                     expansion_coeff = float(expansion_coeff[0])
                     # Sanity check for the expansion coefficient of the polynomial
-                    self.__warn_message = sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+                    self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
                     if len(self.__warn_message) > 0:
                         warnings.warn(self.__warn_message); self.__warn_message = ""
                     self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
                 else:
-                   raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
+                    raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
             else:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
-                self.__warn_message = sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
                 if len(self.__warn_message) > 0:
                     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.amplitudes = self.coefficients / self.wavelength
@@ -209,7 +211,7 @@ class ZernPSF:
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
-            self.__warn_message = sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+            self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
@@ -229,7 +231,7 @@ class ZernPSF:
 
     def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int) -> None:
         """
-        Set calculation properties: kernel size, number of integration points on polar coordinates. \n
+        Set calculation properties: kernel size, number of integration points on polar coordinates.
 
         Note that it's recommended to set the physical properties by set_physical_props() method for getting estimated
         required kernel size.
@@ -287,18 +289,18 @@ class ZernPSF:
     def calculate_psf_kernel(self, suppress_warnings: bool = False, normalized: bool = True, verbose_info: bool = False,
                              accelerated: bool = False) -> np.ndarray:
         """
-        Calculate PSF kernel using the specified or default calculation parameters and physical values. \n
+        Calculate PSF kernel using the specified or default calculation parameters and physical values.
 
         Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References. \n
         Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
         an imaging system (micro-objective). \n
         The order of integration and used equations in short:
-        1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022azernike_pol.polynomial_value(p, phi) -
+        1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022zernike_pol.polynomial_value(p, phi) -
                                                                              r\u2022p\u2022cos(phi - theta))\u20221j \n
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
         output, it provides as the np.power(np.abs(integral_sum), 2)\u2022integral_normalization, there integral_normalization =
-        1.0/(pi \u002a pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
+        1.0/(pi\u2022pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n
         Note that the Nijboer's approximation for calculation of diffraction integral also has been tested, but the results is not in agreement
@@ -513,7 +515,7 @@ class ZernPSF:
             abs_path = str(abs_path)
         json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
-            l: float; na: float; a: float; ampls: np.ndarray; pols: list; ps: float; read_props = 0
+            wavelen: float; na: float; a: float; pols: list; ps: float; read_props = 0
             for key, item in json_data.items():
                 # Calculation properties + calculated kernel
                 if key == "PSF Kernel":
@@ -528,7 +530,7 @@ class ZernPSF:
                 elif key == "NA":
                     na = item; read_props += 1
                 elif key == "Wavelength":
-                    l = item; read_props += 1
+                    wavelen = item; read_props += 1
                 elif key == "Expansion Coefficient":
                     a = item; read_props += 1
                 elif key == "Amplitudes":
@@ -552,7 +554,7 @@ class ZernPSF:
                         self.polynomials = pols; self.zernpol = None; self.airy = False
             # Assign read physical properties
             if read_props == 8:
-                self.set_physical_props(NA=na, wavelength=l, expansion_coeff=a, pixel_physical_size=ps)
+                self.set_physical_props(NA=na, wavelength=wavelen, expansion_coeff=a, pixel_physical_size=ps)
             else:
                 self.__warn_message = "Provided json file doesn't contain all necessary keys for physical / calculation properties"
                 warnings.warn(self.__warn_message); self.__warn_message = ""
@@ -668,7 +670,7 @@ class ZernPSF:
 
 
 # %% Utility functions
-def sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_check: bool = False) -> str:
+def _sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_check: bool = False) -> str:
     """
     Sanity check of the divided by wavelength expansion coefficient.
 
@@ -755,11 +757,11 @@ if __name__ == "__main__":
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
-    check_accelaration_flag = True  # for testing fallback calculation with the wrong flag for calculate PSF kernel
+    check_accelaration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
 
     # Common PSF for testing
     if check_common_psf:
-        zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl=-0.43
+        zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl = -0.43
         zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
         zpsf1.set_physical_props(NA=0.5, wavelength=0.6, expansion_coeff=0.25, pixel_physical_size=wavelength_um/5.5)
         zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
@@ -807,7 +809,6 @@ if __name__ == "__main__":
         zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)  # normal assignment
         zpsf6.set_calculation_props(kernel_size=zpsf6.kernel_size, n_integration_points_r=250, n_integration_points_phi=300)
         zpsf6.calculate_psf_kernel(normalized=True); zpsf6.plot_kernel()
-
     if check_test_conditions2:
         zp7 = ZernPol(m=1, n=3); zpsf7 = ZernPSF(zp7)  # horizontal coma
         NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.2; ampl = 0.185  # Common physical properties

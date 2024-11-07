@@ -11,7 +11,7 @@ from multiprocessing import Process, Event, Queue
 import os
 import warnings
 import time
-from typing import Callable, Any  # Callable[..., Any] - should check for any callable instance accepting / returning any types
+from typing import Callable, Any, Union  # Callable[..., Any] - should check for any callable instance accepting / returning any types
 # from collections.abc import Sequence  # for more broad typing check - Sequence[Any] | np.ndarray - accept list, set, tuple, str or np.ndarray
 
 
@@ -144,7 +144,6 @@ class DispenserManager():
                         self.__results[current_param_index] = self.__queues[proc_i].get()
                         computed_tasks += 1  # computation has been done
                         task_assigned[proc_i] = False  # next comptutation hasn't been yet assigned, check if still jobs are available
-                        # print(f"Received result {self.__results[current_param_index]} for parameter {self.__parameters_vector[current_param_index]}")
                         if len(indices2process) > 0:
                             current_param_index = indices2process.pop(0); task_assigned[proc_i] = True
                             self.__queues[proc_i].put(self.__parameters_vector[current_param_index])
@@ -291,8 +290,8 @@ class IndiWorker(Process):
                     self.__trigger.clear(); break
 
 
-# %% Pickleable function for tests
-def test_plus(x: float | int) -> float | int:
+# %% Pickleable functions for tests as the main script (latest section)
+def test_plus(x: Union[float, int]) -> Union[float, int]:
     """
     Simulation of the time-costly computation task.
 
@@ -310,7 +309,7 @@ def test_plus(x: float | int) -> float | int:
     time.sleep(0.004); return x + 1
 
 
-def test_minus(x: float | int) -> float | int:
+def test_minus(x: Union[float, int]) -> Union[float, int]:
     """
     Simulation of the time-costly computation task.
 
