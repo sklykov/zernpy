@@ -18,3 +18,4 @@ if __name__ != "__main__" and __name__ != "__mp_main__":
     # functions auto export - when everything imported from the module
     from .zernikepol import generate_polynomials, fit_polynomials, generate_random_phases, fit_polynomials_vectors, generate_phases_image
     from .zernpsf import ZernPSF  # class for ZernPSF auto export on the import call of the package
+    from .zernpsf import force_get_psf_compilation  # function for precompile functions by numba library

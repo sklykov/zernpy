@@ -619,7 +619,7 @@ class ZernPol:
         References
         ----------
         [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
-        [2] Check also preceeding coefficients in the table Zj column: https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials
+        [2] Check also preceding coefficients in the table Zj column: https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials
 
         Returns
         -------

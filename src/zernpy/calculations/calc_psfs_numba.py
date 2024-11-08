@@ -581,7 +581,7 @@ if __name__ == '__main__':
     pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
     pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
 
-    # Flags for testing various scenarious
+    # Flags for testing various scenarios
     test_single_polynomial = False; test_few_polynomials = True
 
     # Testing implemented calculations for single polynomial
@@ -593,7 +593,7 @@ if __name__ == '__main__':
                             show_kernel=True, kernel_size=21, verbose=True)
     # For several (calculated their sum)
     if test_few_polynomials:
-        # First, checking below sequentially all functions to be compileable
+        # First, checking below sequentially all functions to be compilable
         # pols = ((-2, 2), (1, 3)); ampls = np.asarray([-0.4, 0.6])
         # diffraction_integral_r_pols_comp(pols, ampls, phi=0.2, p=0.1, theta=0.3, r=0.5)
         # radial_integral_pols_comp(pols, ampls, r=0.5, theta=0.3, phi=1.01, n_int_r_points=300)

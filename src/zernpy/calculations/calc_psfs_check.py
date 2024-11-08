@@ -53,7 +53,7 @@ def diffraction_integral_r(zernike_pol: ZernPol, alpha: float, phi: float, p: np
         Amplitude of the polynomial.
     phi : float
         Angle on the pupil coordinates.
-    p : np.array
+    p : np.ndarray
         Integration interval on the pupil coordinates.
     theta : float
         Angle on the image coordinates.
@@ -252,9 +252,9 @@ def diffraction_int_approx_sum(zernike_pol: ZernPol, s: int, alpha: float, theta
         c = 2.0
     else:
         c = 4.0
-    coeffiicent = c*pow(1j, (m-1)*s)*np.cos(m*s*theta)
+    coefficient = c*pow(1j, (m-1)*s)*np.cos(m*s*theta)
     h_p = 1.0/n_p_points; p_arr = np.arange(start=h_p, stop=1.0, step=h_p)
-    eps_zero = 1E-11  # substituion of the exact 0.0 value
+    eps_zero = 1E-11  # substitution of the exact 0.0 value
     if r <= 1E-12:
         r = eps_zero
     if alpha <= 1E-12:
@@ -262,7 +262,7 @@ def diffraction_int_approx_sum(zernike_pol: ZernPol, s: int, alpha: float, theta
     fa = jv(s, alpha*zernike_pol.radial(eps_zero))*jv(m*s, eps_zero*r)*eps_zero  # f(0.0)
     fb = jv(s, alpha*zernike_pol.radial(1.0))*jv(m*s, r); fAB = 0.5*(fa + fb)
     integral_sum = h_p*np.sum(jv(s, alpha*zernike_pol.radial(p_arr))*jv(m*s, r*p_arr)*p_arr)
-    return coeffiicent*(fAB + integral_sum)
+    return coefficient*(fAB + integral_sum)
 
 
 def get_psf_point_bwap(zernike_pol, r: float, theta: float, alpha: float = 1.0) -> float:
@@ -294,7 +294,7 @@ def radial_func(n: int, r: float) -> float:
         Evaluated function Jn(r)/r.
 
     """
-    # Defining pure radial function (angular indenpendent) - Jv(r)/r
+    # Defining pure radial function (angular independent) - Jv(r)/r
     if isinstance(r, int):  # Convert int to float explicitly
         r = float(r)
     radial = 0.0  # default value
@@ -398,7 +398,7 @@ def get_aberrated_psf(zernike_pol, r: float, theta: float, alpha: float = 1.0) -
 
 
 # %% Another attempt to use Nijboer's Thesis Functions
-# Tested, this approximation somehow doens't work (maybe, the amplitudes of polynomial aren't small enough)
+# Tested, this approximation somehow doesn't work (maybe, the amplitudes of polynomial aren't small enough)
 def radial_integral_nijboer(zernike_pol: ZernPol, r: float, order: int, power: int) -> float:
     """
     Calculate the radial integrals used in the Nijboer's thesis.
@@ -485,7 +485,7 @@ def get_psf_kernel(zernike_pol, calibration_coefficient: float, alpha: float, un
 
     Parameters
     ----------
-    zernike_pol : tuple (m, n) or isntance of the ZernPol class.
+    zernike_pol : tuple (m, n) or instance of the ZernPol class.
         Required for calculation Zernike polynomial.
 
     calibration_coefficient : float

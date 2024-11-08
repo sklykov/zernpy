@@ -215,7 +215,7 @@ class ZernPSF:
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
-        # Kernel size estimation (could be changed explicilty in the method 'set_calculation_props'). Redefine it for each call
+        # Kernel size estimation (could be changed explicitly in the method 'set_calculation_props'). Redefine it for each call
         if self.zernpol is not None:  # for single polynomial
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
                                                wavelength=self.wavelength, NA=self.NA)
@@ -751,6 +751,10 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
         return None
 
 
+# %% Define default export classes and methods used with import * statement (import * from zernpsf)
+__all__ = ['ZernPSF', 'force_get_psf_compilation']
+
+
 # %% Test as the main script
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
@@ -760,7 +764,7 @@ if __name__ == "__main__":
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
-    check_accelaration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
+    check_acceleration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
 
     # Common PSF for testing
     if check_common_psf:
@@ -853,7 +857,7 @@ if __name__ == "__main__":
         zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=0.65, wavelength=0.6, expansion_coeff=coeffs, pixel_physical_size=0.6/5.0)
         zpsf_pic.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True)
         zpsf_pic.plot_kernel("Vert. Coma Vert. 2nd Astigmatism Spherical")
-    if check_accelaration_flag:
+    if check_acceleration_flag:
         zp16 = ZernPol(m=-1, n=3); zp18 = ZernPol(m=2, n=4); pols10 = (zp16, zp18); coeffs10 = (-0.1, 0.13); zpsf_acc = ZernPSF(pols10)
         zpsf_norm = ZernPSF(pols10); zpsf_acc.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
         zpsf_norm.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
