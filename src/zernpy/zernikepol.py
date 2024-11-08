@@ -16,6 +16,7 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 import random
 import time
+from typing import Union, Sequence
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -348,7 +349,7 @@ class ZernPol:
             raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
 
     # %% Polynomial values calculation in various forms
-    def polynomial_value(self, r, theta, use_exact_eq: bool = False):
+    def polynomial_value(self, r: Union[float, np.ndarray], theta: Union[float, np.ndarray], use_exact_eq: bool = False):
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
@@ -400,7 +401,7 @@ class ZernPol:
         # Checking that angles lie in the range [0, 2*pi] and their type
         theta = ZernPol._check_angles(theta)
         # Checking coincidence of shapes if theta and r are arrays
-        if isinstance(r, np.ndarray) and isinstance(theta, np.ndarray):
+        if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))):
             if r.shape != theta.shape:
                 raise ValueError("Shape of input arrays r and theta is not equal")
         # Calculation using imported function from submodule depending on radial order, use different eq.
@@ -426,7 +427,7 @@ class ZernPol:
             else:
                 return nTr*radial_polynomial_eq(self, r)
 
-    def radial(self, r, use_exact_eq: bool = False):
+    def radial(self, r: Union[float, np.ndarray], use_exact_eq: bool = False):
         """
         Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.
 
@@ -491,7 +492,7 @@ class ZernPol:
             else:
                 return radial_polynomial_eq(self, r)
 
-    def triangular(self, theta):
+    def triangular(self, theta: Union[float, np.ndarray]):
         """
         Calculate triangular Zernike function value(-s) within the unit circle.
 
@@ -520,7 +521,7 @@ class ZernPol:
         # Calculation using imported function
         return triangular_function(self, theta)
 
-    def radial_dr(self, r, use_exact_eq: bool = False):
+    def radial_dr(self, r: Union[float, np.ndarray], use_exact_eq: bool = False):
         """
         Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.
 
@@ -583,7 +584,7 @@ class ZernPol:
             else:
                 return radial_derivative_eq(self, r)
 
-    def triangular_dtheta(self, theta):
+    def triangular_dtheta(self, theta: Union[float, np.ndarray]):
         """
         Calculate derivative from triangular function on angle theta.
 
@@ -613,16 +614,17 @@ class ZernPol:
 
     def normf(self):
         """
-        Calculate normalization factor for the Zernike polynomial calculated according to the Reference below.
+        Calculate normalization factor for the Zernike polynomial calculated according to the References below.
 
         References
         ----------
         [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+        [2] Check also preceeding coefficients in the table Zj column: https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials
 
         Returns
         -------
         float
-            Normalization factor calculated according to the Reference.
+            Normalization factor calculated according to the References.
 
         """
         return normalization_factor(self)
@@ -866,7 +868,7 @@ class ZernPol:
 
     # %% Static methods: generation parameters, sum of polynomials and plotting
     @staticmethod
-    def _sum_zernikes_meshgrid(coefficients: list, polynomials: list, r: np.ndarray, theta: np.ndarray):
+    def _sum_zernikes_meshgrid(coefficients: Sequence[float], polynomials: Sequence, r: np.ndarray, theta: np.ndarray) -> np.ndarray:
         """
         Calculate sum of Zernike polynomials only for the numpy arrays with r and theta.
 
@@ -876,24 +878,24 @@ class ZernPol:
 
         Parameters
         ----------
-        coefficients : list
-            Coefficients of Zernike polynomials for summing.
-        polynomials : list
+        coefficients : Sequence[float]
+            Coefficients of Zernike polynomials for calculation of their sum.
+        polynomials : Sequence[ZernPol]
             Initialized polynomials as class instances of ZernPol class specified in this module.
-        r : numpy.ndarray
-            Radius(-s) from a unit circle.
-        theta : numpy.ndarray
-            Polar angle(-s) from a unit circle.
+        r : np.ndarray
+            Radii from a unit circle.
+        theta : np.ndarray
+            Polar angles from a unit circle.
 
         Raises
         ------
         ValueError
-            If the "polynomials" list doesn't contain the ZernPol() class instances.
+            If the "polynomials" Sequence doesn't contain the ZernPol() class instances.
 
         Returns
         -------
-        Sum of Zernike polynomials
-            2D numpy.ndarray of polynomials sum over the provided polar coordinates.
+        S : 2D numpy.ndarray
+            Sum over the provided polar coordinates.
 
         """
         S = 0.0  # default value - sum
@@ -915,18 +917,19 @@ class ZernPol:
         return S
 
     @staticmethod
-    def sum_zernikes(coefficients: list, polynomials: list, r, theta, get_surface: bool = False):
+    def sum_zernikes(coefficients: Sequence[float], polynomials: Sequence, r: Union[float, np.ndarray], theta: Union[float, np.ndarray],
+                     get_surface: bool = False) -> Union[float, np.ndarray]:
         """
         Calculate sum of Zernike polynomials with their amplitude coefficients (e.g., for plotting over a unit circle).
 
         Parameters
         ----------
-        coefficients : list
-            Coefficients of Zernike polynomials for summing.
-        polynomials : list
+        coefficients : Sequence[float]
+            Coefficients of Zernike polynomials for calculation of their sum.
+        polynomials : Sequence[ZernPol]
             Initialized polynomials as class instances of ZernPol class specified in this module.
         r : float or numpy.ndarray
-            Radius(-s) from a unit circle.
+            Radius(Radii) from a unit circle.
         theta : float or numpy.ndarray
             Polar angle(-s) from a unit circle.
         get_surface : bool, optional
@@ -945,7 +948,7 @@ class ZernPol:
 
         Returns
         -------
-        Sum of Zernike polynomials
+        Sum of Zernike polynomials: float or numpy.ndarray
             Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.
 
         """
@@ -1109,7 +1112,7 @@ class ZernPol:
                     plot_sum_fig(zern_surface, r, theta, "", color_map)
 
     @staticmethod
-    def gen_zernikes_surface(coefficients: list, polynomials: list, r_step: float = 0.01,
+    def gen_zernikes_surface(coefficients: Sequence[float], polynomials: Sequence, r_step: float = 0.01,
                              theta_rad_step: float = round(np.pi/180, 7),
                              equal_n_coordinates: bool = False, n_points: int = 250) -> zernikes_surface:
         """
@@ -1117,9 +1120,9 @@ class ZernPol:
 
         Parameters
         ----------
-        coefficients : list
-            Coefficients of Zernike polynomials for summing.
-        polynomials : list
+        coefficients : Sequence[float]
+            Coefficients of Zernike polynomials for calculation of their sum.
+        polynomials : Sequence[ZernPol]
             Initialized polynomials as class instances of ZernPol class specified in this module.
         r_step : float, optional
             Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. \n
@@ -1149,9 +1152,8 @@ class ZernPol:
         return zernikes_surface(zernikes_sum, polar_vectors.R, polar_vectors.Theta)
 
     @staticmethod
-    def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: list = (), polynomials: list = (),
-                                 use_defaults: bool = True, zernikes_sum_surface: zernikes_surface = (),
-                                 show_range: bool = True, color_map: str = "coolwarm",
+    def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: Sequence[float] = (), polynomials: Sequence = (), use_defaults: bool = True,
+                                 zernikes_sum_surface: zernikes_surface = (), show_range: bool = True, color_map: str = "coolwarm",
                                  projection: str = "2d") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
@@ -1166,9 +1168,9 @@ class ZernPol:
         use_defaults : bool, optional
             Use for plotting default values for generation of a mesh of polar coordinates and calculation
             of Zernike polynomials sum or Use for plotting provided calculated beforehand surface. The default is True.
-        coefficients : list, optional
-            Coefficients of Zernike polynomials for summing. The default is ().
-        polynomials : list, optional
+        coefficients : Sequence[float], optional
+            Coefficients of Zernike polynomials for calculation of their sum. The default is ().
+        polynomials : Sequence[ZernPol], optional
             Initialized polynomials as class instances of ZernPol class specified in this module. The default is ().
         zernikes_sum_surface : namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional
             This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
@@ -1195,7 +1197,7 @@ class ZernPol:
 
         """
         if use_defaults and len(coefficients) == 0 and len(polynomials) == 0:
-            raise ValueError("Input list with coefficients or with polynomials is empty along with the flag 'use_defaults' - True")
+            raise ValueError("Input Sequence with coefficients or with polynomials is empty along with the flag 'use_defaults' - True")
         if not use_defaults and len(zernikes_sum_surface) != 3:
             raise ValueError("Zernike surface isn't provided as a tuple with values Sum surface, R, Theta")
         if use_defaults:
@@ -1250,7 +1252,7 @@ class ZernPol:
 
     # %% Static methods: parameters checking
     @staticmethod
-    def _check_radii(radii):
+    def _check_radii(radii: Union[list, tuple, float, int, np.ndarray]) -> Union[float, np.ndarray]:
         """
         Perform check of type of input, attempt to convert to numpy.ndarray or float, check that r is inside [0.0, 1.0].
 
@@ -1272,7 +1274,7 @@ class ZernPol:
         """
         # Trying to convert known (list, tuple) data types into numpy, if they provided as input
         if not isinstance(radii, np.ndarray) and not isinstance(radii, float):
-            if isinstance(radii, list) or isinstance(radii, tuple):
+            if isinstance(radii, list) or isinstance(radii, tuple) or isinstance(radii, set):
                 radii = np.asarray(radii)  # convert list or tuple to np.array
             else:
                 radii = float(radii)  # attempt to convert r to float number, will raise ValueError if it's impossible
@@ -1286,7 +1288,7 @@ class ZernPol:
         return radii
 
     @staticmethod
-    def _check_angles(angles):
+    def _check_angles(angles: Union[list, tuple, float, int, np.ndarray]) -> Union[float, np.ndarray]:
         """
         Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside [0, 2pi].
 
@@ -1311,7 +1313,7 @@ class ZernPol:
         """
         # Check input parameter type and attempt to convert to acceptable types
         if not isinstance(angles, np.ndarray) and not isinstance(angles, float):
-            if isinstance(angles, list) or isinstance(angles, tuple):
+            if isinstance(angles, list) or isinstance(angles, tuple) or isinstance(angles, set):
                 angles = np.asarray(angles)  # convert list or tuple to np.array
             else:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
@@ -1333,7 +1335,7 @@ class ZernPol:
 # %% Independent functions defs.
 def generate_polynomials(max_order: int = 10) -> tuple:
     """
-    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with piston (m=0, n=0).
+    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with Piston(m=0,n=0).
 
     Parameters
     ----------
@@ -1497,9 +1499,8 @@ def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple
     return phases_image
 
 
-def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: float = 1.0,
-                    suppress_warnings: bool = False, strict_circle_border: bool = False,
-                    round_digits: int = 4, return_cropped_image: bool = False) -> tuple:
+def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: float = 1.0, suppress_warnings: bool = False,
+                    strict_circle_border: bool = False, round_digits: int = 4, return_cropped_image: bool = False) -> tuple:
     """
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
 
@@ -1745,11 +1746,9 @@ def check_conformity():
     ampls = [-0.85, 0.85, 0.24, -0.37, 1.0, 0.1, -1.0, -0.05, 1.1, 0.41]
     radii = np.arange(start=0.0, stop=1.0 + 0.001, step=0.001)
     thetas = np.arange(start=0.0, stop=2.0*np.pi + np.pi/180, step=np.pi/180)
-    t1 = time.perf_counter()
-    ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
+    t1 = time.perf_counter(); ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
     t_direct = int(round(1000*(time.perf_counter() - t1), 0)); t1 = time.perf_counter()
-    ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas)
-    t_meshgr = int(round(1000*(time.perf_counter() - t1), 0))
+    ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas); t_meshgr = int(round(1000*(time.perf_counter() - t1), 0))
     print(f"Diff. calc. time b/t direct ({t_direct} ms) and meshgrid ({t_meshgr} ms) sums: {t_direct - t_meshgr} ms")
     print("ALL TEST PASSED")
 

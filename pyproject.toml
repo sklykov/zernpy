@@ -1,11 +1,11 @@
 [project]
 name = "zernpy"
-version = "0.0.13"
+version = "0.0.14"
 authors = [
     {name = "Sergei Klykov"},
     {email = "sergej.klykow@gmail.com"}
 ]
-description = "Calculation of Zernike polynomial value, their sums and basic plotting of their values in polar coordinates"
+description = "Calculation of real Zernike polynomials values, associated PSFs, plotting of their profiles in polar coordinates"
 readme = "README.md"
 # license = {file = "LICENSE"}  # includes the whole text in METADATA, maybe not so convienient
 license = {text = "MIT"}  # short descriptive name of the used license

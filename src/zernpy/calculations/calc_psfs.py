@@ -2,7 +2,7 @@
 """
 Calculation and plotting of associated with polynomials PSFs.
 
-@author: Sergei Klykov
+@author: Sergei Klykov  \n
 @licence: MIT, @year: 2024
 
 """
@@ -18,6 +18,7 @@ from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
 from functools import partial
+from typing import Union
 # import time
 
 # Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
@@ -41,7 +42,7 @@ pi_char = "\u03C0"  # Unicode char code for pi
 # print(um_char, lambda_char, pi_char)  # check the codes for characters from above
 
 
-# %% Reference
+# %% Reference - Airy profile for Z(0, 0)
 def airy_ref_pattern(r: float):
     """
     Return Airy pattern radial function J1(r)/r.
@@ -66,7 +67,7 @@ def airy_ref_pattern(r: float):
 
 
 # %% PSF pixel value calc.
-def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p, theta: float, r: float) -> np.array:
+def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.array:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -255,7 +256,8 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
     # below - wrapping the callable function with the fixed arguments for using in the paralleled framework call
-    radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta, alpha=alpha, n_int_r_points=n_int_r_points)
+    radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta,
+                                         alpha=alpha, n_int_r_points=n_int_r_points)
 
     # Vectorized or parallelized form of for loop for even and odd phi-s
     if not joblib_installed or paralleljobs is None:
@@ -306,7 +308,7 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     size_ext = 0   # additional size depending on some parameters below
     if m == 0 and n == 0:  # Airy
         if 0.25 < NA < 1.0:
-            multiplier = 4.5*(1.0 - NA)
+            multiplier = 5.0*(1.0 - NA) + 1.5
         else:
             multiplier = 4.5 + 2.5*sqrt(1.0 / NA)
     else:
@@ -314,12 +316,14 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
         if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
             multiplier += 0.5*sqrt(n - abs(m))
         elif abs(m) > 0 and n % 2 == 0:
-            multiplier = 1.35*sqrt(n)
+            multiplier = 1.45*sqrt(n)
         if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
             size_ext += int(round(sqrt(n+abs(m)))) + 1
     if abs(alpha) >= 0.5:
-        multiplier *= sqrt(2.45*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        multiplier *= sqrt(2.5*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        size_ext += 2  # enlarge kernel size additionally for high amplitude
     elif abs(alpha) >= 0.25:
+        size_ext += 1  # add one more line for kernel (prevent automatic warnings)
         multiplier *= sqrt(4.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
     # Estimation below based on the provided physical properties
     size = int(round((multiplier*wavelength)/len2pixels, 0)) + 1 + size_ext
@@ -334,7 +338,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                    airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
                    test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
-    Calculate centralized matrix with the PSF mask values.
+    Calculate centralized matrix (kernel) with the PSF mask values.
 
     Parameters
     ----------
@@ -354,7 +358,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     n_int_phi_points : int, optional
         Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
     show_kernel : bool, optional
-        Plot the calculated kernel interactively. The default is True.
+        Plot the calculated kernel interactively. The default is False.
     fig_title : str, optional
         Custom figure title. The default is None.
     normalize_values : bool, optional
@@ -372,7 +376,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     suppress_warns : bool, optional
         Flag for suppressing any thrown warnings. The default is False.
     verbose: bool, optional
-        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
+        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it. The default is False.
 
     Returns
     -------
@@ -396,9 +400,11 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     # Print note about calculation duration
     if size > 25 and not suppress_warns and not airy_pattern:
         if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
-            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")
+            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}."
+                  + f"Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")  # estimated based on tests only
         else:
-            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}. Calculation may take from several dozens of seconds to minutes")
+            print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}."
+                  + "Calculation may take from several dozens of seconds to minutes")
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
@@ -410,6 +416,9 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if not joblib_installed or not test_parallel:
         if verbose:
             calculated_points = 0  # for explicit showing of performance
+            show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
+            if 100 < size*size < 301:
+                show_each_tenth_point = True; checking_point = 10
         for i in range(size):
             for j in range(size):
                 if verbose:
@@ -428,7 +437,12 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                         kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                         if verbose:
                             calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
-                            print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                            if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                                if calculated_points == checking_point:
+                                    checking_point += 10
+                            elif (not show_each_tenth_point and not size*size >= 301):
+                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
                 else:
                     kernel[i, j] = airy_ref_pattern(distance)
     elif joblib_installed and test_parallel:
@@ -444,7 +458,8 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
                     theta += np.pi  # shift angles to the range [0, 2pi]
                     # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
                     if not airy_pattern:
-                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points, paralleljobs)
+                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points,
+                                                                n_int_phi_points, paralleljobs)
                     else:
                         kernel[i, j] = airy_ref_pattern(distance)
     # Normalize all values in kernel to bring the max value to 1.0
@@ -456,7 +471,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     kernel_max_end_col = np.max(kernel[:, k_size-1]); kernel_max_end_row = np.max(kernel[k_size-1, :])
     kernel_border_max = np.max([kernel_max_zero_col, kernel_max_zero_row, kernel_max_end_col, kernel_max_end_row])
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
-        __warn_message = (f"The calculated size for PSF ({size}) isn't sufficient for its proper representation, "
+        __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
         warnings.warn(__warn_message)
     # Plotting the calculated kernel
@@ -468,6 +483,222 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         else:
             plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
+    return kernel
+
+
+# %% PSF calculation for several polynomials
+def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float, p: Union[float, np.ndarray],
+                                theta: float, r: float) -> np.ndarray:
+    """
+    Diffraction integral function for the formed image point (see the references as the sources of the equation).
+
+    Parameters
+    ----------
+    polynomials : Sequence[ZernPol]
+        Instances of ZernPol() class required for calculation of Zernike polynomials values.
+    amplitudes : np.ndarray
+        Zernike amplitudes (the expansion coefficients) in physical units.
+    phi : float
+        Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
+    p : float or np.ndarray
+        Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
+    theta : floats
+        Angle on the image coordinates.
+    r : float
+        Radius on the image coordinates.
+
+    References
+    ----------
+    [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968
+    [2] https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf
+
+    Returns
+    -------
+    numpy.ndarray
+        Values of the diffraction integral.
+
+    """
+    # NOTE: the manual for loop should be implemented, because sum can be calculated for float 'p' and for np.ndarray 'p'
+    for i, zernike_pol in enumerate(polynomials):
+        if i == 0:
+            sum_polynomial_values = amplitudes[i]*zernike_pol.polynomial_value(p, phi)
+        else:
+            sum_polynomial_values += amplitudes[i]*zernike_pol.polynomial_value(p, phi)
+    phase_arg = (sum_polynomial_values - r*p*np.cos(phi - theta))*1j
+    return np.exp(phase_arg)*p
+
+
+def radial_integral_pols(polynomials, amplitudes: np.ndarray, r: float, theta: float, phi: float, n_int_r_points: int) -> complex:
+    """
+    Make integration of the diffraction integral on the radius of the entrance pupil.
+
+    Parameters
+    ----------
+    polynomials : Sequence[ZernPol]
+        Instances of ZernPol() class required for calculation of Zernike polynomials values.
+    amplitudes : np.ndarray
+        Zernike amplitudes (the expansion coefficients) in physical units.
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    phi : float
+        Angle on the pupil coordinates.
+    alpha : float
+        Amplitude of the polynomial.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+
+    Returns
+    -------
+    complex
+        Complex amplitude of the field as result of integration on the pupil radius coordinate.
+
+    """
+    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
+    fa = diffraction_integral_r_pols(polynomials, amplitudes, phi, 0.0, theta, r)
+    fb = diffraction_integral_r_pols(polynomials, amplitudes, phi, 1.0, theta, r)
+    ang_int = np.sum(diffraction_integral_r_pols(polynomials, amplitudes, phi, p, theta, r)) + 0.5*(fa + fb)
+    return h_p*ang_int
+
+
+def get_psf_point_r_pols(polynomials, amplitudes: np.ndarray, r: float, theta: float, n_int_r_points: int, n_int_phi_points: int) -> float:
+    """
+    Calculate PSF point for provided polynomials.
+
+    Parameters
+    ----------
+    polynomials : Sequence[ZernPol]
+        Instances of ZernPol() class required for calculation of Zernike polynomials values.
+    amplitudes : np.ndarray
+        Zernike amplitudes (the expansion coefficients) in physical units.
+    r : float
+        Radius on the image coordinates.
+    theta : float
+        Angle on the image coordinates.
+    n_int_r_points : int
+        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
+    n_int_phi_points : int
+        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
+
+    Returns
+    -------
+    float
+        |U|**2 - the module and square of the amplitude, intensity as the PSF value.
+
+    """
+    h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
+    # Vectorized or parallelized form of for loop for even and odd phi-s
+    even_sums = [radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
+    even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
+    odd_sums = [radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
+    odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    # Simpson integration rule implementation
+    yA = radial_integral_pols(polynomials, amplitudes, r, theta, 0.0, n_int_r_points)
+    yB = radial_integral_pols(polynomials, amplitudes, r, theta, 2.0*pi, n_int_r_points)
+    integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
+    return np.power(np.abs(integral_sum), 2)*integral_normalization
+
+
+def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float, wavelength: float, NA: float, kernel_size: int,
+                         n_int_r_points: int = 320, n_int_phi_points: int = 300, normalize_values: bool = False,
+                         suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
+    """
+    Calculate centralized matrix with the PSF mask values.
+
+    Parameters
+    ----------
+    polynomials : Sequence[ZernPol]
+        Instances of ZernPol() class required for calculation of Zernike polynomials values.
+    amplitudes : np.ndarray
+        Zernike amplitudes (the expansion coefficients) in physical units used for the wavelength specification (e.g., \u00B5m).
+        Note that the normalized Zernike polynomials are used, so their coefficients are normalized to the specified wavelength.
+    len2pixels : float
+        Relation between length in physical units (the same as the provided wavelength) and pixels.
+    wavelength : float
+        Wavelength (\u03BB) in physical units (e.g., \u00B5m) of the light used for calculations (in imaging).
+    NA : float
+        Objective property.
+    n_int_r_points : int, optional
+        Number of points used for integration on the unit pupil radius from the range [0.0, 1.0]. The default is 320.
+    n_int_phi_points : int, optional
+        Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
+    show_kernel : bool, optional
+        Plot the calculated kernel interactively. The default is True.
+    fig_title : str, optional
+        Custom figure title. The default is None.
+    normalize_values : bool, optional
+        Normalize all values in the sense that the max kernel value = 1.0. The default is False.
+    kernel_size : int
+        Kernel size (2D matrix).
+    fig_id : str, optional
+        Some string id for the figure title. The default is "".
+    verbose: bool, optional
+        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
+
+    Returns
+    -------
+    kernel : numpy.ndarray
+        Matrix with PSF values.
+
+    """
+    k = 2.0*pi/wavelength; size = kernel_size  # Calculate angular frequency (k) and reassign size for further using
+    # Make kernel with odd sizes for precisely centering the kernel (in the center of an image)
+    if size % 2 == 0:
+        size += 1
+    kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
+    # Print note about calculation duration
+    if size > 25 and not suppress_warns:
+        if abs(n_int_phi_points - 300) < 40 and abs(n_int_r_points - 320) < 50:
+            print(f"Estimated calc. time: {int(round(size*size*38.5/1000, 0))} sec.")  # estimated based on tests only
+        else:
+            print("Calculation may take from several dozens of seconds to minutes")
+    # Check that the calibration coefficient is sufficient for calculation
+    pixel_size_nyquist = 0.5*0.61*wavelength/NA
+    if len2pixels > pixel_size_nyquist and not suppress_warns:
+        __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
+        __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
+        warnings.warn(__warn_message)
+    # Verbose info preparation
+    if verbose:
+        calculated_points = 0  # for explicit showing of performance
+        show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
+        if 100 < size*size < 301:
+            show_each_tenth_point = True; checking_point = 10
+    # Calculate the PSF kernel for usage in convolution operation
+    for i in range(size):
+        for j in range(size):
+            if verbose:
+                t1 = time.perf_counter()  # for explicit showing of performance
+            pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
+            # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
+            distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
+            # The PSF also has the angular dependency, not only the radial one
+            theta = np.arctan2((i - i_center), (j - j_center))
+            theta += np.pi  # shift angles to the range [0, 2pi]
+            # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
+            kernel[i, j] = get_psf_point_r_pols(polynomials, amplitudes, distance, theta, n_int_r_points, n_int_phi_points)
+            if verbose:
+                calculated_points += 1; passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
+                if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                    if calculated_points == checking_point:
+                        checking_point += 10
+                elif (not show_each_tenth_point and not size*size >= 301):
+                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+    # Normalize all values in kernel to bring the max value to 1.0
+    if normalize_values:
+        kernel /= np.max(kernel)
+    # Provide warning in the case if kernel size not sufficient for representation of the calculated kernel
+    k_size, k_size = kernel.shape
+    kernel_max_zero_col = np.max(kernel[:, 0]); kernel_max_zero_row = np.max(kernel[0, :])
+    kernel_max_end_col = np.max(kernel[:, k_size-1]); kernel_max_end_row = np.max(kernel[k_size-1, :])
+    kernel_border_max = np.max([kernel_max_zero_col, kernel_max_zero_row, kernel_max_end_col, kernel_max_end_row])
+    if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
+        __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
+                          + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
+        warnings.warn(__warn_message)
     return kernel
 
 
@@ -500,7 +731,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
 
 
 # %% Save and read the calculated PSF matrices
-def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: float,
+def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: Union[float, np.ndarray],
              kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str = None,
              overwrite: bool = True, additional_file_name: str = None) -> str:
     """
@@ -516,16 +747,16 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Wavelength used for the PSF calculation (in physical units).
     pixel_size : float
         Pixel size (in physical units same to wavelength) used for the PSF calculation.
-    expansion_coefficient : float
-        Amplitude (in other words) of the polynomial.
+    expansion_coefficient : float or np.ndarray
+        Amplitude(-s) (in other words) of the polynomial(-s).
     kernel_size : int
         Size of the PSF kernel.
     n_int_points_r : int
         Number of the used integration points on r.
     n_int_points_phi : int
         Number of the used integration points on phi.
-    zernike_pol : tuple or ZernPol()
-        Tuple as the (m, n) orders or an instance of ZernPol() class.
+    zernike_pol : ZernPol instance or Sequence[ZernPol]
+        Zernike polynomial(-s).
     folder_path : str, optional
         Absolute path to the folder where the file will be saved. The default is None.
     overwrite : bool, optional
@@ -539,7 +770,12 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Absolute path to the file.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    single_pol_used = False; osa_indices = []  # flag for saving different parameters
+    if not hasattr(zernike_pol, '__len__'):
+        (m, n) = define_orders(zernike_pol); single_pol_used = True  # get polynomial orders
+    else:
+        for zernpol in zernike_pol:
+            osa_indices.append(zernpol.get_indices()[1])
     # Checking the provided folder or creating the folder for storing files
     if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
         working_folder = Path(__file__).cwd(); saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
@@ -551,14 +787,25 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
             saved_psfs_folder = Path(folder_path)
     # Save provided PSF kernel with the provided parameters
     if additional_file_name is not None and len(additional_file_name) > 0:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
+        if single_pol_used:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
+        else:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{additional_file_name}_{expansion_coefficient}.json")
     else:
-        json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
+        if single_pol_used:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
+        else:
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{expansion_coefficient}.json")
+    # Data composing for recording
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
     data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
-    data4serialization["Pixel Size"] = pixel_size; data4serialization["Expansion Coefficient"] = expansion_coefficient
-    data4serialization["Kernel Size"] = kernel_size; data4serialization["# of integration points R"] = n_int_points_r
-    data4serialization["# of integration points angle"] = n_int_points_phi
+    data4serialization["Pixel Size"] = pixel_size; data4serialization["Kernel Size"] = kernel_size
+    data4serialization["# of integration points R"] = n_int_points_r; data4serialization["# of integration points angle"] = n_int_points_phi
+    if single_pol_used:
+        data4serialization["Expansion Coefficient"] = expansion_coefficient; data4serialization["Polynomial"] = zernike_pol.get_indices()[1]
+    else:
+        data4serialization["Amplitudes"] = expansion_coefficient.tolist(); data4serialization["Polynomials"] = osa_indices
+    # File presence check and recording
     if json_file_path.exists() and not overwrite:
         _warn_message = "The file already exists, the content won't be overwritten."; warnings.warn(_warn_message)
     if not json_file_path.exists() or (json_file_path.exists() and overwrite):
@@ -639,7 +886,7 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 
 # %% Define standard exports from this module
 __all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral',
-           'get_kernel_size', 'um_char', 'lambda_char', 'get_bumped_circle']
+           'get_kernel_size', 'um_char', 'lambda_char', 'get_bumped_circle', 'get_psf_kernel_zerns']
 
 # %% Tests
 if __name__ == '__main__':
@@ -647,7 +894,7 @@ if __name__ == '__main__':
     plt.ion(); plt.close('all')  # close all plots before plotting new ones
     # Physical parameters of a system (an objective)
     wavelength = 0.55  # in micrometers
-    NA = 0.95  # micro-objective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
+    NA = 0.95  # objective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
     # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
     resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
     pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
@@ -663,7 +910,8 @@ if __name__ == '__main__':
     show_convolution_results = False  # check result of convolution of several kernel with the disk
 
     # Definition of some Zernike polynomials for further tests
-    pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4); pol9 = (-4, 4)
+    pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4)
+    pol9 = (-4, 4); pol7z = ZernPol(m=pol7[0], n=pol7[1])
     pol1z = ZernPol(m=pol1[0], n=pol1[1]); pol2z = ZernPol(m=pol2[0], n=pol2[1]); pol3z = ZernPol(m=pol3[0], n=pol3[1])
 
     if check_zero_case:
@@ -671,7 +919,8 @@ if __name__ == '__main__':
                                  show_kernel=True, normalize_values=True)
         kern_zc_ref = get_psf_kernel(pol1z, len2pixels=wavelength/5.5, alpha=-0.4, wavelength=0.55, NA=0.65, airy_pattern=True,
                                      show_kernel=True, normalize_values=True)
-        diff = kern_zc_ref - kern_zc; plt.figure("Difference Airy and Piston", figsize=(6, 6)); plt.imshow(diff, cmap=plt.cm.viridis, origin='upper')
+        diff = kern_zc_ref - kern_zc; plt.figure("Difference Airy and Piston", figsize=(6, 6))
+        plt.imshow(diff, cmap=plt.cm.viridis, origin='upper')
 
     if check_sign_coeff:
         kern_sign_n = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=-0.5, wavelength=wavelength, NA=NA, normalize_values=False)
@@ -693,26 +942,32 @@ if __name__ == '__main__':
         kern_diff1 = np.round(kern_sign - kern_sign2, 9); kern_diff2 = np.round(kern_sign - kern_sign3, 9)
 
     if check_various_pols:
-        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
-        kern_ast = get_psf_kernel(pol6, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
-        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
-        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
-        kern_4foil = get_psf_kernel(pol9, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
+                                  show_kernel=True)
+        kern_ast = get_psf_kernel(pol6, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
+                                  show_kernel=True)
+        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
+                                   show_kernel=True)
+        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength,
+                                    NA=NA, normalize_values=True, show_kernel=True)
+        kern_4foil = get_psf_kernel(pol9, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength,
+                                    NA=NA, normalize_values=True, show_kernel=True)
 
     if check_warnings:
         kern_def = get_psf_kernel(pol3z, len2pixels=1.0, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-
     if show_convolution_results:
         # Generate the ideal centralized circle with the blurred edges
         radius = 4.0; sample = get_bumped_circle(radius); plt.figure("Sample disk"); m_center, n_center = sample.shape
-        m_center = m_center // 2; n_center = n_center // 2; axes_img = plt.imshow(sample, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
-        axes_img.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
+        m_center = m_center // 2; n_center = n_center // 2; axes_img = plt.imshow(sample, cmap=plt.cm.viridis, origin='upper')
+        plt.tight_layout(); axes_img.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
         # Visualize results of convolution with various PSFs
-        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.7, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.7, wavelength=wavelength,
+                                  NA=NA, normalize_values=True, show_kernel=True)
         conv_def = convolute_img_psf(img=sample, psf_kernel=kern_def, scale2original=True)
         plt.figure("Defocused"); axes_img2 = plt.imshow(conv_def, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
         axes_img2.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
-        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=-0.45, wavelength=wavelength, NA=NA, normalize_values=True, show_kernel=True)
+        kern_coma = get_psf_kernel(pol7z, len2pixels=pixel_size, alpha=-0.45, wavelength=wavelength,
+                                   NA=NA, normalize_values=True, show_kernel=True)
         conv_coma = convolute_img_psf(img=sample, psf_kernel=kern_coma, scale2original=True)
         plt.figure("*Coma"); axes_img3 = plt.imshow(conv_coma, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
         axes_img3.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))

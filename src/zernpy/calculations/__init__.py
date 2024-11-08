@@ -6,4 +6,4 @@ Default exports from this module (calculations).
 
 """
 
-__all__ = ['calc_zernike_pol', 'fit_zernike_pols', 'find_pols_coeffs', 'calc_psfs']
+__all__ = ['calc_zernike_pol', 'fit_zernike_pols', 'find_pols_coeffs', 'calc_psfs', 'calc_psfs_numba']
