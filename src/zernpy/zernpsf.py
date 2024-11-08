@@ -411,8 +411,9 @@ class ZernPSF:
                              + f"{round(self.expansion_coeff, 2)} expansion coeff. {id_str}")
         else:
             fig_title = f"Composed kernel for #{len(self.polynomials)} provided polynomials {id_str}"
-        plt.figure(fig_title, figsize=(6, 6)); plt.imshow(self.kernel, cmap=plt.cm.viridis, origin='upper')
-        plt.colorbar(); plt.tight_layout()
+        if not plt.isinteractive():
+            plt.ion()
+        plt.figure(fig_title, figsize=(6, 6)); plt.imshow(self.kernel, cmap=plt.cm.viridis, origin='upper'); plt.colorbar(); plt.tight_layout()
 
     # %% Utilities
     def convolute_img(self, image: np.ndarray, scale2original: bool = True) -> np.ndarray:
@@ -451,7 +452,9 @@ class ZernPSF:
 
         """
         target_disk = get_bumped_circle(radius, max_intensity)  # get the sample image of the even centered circle with blurred edges
-        plt.ion(); plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.cm.viridis, origin='upper')
+        if not plt.isinteractive():
+            plt.ion()
+        plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.cm.viridis, origin='upper')
         plt.axis('off'); plt.tight_layout()
         convolved_img = self.convolute_img(image=target_disk); plt.figure("Convolved PSF and Disk", figsize=(6, 6))
         plt.imshow(convolved_img, cmap=plt.cm.viridis, origin='upper'); plt.axis('off'); plt.tight_layout()
