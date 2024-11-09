@@ -325,8 +325,8 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     if size % 2 == 0:
         size += 1
     # Provide performance tip if the provided kernel size is quite big for calculations
-    if size > 45 and not suppress_warns:
-        __warn_message = f"Calculation of provided {size} will take more than 20 seconds"
+    if size > 85 and not suppress_warns:
+        __warn_message = f"\nCalculation of provided {size} may take more than 20 seconds"
         warnings.warn(__warn_message); __warn_message = ""
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Get the orders of polynomial and check if the equation for compilation was implemented
@@ -348,7 +348,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
-        __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
+        __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
         warnings.warn(__warn_message); __warn_message = ""
     # Calculate the PSF kernel for usage in convolution operation

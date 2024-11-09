@@ -34,6 +34,12 @@ def test_psf_kernel_calc():
     diff_airy = np.abs(airy_int - airy_p)
     assert np.max(diff_airy) < 0.01, print("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:",
                                            np.max(diff_airy))
+    # Test normal calculation of several polynomials
+    pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.3, -0.27)
+    zpsf = ZernPSF(pols); zpsf.set_physical_props(NA, wavelength, expansion_coeff=coeffs, pixel_physical_size=wavelength / 3.5)
+    zpsf.set_calculation_props(kernel_size=25, n_integration_points_r=200, n_integration_points_phi=180)
+    psf_kernel = zpsf.calculate_psf_kernel()
+    assert np.max(psf_kernel) > 0.5 and np.min(psf_kernel) > -1E-5, "Check calculation of a kernel for several polynomials"
 
 
 def test_zernpsf_usage():

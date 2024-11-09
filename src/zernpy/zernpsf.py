@@ -335,7 +335,7 @@ class ZernPSF:
         if len(self.__warn_message) > 0 and not suppress_warnings:
             warnings.warn(self.__warn_message)
         if not self.__physical_props_set and not suppress_warnings:
-            self.__warn_message = "\nPhysical properties for calculation haven't been set, the default values will be used"
+            self.kernel_size = 19; self.__warn_message = "\nPhysical properties haven't been set before, the default ones will be used"
             warnings.warn(self.__warn_message); self.__warn_message = ""
         # Check if accelerated flag set to True but no numba installed
         global numba_installed  # access the flag
@@ -759,7 +759,7 @@ __all__ = ['ZernPSF', 'force_get_psf_compilation']
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
-    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False
+    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False; check_test = False
     check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
@@ -863,3 +863,9 @@ if __name__ == "__main__":
         zpsf_norm.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
         kern_acc = zpsf_acc.calculate_psf_kernel(normalized=True, accelerated=True); kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True)
         kern_diff = np.round(kern_acc - kern_norm, 9)  # for checking the difference in calculations
+
+    if check_test:
+        pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.28, -0.33); NA = 0.35; wavelength = 0.55
+        zpsf = ZernPSF(pols); zpsf.set_physical_props(NA, wavelength, expansion_coeff=coeffs, pixel_physical_size=wavelength / 3.5)
+        zpsf.set_calculation_props(kernel_size=25, n_integration_points_r=200, n_integration_points_phi=180)
+        psf_kernel = zpsf.calculate_psf_kernel(normalized=False); zpsf.plot_kernel()

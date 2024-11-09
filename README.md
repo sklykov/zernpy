@@ -106,9 +106,34 @@ The sample of calculated PSF for Vertical Trefoil:
 ![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")    
 Initialization and usage of the class instance (basic usage with default calculation parameters, such as the kernel size):    
 ```python  # code block for Python code
-from zernpy import ZernPSF
+from zernpy import ZernPSF, ZernPol
 zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
+NA = 0.95; wavelength = 0.55; expansion_coeff = -0.26; pixel_physical_size = 0.2*wavelength   # example of physical properties
 zpsf.set_physical_properties(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
 kernel = zpsf.calculate_psf_kernel(normalized=True)  # get the kernel as the square normalized matrix
 ```
-Check the API documentation for other available methods.
+Check the API documentation for other available methods.     
+
+#### PSF kernel for several polynomials
+Similarly to the code above, it's possible to calculate the PSF associated with the sum profile of several polynomials:   
+```python
+from zernpy import ZernPSF, ZernPol 
+zp1 = ZernPol(m=-1, n=3); zp2 = ZernPol(m=2, n=4); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (0.5, 0.21, 0.15)
+zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=0.65, wavelength=0.6, expansion_coeff=coeffs, pixel_physical_size=0.6/5.0)
+zpsf_pic.calculate_psf_kernel(); zpsf_pic.plot_kernel("Sum of Polynomials Profile")
+```
+The resulting profile is:    
+
+![3 Polynomials Kernel Plot](./src/zernpy/readme_images/Kernel_Sum_Vert_Coma_2nd_Astigm_Spher.png "3 Polynomials Kernel Plot")  
+
+#### Acceleration of kernel calculation by numba
+It's possible to accelerate the calculation of a kernel by installing the [numba](https://numba.pydata.org/) library in the 
+same Python environment and providing the appropriate flags in a calculation method, similar to the following code snippet:
+```python
+from zernpy import *
+force_get_psf_compilation()  # optional precompilation of calculation methods for further using of their compiled forms 
+NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.6; ampl = -0.16
+zp = ZernPol(m=0, n=2); zpsf = ZernPSF(zp) 
+zpsf.set_physical_props(NA, wavelength, ampl, pixel_size)
+zpsf.calculate_psf_kernel(accelerated=True)
+```
