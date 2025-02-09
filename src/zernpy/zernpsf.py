@@ -16,11 +16,13 @@ from typing import Union, Sequence
 from importlib.metadata import version
 
 # Check if numba library installed for importing compilable methods
+numba_installed = False
 try:
     import numba
-    numba_installed = True; numba_version = version('numba'); numba_ver_n = numba_version.split('.')
+    if numba is not None:
+        numba_installed = True; numba_version = version('numba'); numba_ver_n = numba_version.split('.')
 except ModuleNotFoundError:
-    numba_installed = False
+    pass
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -44,6 +46,12 @@ else:
 
 # %% Module parameters
 __docformat__ = "numpydoc"
+
+# TODO:
+# 1) Check non trivial error report if several pol-s provided with a single amplitude
+# 2) Warning report for accelerated call and many points for calculation - not informative
+# 3) Crop kernel, especially for a few polynomials calculation, it's growing too fast
+# 4) Figure name for plotted mix of pol-s - provide their orders in a name
 
 
 # %% PSF class
