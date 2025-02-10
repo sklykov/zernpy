@@ -16,7 +16,7 @@ from typing import Union, Sequence
 from importlib.metadata import version
 
 # Check if numba library installed for importing compilable methods
-numba_installed = False
+numba_installed = False  # default value for checking if 'numba' library is installed
 try:
     import numba
     if numba is not None:
@@ -102,7 +102,10 @@ class ZernPSF:
         Raises
         ------
         ValueError
-            If not instance(-s) of ZernPol class provided as the input parameter or if Sequence has zero length.
+            1) If not instance(-s) of ZernPol class provided as the input parameter; \n
+            2) If the provided sequence has zero length; \n
+            3) If not all members of the provided sequence are instance of the "ZernPol" class; \n
+            4) If the provided sequence contain repeated polynomials.
 
         Returns
         -------
@@ -120,7 +123,7 @@ class ZernPSF:
             seq_length = len(zernpol)
             # Empty sequence as the input not acceptable
             if seq_length == 0:
-                raise ValueError("Provided empty Sequence")
+                raise ValueError("Provided empty Sequence, expected - Sequence with the 'ZernPol' class instances")
             # Single element should be unpacked and used
             elif seq_length == 1:
                 self.zernpol = zernpol[0]; m, n = self.zernpol.get_mn_orders()
@@ -130,16 +133,25 @@ class ZernPSF:
                     self.airy = False
             # Several polynomials provided
             else:
-                all_are_polls = True
+                all_are_polls = True; osa_orders = []
                 for pol in zernpol:
                     if not isinstance(pol, ZernPol):
                         all_are_polls = False; break
+                    else:
+                        m, n = pol.get_mn_orders()
+                        osa_orders.append(pol.get_indices()[1])  # collect OSA index of each provided polynomial
+                        if m == 0 and n == 0:
+                            self.airy = True  # check if Airy pattern is among provided polynomials
                 if all_are_polls:
                     self.polynomials = zernpol; self.zernpol = None
+                    unique_osa_orders = set(osa_orders)  # check that all OSA orders are unique
+                    if len(osa_orders) > len(unique_osa_orders):
+                        raise ValueError("There might be some repeated polynomials provided, "
+                                         + f"# of provided: {len(osa_orders)} and # of unique: {len(unique_osa_orders)}")
                 else:
-                    raise ValueError("Not all objects in Sequence are instances of ZernPol class")
+                    raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
         else:
-            ValueError("ZernPSF class required single ZernPol instance or Sequence (class with __len__ attr.) with instances as the input")
+            ValueError("ZernPSF class requires single 'ZernPol' instance or Sequence (class with __len__ attr.) with 'ZernPol' instances")
 
     # %% Set properties
     def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
@@ -155,7 +167,9 @@ class ZernPSF:
         expansion_coeff : float | Sequence[float]
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-            alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel".
+            alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
+            Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
+            However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
             Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
             The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
@@ -195,9 +209,9 @@ class ZernPSF:
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
         if hasattr(expansion_coeff, '__len__'):
-            coeffs_len = len(expansion_coeff)
-            if coeffs_len == 0 or coeffs_len != len(self.polynomials):
-                if coeffs_len == 1:
+            coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
+            if coeffs_len != len(self.polynomials):
+                if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
                     expansion_coeff = float(expansion_coeff[0])
                     # Sanity check for the expansion coefficient of the polynomial
                     self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
@@ -205,7 +219,8 @@ class ZernPSF:
                         warnings.warn(self.__warn_message); self.__warn_message = ""
                     self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
                 else:
-                    raise ValueError("Length of coefficients is zero or not equal to stored number of polynomials")
+                    raise ValueError(f"Length of provided coefficients ({coeffs_len}) is not equal to stored number "
+                                     + f"of polynomials ({len(self.polynomials)})")
             else:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
@@ -215,6 +230,10 @@ class ZernPSF:
                     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.amplitudes = self.coefficients / self.wavelength
         else:
+            # Check consistency of provided type of polynomials and coefficients
+            if self.zernpol is None and len(self.polynomials) > 1:  # only if 2 and more polynomials provided
+                raise ValueError(f"Class initialized with #{len(self.polynomials)} polynomials and expected "
+                                 + "to get their amplitudes in Sequence (as 'expansion_coeff' parameter)")
             # explicitly conversion to float for raising implicit conversion errors if not valid type provided
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
@@ -390,9 +409,9 @@ class ZernPSF:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
             print("--------------------------------------------")
             if passed_time_ms > 1000:
-                print(f"Overall kernel calculation takes: {round(passed_time_ms/1000.0, 2)} sec.")
+                print(f"Overall kernel calculation took: {round(passed_time_ms/1000.0, 2)} sec.")
             else:
-                print(f"Overall kernel calculation takes: {passed_time_ms} ms.")
+                print(f"Overall kernel calculation took: {passed_time_ms} ms.")
             print("")
         return self.kernel
 
@@ -418,7 +437,10 @@ class ZernPSF:
                 fig_title = (f"{self.zernpol.get_mn_orders()} {self.zernpol.get_polynomial_name(True)}: "
                              + f"{round(self.expansion_coeff, 2)} expansion coeff. {id_str}")
         else:
-            fig_title = f"Composed kernel for #{len(self.polynomials)} provided polynomials {id_str}"
+            orders = []
+            for pol in self.polynomials:
+                orders.append(pol.get_mn_orders())
+            fig_title = f"Composed kernel for #{len(self.polynomials)} polynomials: {orders} {id_str}"
         if not plt.isinteractive():
             plt.ion()
         plt.figure(fig_title, figsize=(6, 6)); plt.imshow(self.kernel, cmap=plt.cm.viridis, origin='upper'); plt.colorbar(); plt.tight_layout()
@@ -467,6 +489,7 @@ class ZernPSF:
         convolved_img = self.convolute_img(image=target_disk); plt.figure("Convolved PSF and Disk", figsize=(6, 6))
         plt.imshow(convolved_img, cmap=plt.cm.viridis, origin='upper'); plt.axis('off'); plt.tight_layout()
 
+    # %% I/O methods
     def save_json(self, abs_path: Union[str, Path] = None, overwrite: bool = False):
         """
         Save class attributes (PSF kernel, physical properties, etc.) in the JSON file for further reloading and avoiding long computation.
@@ -733,24 +756,24 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
         except ValueError:
             __warn_message = "\nCannot parse 'numba' version, expected in format 'x.yy.zz' - all integers"; warnings.warn(__warn_message)
         # Compilation of methods for single polynomial PSF calculation
-        NA = 0.98; wavelength = 0.55; pixel_size = wavelength / 4.0; ampl = 1.0
-        zp_prc = ZernPol(m=0, n=0); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
+        NA = 0.2; wavelength = 0.55; pixel_size = wavelength / 1.0; ampl = 0.05
+        zp_prc = ZernPol(m=-1, n=1); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
         zpsf_prc.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-        zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
-        zpsf_prc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=verbose_report)
+        # zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        zpsf_prc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         # Compilation of methods for multiple polynomials PSF calculation
-        zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.2, 0.15, 0.1)
-        zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.35, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.5)
-        zpsf_mpc.kernel_size = 1; zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True,
-                                                                verbose_info=verbose_report)
+        zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.04, 0.05, 0.04)
+        zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.2, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.0)
+        # zpsf_mpc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         set_methods_compiled()  # setting the flag implicitly in the module
         global methods_compiled; methods_compiled = True  # setting copied variable in this script
         if verbose_report:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
             if passed_time_ms > 1000:
-                print(f"Precompilation takes: {round(passed_time_ms/1000.0, 2)} sec.")
+                print(f"Precompilation took: {round(passed_time_ms/1000.0, 2)} sec.")
             else:
-                print(f"Precompilation takes: {passed_time_ms} ms.")
+                print(f"Precompilation took: {passed_time_ms} ms.")
             print("--------------------------------------------")
         return (zpsf_prc, zpsf_mpc)
     else:
@@ -773,6 +796,9 @@ if __name__ == "__main__":
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
     check_acceleration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
+    check_init_several_pols = False  # check calculation several pol-s: Airy (Piston) + some of polynomial
+    check_airy_patterns = False  # check the difference between calculated by equation for Airy pattern and diffraction integral
+    check_precompilation = True  # checks with precompilation
 
     # Common PSF for testing
     if check_common_psf:
@@ -877,3 +903,35 @@ if __name__ == "__main__":
         zpsf = ZernPSF(pols); zpsf.set_physical_props(NA, wavelength, expansion_coeff=coeffs, pixel_physical_size=wavelength / 3.5)
         zpsf.set_calculation_props(kernel_size=25, n_integration_points_r=200, n_integration_points_phi=180)
         psf_kernel = zpsf.calculate_psf_kernel(normalized=False); zpsf.plot_kernel()
+
+    if check_init_several_pols:
+        force_get_psf_compilation(True)
+        zpsf30 = ZernPSF(zernpol=(ZernPol(osa=1), ZernPol(osa=5)))
+        try:
+            zpsf30.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=0.5, pixel_physical_size=0.5/5.0)
+        except ValueError:
+            print("Check for 1 ampl. and 2 pol-s passed")  # as expected, transfer to test function
+        zpsf31 = ZernPSF(zernpol=(ZernPol(osa=0), ZernPol(m=-1, n=3)))
+        zpsf31.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=[1.5, 0.24], pixel_physical_size=0.5/3.8)
+        # zpsf31.calculate_psf_kernel(verbose_info=True, accelerated=False); zpsf31.plot_kernel("Not accelerated 2 pol-s")
+        # kernel_not_acc = np.copy(zpsf31.kernel)
+        zpsf31.calculate_psf_kernel(verbose_info=True, accelerated=True); zpsf31.plot_kernel("Airy 1.5")
+        kernel_acc = np.copy(zpsf31.kernel)
+        # zpsf31.kernel = np.abs(kernel_acc - kernel_not_acc); zpsf31.plot_kernel("Diff. 2 pol-s")
+        zpsf31.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=[-1.5, 0.24], pixel_physical_size=0.5/3.8)
+        zpsf31.calculate_psf_kernel(verbose_info=True, accelerated=True); zpsf31.plot_kernel("Airy -1.5")
+        kernel_neg_acc = np.copy(zpsf31.kernel)
+        zpsf31.kernel = np.abs(kernel_acc - kernel_neg_acc); zpsf31.plot_kernel("Diff. neg. pos. Airy + Coma")
+
+    if check_airy_patterns:
+        force_get_psf_compilation(verbose_report=True)
+        zpsf40 = ZernPSF(zernpol=ZernPol(osa=0))
+        zpsf40.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=3.0, pixel_physical_size=0.5/4.0)
+        zpsf40.calculate_psf_kernel(verbose_info=True, accelerated=False, normalized=False); zpsf40.plot_kernel("Not accelerated Airy")
+        kernel_not_acc = np.copy(zpsf40.kernel)
+        zpsf40.calculate_psf_kernel(verbose_info=True, accelerated=True, normalized=False); zpsf40.plot_kernel("Accelerated Airy")
+        kernel_acc = np.copy(zpsf40.kernel)
+        zpsf40.kernel = np.abs(kernel_acc - kernel_not_acc); zpsf40.plot_kernel("Diff. Airy")
+
+    if check_precompilation:
+        force_get_psf_compilation(True)

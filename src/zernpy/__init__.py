@@ -3,8 +3,13 @@
 The "zernpy" package is intended for initialization and calculation attributes / properties of Zernike polynomials.
 
 @author: Sergei Klykov
+
 @licence: MIT, @year: 2024
+
 """
+
+__version__ = "0.0.15"  # Straightforward way of specifying package version and including it to the package attributes
+
 if __name__ == "__main__":
     # use absolute imports for importing as module
     __all__ = ['zernikepol', 'zernpsf']  # for specifying from zernpy import * if package imported from some script
