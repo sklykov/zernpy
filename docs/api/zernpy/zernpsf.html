@@ -109,6 +109,9 @@
                                 <a class="function" href="#ZernPSF.visualize_convolution">visualize_convolution</a>
                         </li>
                         <li>
+                                <a class="function" href="#ZernPSF.crop_kernel">crop_kernel</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#ZernPSF.save_json">save_json</a>
                         </li>
                         <li>
@@ -135,7 +138,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.0.14, 2024 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.0.15, 2025 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -151,7 +154,7 @@ zernpy<wbr>.zernpsf    </h1>
 
                         <div class="docstring"><p>PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.</p>
 
-<p>@author: Sergei Klykov, @year: 2024, @licence: MIT</p>
+<p>@author: Sergei Klykov, @year: 2025, @licence: MIT</p>
 </div>
 
                 
@@ -210,8 +213,14 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: If not instance(-s) of ZernPol class provided as the input parameter or if Sequence has zero length.</li>
+<li><strong>ValueError</strong>: 1) If not instance(-s) of ZernPol class provided as the input parameter; </li>
 </ul>
+
+<p>2) If the provided sequence has zero length; </p>
+
+<p>3) If not all members of the provided sequence are instance of the "ZernPol" class; </p>
+
+<p>4) If the provided sequence contain repeated polynomials.</p>
 
 <h6 id="returns">Returns</h6>
 
@@ -445,10 +454,13 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
 Numerical aperture of an objective, assumed usage of microscopic ones.</li>
 <li><strong>wavelength</strong> (float):
 Wavelength of monochromatic light (λ) used for imaging in physical units (e.g., as µm).</li>
-<li><strong>expansion_coeff</strong> (float | Sequence[float]):
+<li><p><strong>expansion_coeff</strong> (float | Sequence[float]):
 Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
 Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel".</li>
+alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". </p>
+
+<p>Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
+However, this amplitude will be ignored in general for calculation because of its properties.</p></li>
 <li><strong>pixel_physical_size</strong> (float):
 Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
 The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
@@ -662,6 +674,44 @@ Result of convolution (by using function scipy.ndimage.convolve).</li>
 Radius of the centered disk. The default is 4.0.</li>
 <li><strong>max_intensity</strong> (int, optional):
 Maximum intensity of the even disk. The default is 255.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>None.</strong></li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="ZernPSF.crop_kernel" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">crop_kernel</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">min_part_of_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#ZernPSF.crop_kernel"></a>
+    
+            <div class="docstring"><p>Crop redundant points from kernel.</p>
+
+<p>By default, all rows and columns containing any single value that more than 1% of max kernel value, are not cropped. </p>
+
+<p>Cropped kernel saved in class variable 'kernel'.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>min_part_of_max</strong> (float, optional):
+Part of kernel max that is used for checking rows / columns for cropping. The default is 0.01.</li>
+</ul>
+
+<h6 id="raises">Raises</h6>
+
+<ul>
+<li><strong>ValueError</strong>: If parameter 'min_part_of_max' is not &gt; 0.0 and not &lt; 0.5.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>

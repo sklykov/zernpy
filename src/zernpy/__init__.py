@@ -4,7 +4,7 @@ The "zernpy" package is intended for initialization and calculation attributes /
 
 @author: Sergei Klykov
 
-@licence: MIT, @year: 2024
+@licence: MIT, @year: 2025
 
 """
 

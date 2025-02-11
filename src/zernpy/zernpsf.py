@@ -2,7 +2,7 @@
 """
 PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.
 
-@author: Sergei Klykov, @year: 2024, @licence: MIT \n
+@author: Sergei Klykov, @year: 2025, @licence: MIT \n
 
 """
 # %% Global imports
@@ -983,9 +983,9 @@ if __name__ == "__main__":
         zpsf50.calculate_psf_kernel(verbose_info=True, accelerated=True, normalized=True); zpsf50.plot_kernel()
 
     if check_cropping:
-        zpsf60 = ZernPSF(zernpol=(ZernPol(m=-2, n=2)))
-        zpsf60.set_physical_props(NA=1.25, wavelength=0.52, expansion_coeff=0.23, pixel_physical_size=0.5/4.82)
-        zpsf60.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf60.plot_kernel("Not cropped")
+        zpsf60 = ZernPSF(zernpol=(ZernPol(m=0, n=4)))
+        zpsf60.set_physical_props(NA=1.25, wavelength=0.5, expansion_coeff=0.47, pixel_physical_size=0.5/5.0)
+        zpsf60.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf60.plot_kernel("Not Cropped")
         original_kernel = np.copy(zpsf60.kernel)
-        zpsf60.crop_kernel(); zpsf60.plot_kernel("Cropped"); cropped_kernel = np.copy(zpsf60.kernel)
+        zpsf60.crop_kernel(min_part_of_max=0.025); zpsf60.plot_kernel("Cropped"); cropped_kernel = np.copy(zpsf60.kernel)
         print("Original kernel shape:", original_kernel.shape, "\nCropped kernel shape:", cropped_kernel.shape)
