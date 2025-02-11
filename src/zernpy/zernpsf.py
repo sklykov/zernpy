@@ -47,12 +47,6 @@ else:
 # %% Module parameters
 __docformat__ = "numpydoc"
 
-# TODO:
-# 1) Check non trivial error report if several pol-s provided with a single amplitude
-# 2) Warning report for accelerated call and many points for calculation - not informative
-# 3) Crop kernel, especially for a few polynomials calculation, it's growing too fast
-# 4) Figure name for plotted mix of pol-s - provide their orders in a name
-
 
 # %% PSF class
 class ZernPSF:
@@ -382,10 +376,10 @@ class ZernPSF:
                                              test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points)
             elif numba_installed:
-                if not suppress_warnings and not methods_compiled:
-                    self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
-                                           + " consider to run function 'force_get_psf_compilation()' before")
-                    warnings.warn(self.__warn_message); self.__warn_message = ""
+                # if not suppress_warnings and not methods_compiled:
+                #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
+                #                            + " consider to run function 'force_get_psf_compilation()' before")
+                #     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.kernel = get_psf_kernel_comp(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
@@ -397,10 +391,10 @@ class ZernPSF:
                                                    kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                    n_int_phi_points=self.n_int_phi_points)
             elif numba_installed:
-                if not suppress_warnings and not methods_compiled:
-                    self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will takes ~7 sec.,"
-                                           + " consider to run function 'force_get_psf_compilation()' before")
-                    warnings.warn(self.__warn_message); self.__warn_message = ""
+                # if not suppress_warnings and not methods_compiled:
+                #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
+                #                            + " consider to run function 'force_get_psf_compilation()' before")
+                #     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.kernel = get_psf_kernel_comp(zernike_pol=self.polynomials, len2pixels=self.pixel_size, alpha=self.amplitudes,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
@@ -488,6 +482,52 @@ class ZernPSF:
         plt.axis('off'); plt.tight_layout()
         convolved_img = self.convolute_img(image=target_disk); plt.figure("Convolved PSF and Disk", figsize=(6, 6))
         plt.imshow(convolved_img, cmap=plt.cm.viridis, origin='upper'); plt.axis('off'); plt.tight_layout()
+
+    def crop_kernel(self, min_part_of_max: float = 0.01):
+        """
+        Crop redundant points from kernel.
+
+        By default, all rows and columns containing any single value that more than 1% of max kernel value, are not cropped. \n
+        Cropped kernel saved in class variable 'kernel'.
+
+        Parameters
+        ----------
+        min_part_of_max : float, optional
+            Part of kernel max that is used for checking rows / columns for cropping. The default is 0.01.
+
+        Raises
+        ------
+        ValueError
+            If parameter 'min_part_of_max' is not > 0.0 and not < 0.5.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.kernel_size > 3:  # crop redundant points in kernel
+            max_kernel_value = np.max(self.kernel)  # if kernel normalized, will be 1.0
+            if min_part_of_max <= 0.0:
+                raise ValueError("\nParameter 'min_part_of_max' should be > 0.0, but it is:", min_part_of_max)
+            if min_part_of_max >= 0.5:
+                raise ValueError("\nParameter 'min_part_of_max' should be < 0.5, but it is:", min_part_of_max)
+            min_kernel_value = min_part_of_max*max_kernel_value  # by default, 1% of max kernel value
+            # print("min value:", min_kernel_value)
+            rows, cols = self.kernel.shape; stop_cropping_loop = False; step_row = 0; step_column = 0
+            while not stop_cropping_loop:
+                check_upper_row = np.max(self.kernel[0 + step_row, :]) < min_kernel_value
+                check_bottom_row = np.max(self.kernel[rows - 1 - step_row, :]) < min_kernel_value
+                check_left_column = np.max(self.kernel[:, 0 + step_column]) < min_kernel_value
+                check_right_column = np.max(self.kernel[:, cols - 1 - step_column]) < min_kernel_value
+                # print("Max values in rows and cols:", np.max(self.kernel[0 + step_row, :]), np.max(self.kernel[rows - 1 - step_row, :]),
+                #       np.max(self.kernel[:, 0 + step_column]), np.max(self.kernel[:, cols - 1 - step_column]))
+                if check_upper_row and check_bottom_row and check_left_column and check_right_column:
+                    step_row += 1; step_column += 1
+                else:
+                    stop_cropping_loop = True
+            if step_row > 0 and step_column > 0:
+                self.kernel = self.kernel[step_row:rows-step_row, step_column:cols-step_column]
+                self.kernel_size = self.kernel.shape[0]
 
     # %% I/O methods
     def save_json(self, abs_path: Union[str, Path] = None, overwrite: bool = False):
@@ -756,15 +796,17 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
         except ValueError:
             __warn_message = "\nCannot parse 'numba' version, expected in format 'x.yy.zz' - all integers"; warnings.warn(__warn_message)
         # Compilation of methods for single polynomial PSF calculation
-        NA = 0.2; wavelength = 0.55; pixel_size = wavelength / 1.0; ampl = 0.05
+        NA = 0.2; wavelength = 0.55; pixel_size = wavelength / 0.82; ampl = 0.042
         zp_prc = ZernPol(m=-1, n=1); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
         zpsf_prc.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-        # zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        # print("Precompilation kernel size for single pol.:", zpsf_prc.kernel_size)
         zpsf_prc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         # Compilation of methods for multiple polynomials PSF calculation
-        zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.04, 0.05, 0.04)
-        zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.2, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.0)
-        # zpsf_mpc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
+        zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.01, 0.043, 0.027)
+        zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.2, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/0.85)
+        zpsf_mpc.kernel_size = 3  # force to calculate only small kernel size for saving sometime
+        # print("Precompilation kernel size for several pol.:", zpsf_mpc.kernel_size)
         zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         set_methods_compiled()  # setting the flag implicitly in the module
         global methods_compiled; methods_compiled = True  # setting copied variable in this script
@@ -798,7 +840,8 @@ if __name__ == "__main__":
     check_acceleration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
     check_init_several_pols = False  # check calculation several pol-s: Airy (Piston) + some of polynomial
     check_airy_patterns = False  # check the difference between calculated by equation for Airy pattern and diffraction integral
-    check_precompilation = True  # checks with precompilation
+    check_precompilation = False  # checks precompilation
+    check_cropping = False  # checks how kernel is cropped
 
     # Common PSF for testing
     if check_common_psf:
@@ -935,3 +978,14 @@ if __name__ == "__main__":
 
     if check_precompilation:
         force_get_psf_compilation(True)
+        zpsf50 = ZernPSF(zernpol=(ZernPol(m=1, n=3)))
+        zpsf50.set_physical_props(NA=1.25, wavelength=0.52, expansion_coeff=0.5, pixel_physical_size=0.5/4.85)
+        zpsf50.calculate_psf_kernel(verbose_info=True, accelerated=True, normalized=True); zpsf50.plot_kernel()
+
+    if check_cropping:
+        zpsf60 = ZernPSF(zernpol=(ZernPol(m=-2, n=2)))
+        zpsf60.set_physical_props(NA=1.25, wavelength=0.52, expansion_coeff=0.23, pixel_physical_size=0.5/4.82)
+        zpsf60.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf60.plot_kernel("Not cropped")
+        original_kernel = np.copy(zpsf60.kernel)
+        zpsf60.crop_kernel(); zpsf60.plot_kernel("Cropped"); cropped_kernel = np.copy(zpsf60.kernel)
+        print("Original kernel shape:", original_kernel.shape, "\nCropped kernel shape:", cropped_kernel.shape)
