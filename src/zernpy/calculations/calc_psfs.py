@@ -723,7 +723,8 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
         Result of convolution (used scipy.ndimage.convolve).
 
     """
-    img_type = img.dtype; convolved_img = convolve(np.float32(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)
+    img_type = img.dtype; img = np.copy(img)  # get the image type and copy its content to a new container
+    convolved_img = convolve(np.float64(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)  # convolution using scipy
     if conv_coeff > 0.0:
         convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
     if scale2original:
