@@ -241,13 +241,25 @@ class ZernPSF:
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
                                                wavelength=self.wavelength, NA=self.NA)
         else:
-            max_kernel_size = 0
-            for pol in self.polynomials:
-                kernel_size = get_kernel_size(zernike_pol=pol, len2pixels=self.pixel_size, alpha=self.alpha,
+            max_kernel_size = 0; max_ampl = 0.0
+            for i, pol in enumerate(self.polynomials):
+                kernel_size = get_kernel_size(zernike_pol=pol, len2pixels=self.pixel_size, alpha=self.amplitudes[i],
                                               wavelength=self.wavelength, NA=self.NA)
                 if max_kernel_size < kernel_size:
                     max_kernel_size = kernel_size
-            self.kernel_size = max_kernel_size
+                if max_ampl < abs(self.amplitudes[i]):
+                    max_ampl = abs(self.amplitudes[i])
+            # increase depending on the # of provided pol-s and max provided amplitude the kernel size
+            if 0.25 <= max_ampl < 0.5:
+                self.kernel_size = max_kernel_size + int(round(0.6*len(self.polynomials), 0))
+            elif 0.5 <= max_ampl < 0.75:
+                self.kernel_size = max_kernel_size + int(round(1.0*len(self.polynomials), 0))
+            elif max_ampl >= 0.75:
+                self.kernel_size = max_kernel_size + int(round(1.4*len(self.polynomials), 0))
+            else:
+                self.kernel_size = max_kernel_size
+            if self.kernel_size % 2 == 0:
+                self.kernel_size += 1  # kernel size should odd
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
     def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int) -> None:
@@ -308,7 +320,7 @@ class ZernPSF:
 
     # %% Calculation
     def calculate_psf_kernel(self, suppress_warnings: bool = False, normalized: bool = True, verbose_info: bool = False,
-                             accelerated: bool = False) -> np.ndarray:
+                             accelerated: bool = None) -> np.ndarray:
         """
         Calculate PSF kernel using the specified or default calculation parameters and physical values.
 
@@ -338,7 +350,8 @@ class ZernPSF:
         verbose_info : bool, optional
             Flag to print out each step completion report and measured elapsed time in ms. The default is False.
         accelerated : bool, optional
-            Flag to accelerate the calculations by using numba library for scripts compilation. The default is False.
+            Flag to accelerate the calculations by using numba library for scripts compilation. Acceleration will be used automatically,
+            if None is provided and 'numba' library is installed. The default is None.
 
         References
         ----------
@@ -350,7 +363,7 @@ class ZernPSF:
         Returns
         -------
         numpy.ndarray
-            PSF kernel.
+            2D PSF kernel.
 
         """
         if len(self.__warn_message) > 0 and not suppress_warnings:
@@ -358,8 +371,13 @@ class ZernPSF:
         if not self.__physical_props_set and not suppress_warnings:
             self.kernel_size = 19; self.__warn_message = "\nPhysical properties haven't been set before, the default ones will be used"
             warnings.warn(self.__warn_message); self.__warn_message = ""
-        # Check if accelerated flag set to True but no numba installed
         global numba_installed  # access the flag
+        # Check provided flag
+        if numba_installed and accelerated is None:
+            accelerated = True
+        elif not numba_installed and accelerated is None:
+            accelerated = False
+        # Check if accelerated flag set to True but no numba installed
         if accelerated and not numba_installed and not suppress_warnings:
             self.__warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
             warnings.warn(self.__warn_message); self.__warn_message = ""
@@ -374,7 +392,8 @@ class ZernPSF:
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                              test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
-                                             n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points)
+                                             n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points,
+                                             suppress_warns=suppress_warnings)
             elif numba_installed:
                 # if not suppress_warnings and not methods_compiled:
                 #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
@@ -389,7 +408,7 @@ class ZernPSF:
                 self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
                                                    wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                    kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
-                                                   n_int_phi_points=self.n_int_phi_points)
+                                                   n_int_phi_points=self.n_int_phi_points, suppress_warns=suppress_warnings)
             elif numba_installed:
                 # if not suppress_warnings and not methods_compiled:
                 #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
@@ -831,6 +850,7 @@ __all__ = ['ZernPSF', 'force_get_psf_compilation']
 # %% Test as the main script
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
+    wavelength_um = 0.55  # used below in a several calls
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
     check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False; check_test = False
     check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
@@ -845,7 +865,7 @@ if __name__ == "__main__":
 
     # Common PSF for testing
     if check_common_psf:
-        zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); wavelength_um = 0.55; ampl = -0.43
+        zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); ampl = -0.43
         zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
         zpsf1.set_physical_props(NA=0.5, wavelength=0.6, expansion_coeff=0.25, pixel_physical_size=wavelength_um/5.5)
         zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=250, n_integration_points_phi=320)
