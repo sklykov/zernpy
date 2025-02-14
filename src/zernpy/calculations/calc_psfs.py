@@ -63,6 +63,8 @@ def airy_ref_pattern(r: float):
         ratio = jv(1, 1E-11)/1E-11
     else:
         ratio = jv(1, r)/r
+    # NOTE that the values produced by exact equation below is off with the direct computation of diffraction integral
+    # apporoximate coefficient is 0.986711 for a central point. Most likely, the difference because of numerical integration
     return 4.0*pow(ratio, 2)
 
 
@@ -666,6 +668,7 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
         show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
         if 100 < size*size < 301:
             show_each_tenth_point = True; checking_point = 10
+    # Do not perform check for provided Airy pattern case for making an agreement between accelerated and not accelerated cases
     # Calculate the PSF kernel for usage in convolution operation
     for i in range(size):
         for j in range(size):
@@ -682,11 +685,11 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
             if verbose:
                 calculated_points += 1; passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
                 if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
-                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                    print(f"Calculated point #{calculated_points} from {size*size}, took: {passed_time_ms} ms")
                     if calculated_points == checking_point:
                         checking_point += 10
                 elif (not show_each_tenth_point and not size*size >= 301):
-                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                    print(f"Calculated point #{calculated_points} from {size*size}, took: {passed_time_ms} ms")
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -720,7 +723,8 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
         Result of convolution (used scipy.ndimage.convolve).
 
     """
-    img_type = img.dtype; convolved_img = convolve(np.float32(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)
+    img_type = img.dtype; img = np.copy(img)  # get the image type and copy its content to a new container
+    convolved_img = convolve(np.float64(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)  # convolution using scipy
     if conv_coeff > 0.0:
         convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
     if scale2original:

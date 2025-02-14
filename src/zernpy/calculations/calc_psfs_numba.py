@@ -326,7 +326,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
         size += 1
     # Provide performance tip if the provided kernel size is quite big for calculations
     if size > 85 and not suppress_warns:
-        __warn_message = f"\nCalculation of provided {size} may take more than 20 seconds"
+        __warn_message = f"\nCalculation of provided kernel size ({size}x{size}) may take more than 20 seconds"
         warnings.warn(__warn_message); __warn_message = ""
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Get the orders of polynomial and check if the equation for compilation was implemented
@@ -375,11 +375,11 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
             if verbose:
                 calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
                 if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
-                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms", flush=True)
+                    print(f"Calculated point #{calculated_points} from {size*size}, took: {passed_time_ms} ms", flush=True)
                     if calculated_points == checking_point:
                         checking_point += 10
                 elif (not show_each_tenth_point and not size*size >= 651):
-                    print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms", flush=True)
+                    print(f"Calculated point #{calculated_points} from {size*size}, took: {passed_time_ms} ms", flush=True)
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)

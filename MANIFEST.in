@@ -1,1 +1,3 @@
-include ./src/zernpy/readme_images/*.png
+exclude src/zernpy/*.png
+
+recursive-exclude src/zernpy/readme_images *

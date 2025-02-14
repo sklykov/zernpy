@@ -1,6 +1,6 @@
 [project]
 name = "zernpy"
-version = "0.0.14"
+version = "0.0.15"
 authors = [
     {name = "Sergei Klykov"},
     {email = "sergej.klykow@gmail.com"}
@@ -30,11 +30,13 @@ keywords = ["zernike-polynomials", "zernike-psf"]
 "Documentation" = "https://sklykov.github.io/zernpy/"
 "Changelog" = "https://github.com/sklykov/zernpy/blob/main/CHANGELOG.md"
 
-# [tool.setuptools]
-# include-package-data = true  # true by default
+[tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
+where = ["src"]
+include = ["zernpy*"]
+exclude = ["tests"]
 
-# [tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
-# where = ["src"]  # there is no need to specify this here
+[tool.setuptools.exclude-package-data]
+zernpy = ["*.png"]  # should exclude image files from distribution
 
 [build-system]
 requires = ["setuptools>=61.0"]

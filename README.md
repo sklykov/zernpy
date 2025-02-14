@@ -1,14 +1,17 @@
 ### zernpy - Python package for calculation real-valued Zernike polynomials and associated 2D PSF kernels
 
 #### Project description and references
-This project is intended for calculation of Zernike polynomials' parameters / real values / properties using exact (analytical) and recursive equations.   
-The recursive and tabular equations, as well as the valuable information, are taken from the articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
+This project is designed to compute the parameters, real values, and properties of Zernike polynomials using both exact (analytical) and recursive equations.   
+The recursive and tabular equations, along with essential reference information, are sourced from the following articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
 [[2]](https://doi.org/10.1080/09500340.2011.554896) and [[3]](https://doi.org/10.1364/OE.26.018878).    
 The possibly useful functionality for further usage include: conversion between common indexing schemes (OSA / Noll / Fringe), radial / angular / polynomial 
 real values calculation along with their derivatives, plotting the circular 2D or 3D profile of single or sum of polynomials, fitting the arbitrary phase 
 profile specified on the circle aperture by the set of polynomials (see the description [below](#fitting-zernike-polynomials-to-a-2D-image-with-phases)). 
 For the complete list of implemented methods for Zernike polynomial, please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).   
-For the implemented 2D PSF calculation as the class, please refer to [ZernPol API documentation] (https://sklykov.github.io/zernpy/api/zernpy/zernpsf.html).
+For the implemented 2D PSF calculation as the class, please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernpsf.html).   
+
+**Note:** if you're viewing this README on the PyPI website, images will not be displayed - only fallback descriptions will be shown. For the complete and correctly formatted 
+README, please visit the GitHub repository.
 
 #### Notes about implementation
 It was supposed at the project start, that the recursive equations would be the faster way to calculate real values of high order polynomials in comparison 
@@ -78,11 +81,16 @@ on the provided figure (expected as an instance of the class *matplotlib.pyplot.
 
 #### Fitting Zernike polynomials to a 2D image with phases
 Random generated set of Zernike polynomials plotted on an image - as the sample for testing the fitting procedure:     
+
 ![Random Profile](./src/zernpy/readme_images/Random_Profile.png "Random phases profile, 'jet' matplotlib colormap")        
+
 This image is assumed to contain phases wrapped in a circular aperture, used function for generation:
 ***generate_random_phases(...)*** from the main *zernikepol* module.    
+
 Below is profile made by calculation of fitted Zernike polynomials:    
+
 ![Fitted Profile](./src/zernpy/readme_images/Fitted_Profile.png "Fitted polynomials profile, 'jet' matplotlib colormap")               
+
 The function used for fitting: ***fit_polynomials(...)*** from the main *zernikepol* module.    
 This function could be useful for making approximation of any image containing phases recorded by the optical system
 to the sum of Zernike polynomials. Check the detailed description of functions in the API dictionary, available on
@@ -98,12 +106,17 @@ Or for importing all available functions and base class in one statement:
 ```python
 from zernpy import *
 ```
-Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of the *ZernPol* class, starting from the 'Piston' polynomial.    
+Note that the function ***generate_polynomials(...)*** returns tuple with OSA indexed polynomials as instances of the *ZernPol* class, 
+starting from the 'Piston' polynomial.    
 
 #### 2D PSF kernel calculation
-The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase distribution for the focal point (no Z-axis dependency). The used references are listed in the docstring of the **calculate_psf_kernel()** method.   
+The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase distribution 
+for the focal point (no Z-axis dependency). The used references are listed in the docstring of the **calculate_psf_kernel()** method.    
+
 The sample of calculated PSF for Vertical Trefoil:    
-![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")    
+
+![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")   
+
 Initialization and usage of the class instance (basic usage with default calculation parameters, such as the kernel size):    
 ```python  # code block for Python code
 from zernpy import ZernPSF, ZernPol
@@ -130,10 +143,30 @@ The resulting profile is:
 It's possible to accelerate the calculation of a kernel by installing the [numba](https://numba.pydata.org/) library in the 
 same Python environment and providing the appropriate flags in a calculation method, similar to the following code snippet:
 ```python
-from zernpy import *
+from zernpy import force_get_psf_compilation, ZernPol, ZernPSF
 force_get_psf_compilation()  # optional precompilation of calculation methods for further using of their compiled forms 
 NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.6; ampl = -0.16
 zp = ZernPol(m=0, n=2); zpsf = ZernPSF(zp) 
 zpsf.set_physical_props(NA, wavelength, ampl, pixel_size)
 zpsf.calculate_psf_kernel(accelerated=True)
 ```
+
+#### Cropping kernel
+By default, the kernel size is overestimated to guarantee that all significant points of kernel will be calculated. Also, kernel size is growing
+with the polynomial orders and its amplitude. To reduce the size of kernel, from ver. 0.0.15, it's possible to call the method ***crop_kernel***.
+Example of the code: 
+```python
+from zernpy import ZernPSF, ZernPol
+zpsf = ZernPSF(zernpol=(ZernPol(m=0, n=4)))  # Spherical aberration
+zpsf.set_physical_props(NA=1.25, wavelength=0.5, expansion_coeff=0.47, pixel_physical_size=0.5/5.0)
+zpsf.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf.plot_kernel("Not Cropped")
+zpsf.crop_kernel(min_part_of_max=0.025)  # rows and columns containing less than 2.5% of kernel max will be cropped out 
+zpsf.plot_kernel("Cropped")
+```
+Original kernel with size (23, 23) for Spherical aberration:
+
+![Original Spherical aber. kernel](./src/zernpy/readme_images/(0,4)_Spherical_0.47_Original.png "Original Spherical aber. kernel (23, 23)")  
+
+Cropped kernel with size (15, 15) for Spherical aberration:
+
+![Cropped Spherical aber. kernel](./src/zernpy/readme_images/(0,4)_Spherical_0.47_Cropped.png "Cropped Spherical aber. kernel (15, 15)")  
