@@ -302,7 +302,7 @@ class ZernPSF:
                                        + f"is larger than provided size = {kernel_size}. PSF may be truncated.")
                 warnings.warn(self.__warn_message); self.__warn_message = ""
         else:
-            self.__warn_message = "Recommended to set the physical properties for getting estimated kernel size and after set it by this method"
+            self.__warn_message = "Please set the physical properties first for estimation of kernel size and after call this method"
             warnings.warn(self.__warn_message); self.__warn_message = ""
         self.kernel_size = kernel_size  # overwrite stored property, show before all warnings if kernel size is inconsistent
         # Sanity checks for n_integration_points_r and n_integration_points_phi
@@ -865,6 +865,7 @@ if __name__ == "__main__":
 
     # Common PSF for testing
     if check_common_psf:
+        force_get_psf_compilation(True)
         zpsf1 = ZernPSF(ZernPol(m=1, n=1)); zpsf2 = ZernPSF(ZernPol(m=-3, n=3)); ampl = -0.43
         zpsf2.set_physical_props(NA=0.95, wavelength=wavelength_um, expansion_coeff=ampl, pixel_physical_size=wavelength_um/5.05)
         zpsf1.set_physical_props(NA=0.5, wavelength=0.6, expansion_coeff=0.25, pixel_physical_size=wavelength_um/5.5)
@@ -925,9 +926,9 @@ if __name__ == "__main__":
         zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/4.5)
         composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel()
         if test_io_few_pols:
-            zpsf14 = ZernPSF(ZernPol(osa=19)); zpsf14.set_physical_props(NA=0.1, wavelength=0.4, expansion_coeff=0.82, pixel_physical_size=0.05)
-            zpsf8.save_json(overwrite=True, abs_path=standard_path)  # save calculated kernel
-            zpsf14.read_json(zpsf8.json_file_path)
+            zpsf14 = ZernPSF(ZernPol(osa=19)); zpsf14.set_physical_props(NA=0.1, wavelength=0.4, expansion_coeff=0.82,
+                                                                         pixel_physical_size=0.05)
+            zpsf8.save_json(overwrite=True, abs_path=standard_path); zpsf14.read_json(zpsf8.json_file_path)  # save / read calculated kernel
 
     # Test some edge conditions - e.g., specifying 1 polynomial in a list with huge coefficient
     if check_edge_conditions:
@@ -947,7 +948,8 @@ if __name__ == "__main__":
         zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.12, 0.15, 0.1)
         zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.35, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.5)
         composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel("Normal")
-        composed_kernel_acc = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True); zpsf8.plot_kernel("Accelerated")
+        composed_kernel_acc = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True)
+        zpsf8.plot_kernel("Accelerated")
     if prepare_pic_readme:
         force_get_psf_compilation(verbose_report=True)
         zp1 = ZernPol(m=-1, n=3); zp2 = ZernPol(m=2, n=4); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (0.5, 0.21, 0.15)
@@ -956,9 +958,11 @@ if __name__ == "__main__":
         zpsf_pic.plot_kernel("Vert. Coma Vert. 2nd Astigmatism Spherical")
     if check_acceleration_flag:
         zp16 = ZernPol(m=-1, n=3); zp18 = ZernPol(m=2, n=4); pols10 = (zp16, zp18); coeffs10 = (-0.1, 0.13); zpsf_acc = ZernPSF(pols10)
-        zpsf_norm = ZernPSF(pols10); zpsf_acc.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
+        zpsf_norm = ZernPSF(pols10); zpsf_acc.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10,
+                                                                 pixel_physical_size=0.6/3.0)
         zpsf_norm.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
-        kern_acc = zpsf_acc.calculate_psf_kernel(normalized=True, accelerated=True); kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True)
+        kern_acc = zpsf_acc.calculate_psf_kernel(normalized=True, accelerated=True)
+        kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True)
         kern_diff = np.round(kern_acc - kern_norm, 9)  # for checking the difference in calculations
 
     if check_test:
