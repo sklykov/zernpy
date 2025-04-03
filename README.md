@@ -1,17 +1,21 @@
-### zernpy - Python package for calculation real-valued Zernike polynomials and associated 2D PSF kernels
+### 'zernpy' - Python package for calculation real-valued Zernike polynomials and associated 2D PSF kernels
 
 #### Project description and references
-This project is designed to compute the parameters, real values, and properties of Zernike polynomials using both exact (analytical) and recursive equations.   
-The recursive and tabular equations, along with essential reference information, are sourced from the following articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
+This project is designed to compute the parameters, real values, and properties of Zernike polynomials using both exact (analytical) and recursive equations. 
+Also, 2D (only for imaging plane of the system) PSF kernel can be computed for a single or multiple polynomials.   
+The recursive and tabular equations, along with references to the essential information about polynomials, are sourced from the following articles: [[1]](https://doi.org/10.1364/OL.38.002487), 
 [[2]](https://doi.org/10.1080/09500340.2011.554896) and [[3]](https://doi.org/10.1364/OE.26.018878).    
+The information about PSF can be found on: [4] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968; [[5]](https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf),
+[[6]](https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations), [[7]](https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]).   
 The possibly useful functionality for further usage include: conversion between common indexing schemes (OSA / Noll / Fringe), radial / angular / polynomial 
 real values calculation along with their derivatives, plotting the circular 2D or 3D profile of single or sum of polynomials, fitting the arbitrary phase 
-profile specified on the circle aperture by the set of polynomials (see the description [below](#fitting-zernike-polynomials-to-a-2D-image-with-phases)). 
-For the complete list of implemented methods for Zernike polynomial, please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).   
-For the implemented 2D PSF calculation as the class, please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernpsf.html).   
+profile specified on the circle aperture by the set of polynomials (see the description [below](#fitting-zernike-polynomials-to-a-2D-image-with-phases)).   
+For the complete list of implemented methods and properties of Zernike polynomial as the class 'ZernPol', please refer to [ZernPol API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernikepol.html).   
+For the implemented 2D PSF kernel calculation associated with Zernike polynomial(-s) as the class 'ZernPSF', please refer to 
+[ZernPSF API documentation](https://sklykov.github.io/zernpy/api/zernpy/zernpsf.html).   
 
-**Note:** if you're viewing this README on the PyPI website, images will not be displayed - only fallback descriptions will be shown. For the complete and correctly formatted 
-README, please visit the GitHub repository.
+**Note:** if you're viewing this README on the PyPI website, images will not be displayed - only their fallback descriptions will be shown. 
+For the complete and correctly formatted README, please visit the GitHub repository.
 
 #### Notes about implementation
 It was supposed at the project start, that the recursive equations would be the faster way to calculate real values of high order polynomials in comparison 
@@ -31,7 +35,7 @@ For updating already installed package:  ***pip install --upgrade zernpy*** or *
 
 #### Requirements
 For installation, the *numpy* and *matplotlib* libraries are required.  
-For running tests, the *pytest* library is required for automatic recognition of tests stored in package folders.  
+For running tests, the *pytest* library is required for automatic recognition of tests stored in the package folders.  
 
 #### Running tests
 Simply run the command ***pytest*** in the command line from the project folder root. It should collect 10 tests and automatically run them.
