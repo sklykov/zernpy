@@ -4,7 +4,7 @@ Main script with the class definition for accessing Zernike polynomial initializ
 
 Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
-@author: Sergei Klykov, @year: 2024, @licence: MIT \n
+@author: Sergei Klykov, @year: 2026, @licence: MIT \n
 
 """
 # %% Global imports
@@ -16,7 +16,7 @@ from collections import namedtuple
 import matplotlib.pyplot as plt
 import random
 import time
-from typing import Union, Sequence
+from typing import Union, Sequence, Tuple
 
 # %% Local (package-scoped) imports
 if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
@@ -226,7 +226,7 @@ class ZernPol:
         else:
             self.warn_mes_dr = ""
 
-    def get_indices(self):
+    def get_indices(self) -> Tuple[Tuple[int, int], int, int, int]:
         """
         Return the tuple with following orders: ((m, n), OSA index, Noll index, Fringe index).
 
@@ -238,7 +238,7 @@ class ZernPol:
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
 
-    def get_mn_orders(self) -> tuple:
+    def get_mn_orders(self) -> Tuple[int, int]:
         """
         Return tuple with the (azimuthal, radial) orders, i.e. return (m, n).
 
@@ -349,7 +349,8 @@ class ZernPol:
             raise ValueError("Provided object for comparison isn't instance of the ZernPol class")
 
     # %% Polynomial values calculation in various forms
-    def polynomial_value(self, r: Union[float, np.ndarray], theta: Union[float, np.ndarray], use_exact_eq: bool = False):
+    def polynomial_value(self, r: Union[float, np.ndarray], theta: Union[float, np.ndarray],
+                         use_exact_eq: bool = False) -> Union[float, np.ndarray]:
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
@@ -396,10 +397,8 @@ class ZernPol:
 
         """
         # Checking input parameters for avoiding errors and unexpectable values
-        # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
-        r = ZernPol._check_radii(r)
-        # Checking that angles lie in the range [0, 2*pi] and their type
-        theta = ZernPol._check_angles(theta)
+        r = ZernPol._check_radii(r)  # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
+        theta = ZernPol._check_angles(theta)  # Checking that angles lie in the range [0, 2*pi] and their type
         # Checking coincidence of shapes if theta and r are arrays
         if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))):
             if r.shape != theta.shape:
@@ -424,10 +423,12 @@ class ZernPol:
                     return 0.0
                 elif isinstance(r, np.ndarray):
                     return np.zeros(shape=r.shape)
+                else:
+                    return 0.0  # default scalar value
             else:
                 return nTr*radial_polynomial_eq(self, r)
 
-    def radial(self, r: Union[float, np.ndarray], use_exact_eq: bool = False):
+    def radial(self, r: Union[float, np.ndarray], use_exact_eq: bool = False) -> Union[float, np.ndarray]:
         """
         Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.
 
@@ -489,10 +490,12 @@ class ZernPol:
                     return 0.0
                 elif isinstance(r, np.ndarray):
                     return np.zeros(shape=r.shape)
+                else:
+                    return 0.0  # default scalar value
             else:
                 return radial_polynomial_eq(self, r)
 
-    def triangular(self, theta: Union[float, np.ndarray]):
+    def triangular(self, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """
         Calculate triangular Zernike function value(-s) within the unit circle.
 
@@ -516,12 +519,10 @@ class ZernPol:
             Calculated value(-s) of Zernike triangular function on provided angle.
 
         """
-        # Check theta type and that angles are lying in the single period range [0, 2pi]
-        theta = ZernPol._check_angles(theta)
-        # Calculation using imported function
+        theta = ZernPol._check_angles(theta)  # Check theta type and that angles are lying in the single period range [0, 2pi]
         return triangular_function(self, theta)
 
-    def radial_dr(self, r: Union[float, np.ndarray], use_exact_eq: bool = False):
+    def radial_dr(self, r: Union[float, np.ndarray], use_exact_eq: bool = False) -> Union[float, np.ndarray]:
         """
         Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.
 
@@ -581,10 +582,12 @@ class ZernPol:
                     return 0.0
                 elif isinstance(r, np.ndarray):
                     return np.zeros(shape=r.shape)
+                else:
+                    return 0.0  # default scalar value
             else:
                 return radial_derivative_eq(self, r)
 
-    def triangular_dtheta(self, theta: Union[float, np.ndarray]):
+    def triangular_dtheta(self, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """
         Calculate derivative from triangular function on angle theta.
 
@@ -608,13 +611,12 @@ class ZernPol:
             Calculated derivative value(-s) of Zernike triangular function on provided angle.
 
         """
-        # Check input parameter type and attempt to convert to acceptable types
-        theta = ZernPol._check_angles(theta)
+        theta = ZernPol._check_angles(theta)  # Check input parameter type and attempt to convert to acceptable types
         return triangular_derivative(self, theta)
 
-    def normf(self):
+    def normf(self) -> float:
         """
-        Calculate normalization factor for the Zernike polynomial calculated according to the References below.
+        Calculate normalization factor (such that Var(Z) = 1) for the associated Zernike polynomial (according to the References below).
 
         References
         ----------
@@ -714,7 +716,7 @@ class ZernPol:
         return (1 + (n + abs(m))//2)**2 - 2*abs(m) + (1 - np.sign(m))//2
 
     @staticmethod
-    def index2orders(**kwargs) -> tuple:
+    def index2orders(**kwargs) -> Tuple[int, int]:
         """
         Return tuple as (azimuthal, radial) orders for the specified by osa_, noll_ or fringe_index input parameter.
 
@@ -898,7 +900,7 @@ class ZernPol:
             Sum over the provided polar coordinates.
 
         """
-        S = 0.0  # default value - sum
+        S = np.empty(shape=(2, 2))  # default value - sum
         if len(coefficients) != len(polynomials):
             raise ValueError("Lengths of coefficients and polynomials aren't equal")
         else:
@@ -1333,9 +1335,9 @@ class ZernPol:
 
 
 # %% Independent functions defs.
-def generate_polynomials(max_order: int = 10) -> tuple:
+def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol]:
     """
-    Generate tuple with ZernPol instances (ultimately, representing Zernike polynomials) indexed using OSA scheme, starting with Piston(m=0,n=0).
+    Generate tuple with ZernPol instances (ultimately, representing polynomials) indexed using OSA scheme, starting with Piston(m=0,n=0).
 
     Parameters
     ----------
@@ -1374,7 +1376,7 @@ def generate_polynomials(max_order: int = 10) -> tuple:
 
 
 def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height: int = 513,
-                           round_digits: int = 4) -> tuple:
+                           round_digits: int = 4) -> Tuple[np.ndarray, np.ndarray, Tuple[ZernPol]]:
     """
     Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.
 
@@ -1500,7 +1502,8 @@ def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple
 
 
 def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: float = 1.0, suppress_warnings: bool = False,
-                    strict_circle_border: bool = False, round_digits: int = 4, return_cropped_image: bool = False) -> tuple:
+                    strict_circle_border: bool = False, round_digits: int = 4,
+                    return_cropped_image: bool = False) -> Tuple[np.ndarray, Union[np.ndarray, None]]:
     """
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
 
@@ -1592,7 +1595,7 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
     return zernike_coefficients
 
 
-def compare_performances(min_order: int, max_order: int) -> tuple:
+def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]:
     """
     Compare performances of radial polynomials calculation by using recursive and exact equations.
 
@@ -1638,7 +1641,7 @@ def compare_performances(min_order: int, max_order: int) -> tuple:
         polynomial.radial(test_r, use_exact_eq=True)  # calculate radial polynomials over vector of radii
     t2 = time.perf_counter()
     t_exact_ms = round(1000*(t2-t1), 3)
-    return (t_recursive_ms, t_exact_ms, f"Used polynomials: {i}", f"Radii: {n_points}")
+    return t_recursive_ms, t_exact_ms, f"Used polynomials: {i}", f"Radii: {n_points}"
 
 
 def _estimate_high_order_calc_times():
@@ -1818,7 +1821,7 @@ if __name__ == "__main__":
         # Below - fitting procedure on the provided phases image
         polynomials_amplitudes2, cropped_img2 = fit_polynomials(phases_image2, polynomials, return_cropped_image=True,
                                                                 strict_circle_border=strict_border, crop_radius=crop_r)
-        print("Difference between used amplitudes and fitted ones:", pols_coeffs-polynomials_amplitudes2)
+        print("Difference between used amplitudes and fitted ones:", np.asarray(pols_coeffs) - polynomials_amplitudes2)
         plt.figure(); plt.axis("off"); im = plt.imshow(cropped_img2, cmap="jet"); plt.tight_layout(); plt.subplots_adjust(0, 0, 1, 1)
         plt.colorbar(mappable=im)
 

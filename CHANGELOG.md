@@ -3,7 +3,19 @@ Logging of changes between package versions (generated and uploaded to pypi.org)
 
 All notable changes to this project will be documented in this file.    
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).   
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).    
+
+
+### [0.1.0] - 2026-01-07
+
+#### Added
+- Automatic testing workflow for GitHub - run collected tests by ***pytest*** library after merging with the main branch;  
+- Bumped up version to a minor release version (0.1.0) for designating persistence of developed API (methods).
+
+#### Fixed
+- Returning types of class methods; 
+- Formulations in docstrings for class methods.
+
 
 ### [0.0.15] - 2025-02-14
 
@@ -28,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [0.0.13] - 2024-06-13
-Added the **ZernPSF** class class with methods for calculation, visualization, and convolution
+Added the **ZernPSF** class with methods for calculation, visualization, and convolution
 with a 2D PSF kernel, corresponding to the Zernike polynomial.
 
 
