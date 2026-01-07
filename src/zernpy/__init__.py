@@ -8,7 +8,7 @@ The "zernpy" package is intended for initialization and calculation attributes /
 
 """
 
-__version__ = "0.0.15"  # Straightforward way of specifying package version and including it to the package attributes
+__version__ = "0.1.0"  # Straightforward way of specifying package version and including it to the package attributes
 
 if __name__ == "__main__":
     # use absolute imports for importing as module
@@ -24,3 +24,5 @@ if __name__ != "__main__" and __name__ != "__mp_main__":
     from .zernikepol import generate_polynomials, fit_polynomials, generate_random_phases, fit_polynomials_vectors, generate_phases_image
     from .zernpsf import ZernPSF  # class for ZernPSF auto export on the import call of the package
     from .zernpsf import force_get_psf_compilation  # function for precompile functions by numba library
+    __all__ = ["ZernPol", "generate_polynomials", "fit_polynomials", "generate_random_phases", "fit_polynomials_vectors",
+               "generate_phases_image", "ZernPSF", "force_get_psf_compilation"]

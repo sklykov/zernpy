@@ -32,6 +32,7 @@ if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__m
     from utils.intmproc import DispenserManager
     if numba_installed:
         from calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
+        num_methods_compiled = methods_compiled
     else:
         methods_compiled = False
 else:
@@ -41,6 +42,7 @@ else:
     from .utils.intmproc import DispenserManager
     if numba_installed:
         from .calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
+        num_methods_compiled = methods_compiled
     else:
         methods_compiled = False
 
@@ -74,6 +76,7 @@ class ZernPSF:
     polynomials = ()  # empty tuple - holder for provided Sequence with instances of ZernPol
     __physical_props_set: bool = False  # flag for saving that physical properties have been provided
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
+    pixel_size_nyquist_eStr = "{:.3e}".format(pixel_size_nyquist)
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
     alpha: float = expansion_coeff / wavelength  # the role of amplitude for PSF calculation
     airy: bool = False  # flag if the Piston is provided as the Zernike polynomial
@@ -395,10 +398,6 @@ class ZernPSF:
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points,
                                              suppress_warns=suppress_warnings)
             elif numba_installed:
-                # if not suppress_warnings and not methods_compiled:
-                #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
-                #                            + " consider to run function 'force_get_psf_compilation()' before")
-                #     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.kernel = get_psf_kernel_comp(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
@@ -410,10 +409,6 @@ class ZernPSF:
                                                    kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                    n_int_phi_points=self.n_int_phi_points, suppress_warns=suppress_warnings)
             elif numba_installed:
-                # if not suppress_warnings and not methods_compiled:
-                #     self.__warn_message = ("\nCalculation methods have been not precompiled, the first step will take ~7 sec.,"
-                #                            + " consider to run function 'force_get_psf_compilation()' before")
-                #     warnings.warn(self.__warn_message); self.__warn_message = ""
                 self.kernel = get_psf_kernel_comp(zernike_pol=self.polynomials, len2pixels=self.pixel_size, alpha=self.amplitudes,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
@@ -828,7 +823,7 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
         # print("Precompilation kernel size for several pol.:", zpsf_mpc.kernel_size)
         zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         set_methods_compiled()  # setting the flag implicitly in the module
-        global methods_compiled; methods_compiled = True  # setting copied variable in this script
+        global num_methods_compiled; num_methods_compiled = True  # setting copied variable in this script
         if verbose_report:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
             if passed_time_ms > 1000:
@@ -836,7 +831,7 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None
             else:
                 print(f"Precompilation took: {passed_time_ms} ms.")
             print("--------------------------------------------")
-        return (zpsf_prc, zpsf_mpc)
+        return zpsf_prc, zpsf_mpc
     else:
         __warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
         warnings.warn(__warn_message)
@@ -932,7 +927,7 @@ if __name__ == "__main__":
 
     # Test some edge conditions - e.g., specifying 1 polynomial in a list with huge coefficient
     if check_edge_conditions:
-        zp4 = ZernPol(m=3, n=3); pols2 = [zp4]; coeff = (5.1)
+        zp4 = ZernPol(m=3, n=3); pols2 = [zp4]; coeff = 5.1
         zpsf9 = ZernPSF(pols2); zpsf9.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=coeff, pixel_physical_size=0.5/4.75)
         zpsf9.set_physical_props(NA=0.95, wavelength=0.5, expansion_coeff=(-0.67), pixel_physical_size=0.5/4.75)
         zpsf9.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf9.plot_kernel()
