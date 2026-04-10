@@ -11,18 +11,29 @@ For running collected here tests, it's enough to run the command "pytest" from t
 """
 import math
 
-# Importing the written in the modules test functions for letting pytest library their automatic exploration
-if __name__ != "__main__":
-    from ..zernikepol import check_conformity, ZernPol
+from ..zernikepol import ZernPol
+from ..run_zernikepol_as_main import check_conformity
 
 
-# Testing initialization of Zernike polynomials, for details, see the zernikepol module
 def test_polynomials_initialization():
+    """
+    Test various initialization ways of Zernike polynomials, for details, see the imported function.
+
+    Returns
+    -------
+    None
+    """
     check_conformity()
 
 
-# Explicit testing initialization of Zernike polynomials
 def test_explicit_initialization():
+    """
+    Test particular initialization scenarios of Zernike polynomials.
+
+    Returns
+    -------
+    None
+    """
     # Testing the ordinary, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
     assert abs(zp.radial_dr(0.25) - 1.0) < 1E-9, f"Radial derivative calculated with error for Z{(m, n)}"

@@ -47,9 +47,9 @@ def define_orders(zernike_pol) -> tuple:
     """
     # Get azimuthal and radial orders
     if isinstance(zernike_pol, tuple):
-        (m, n) = zernike_pol
+        m, n = zernike_pol
     else:
-        (m, n) = zernike_pol.get_mn_orders()
+        m, n = zernike_pol.get_mn_orders()
     return m, n
 
 
@@ -72,7 +72,7 @@ def normalization_factor(zernike_pol) -> float:
         Normalization factor, depending only on Zernike type.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     # Calculation of the value according to Ref.
     if m == 0:
         return np.sqrt(n + 1)
@@ -104,7 +104,7 @@ def radial_polynomial(zernike_pol, r):
         Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     # Radial polynomials defined as analytical equations for up to 10th order (check tables from [2])
     # 0th order
     if (m == 0) and (n == 0):
@@ -222,7 +222,7 @@ def radial_derivative(zernike_pol, r):
         Depending on the type of r, return float or np.ndarray with calculated values of radial polynomial derivative.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     # Derivatives of radial polynomials defined as analytical equations for up to 8th order (check function above)
     # 0th order
     if (m == 0) and (n == 0):
@@ -352,7 +352,7 @@ def radial_polynomial_eq(zernike_pol, r):
         value = 0.0
     elif isinstance(r, np.ndarray):
         value = np.zeros(r.shape)
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     for k in range(0, ((n - abs(m))//2) + 1):
         a = (n + m)//2; b = (n - m)//2
         value += ((-1)**k)*(((math.factorial(n-k))/(math.factorial(k)
@@ -383,7 +383,7 @@ def radial_derivative_eq(zernike_pol, r):
         value = 0.0
     elif isinstance(r, np.ndarray):
         value = np.zeros(r.shape)
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     if n > 0:
         for k in range(0, ((n - abs(m))//2) + 1):
             a = (n + m)//2; b = (n - m)//2
@@ -418,7 +418,7 @@ def triangular_function(zernike_pol, theta):
         Depending on the type of theta, return float or numpy.ndarray with calculated values of triangular function.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get orders
+    m, n = define_orders(zernike_pol)  # get orders
     # Calculation of the value according to Refs.
     if m >= 0:
         return np.cos(m*theta)
@@ -444,7 +444,7 @@ def triangular_derivative(zernike_pol, theta):
         Depending on the type of theta, return float or numpy.ndarray with calculated values of derivative of triangular function.
 
     """
-    (m_order, n) = define_orders(zernike_pol)  # get orders
+    m_order, n = define_orders(zernike_pol)  # get orders
     # Calculation of the value according to the analytical derivative of the equation above
     m = float(m_order)
     if m_order >= 0:

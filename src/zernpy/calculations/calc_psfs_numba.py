@@ -34,7 +34,7 @@ pi_char = "\u03C0"  # Unicode char code for pi
 # %% Airy profile for Z(0, 0) ('airy_ref_pattern' cannot be compiled, deleted)
 
 # %% Exchange ZernPol class call to calculation functions
-@njit
+@njit(cache=True)
 def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float, np.ndarray]) -> np.ndarray:
     """
     Provide composed Zernike polynomial value calculation for compilation by numba.
@@ -159,7 +159,7 @@ def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float
 
 
 # %% PSF pixel value calc.
-@njit
+@njit(cache=True)
 def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.ndarray:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
@@ -194,7 +194,7 @@ def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Unio
     return np.exp(phase_arg)*p
 
 
-@njit
+@njit(cache=True)
 def radial_integral_comp(orders: tuple, r: float, theta: float, phi: float, alpha: float, n_int_r_points: int) -> complex:
     """
     Make integration of the diffraction integral on the radius of the entrance pupil.
@@ -229,7 +229,7 @@ def radial_integral_comp(orders: tuple, r: float, theta: float, phi: float, alph
 
 
 # %% Testing various speeding up calculation approaches
-@njit
+@njit(cache=True)
 def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
     """
     Calculate PSF point for the kernel using Parallel class from the joblib library.
@@ -407,7 +407,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
 
 
 # %% PSF calc. for several polynomials
-@njit
+@njit(cache=True)
 def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: float) -> float:
     """
     Wrap calculation of polynomials values sum for compilation.
@@ -437,7 +437,7 @@ def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: f
     return sum_pols
 
 
-@njit
+@njit(cache=True)
 def diffraction_integral_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, phi: float,
                                      p: float, theta: float, r: float) -> float:
     """
@@ -473,7 +473,7 @@ def diffraction_integral_r_pols_comp(polynomials_orders: tuple, amplitudes: np.n
     return np.exp(phase_arg)*p
 
 
-@njit
+@njit(cache=True)
 def radial_integral_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, r: float, theta: float,
                               phi: float, n_int_r_points: int) -> complex:
     """
@@ -508,7 +508,7 @@ def radial_integral_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
     return h_p*ang_int
 
 
-@njit
+@njit(cache=True)
 def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, r: float, theta: float,
                               n_int_r_points: int, n_int_phi_points: int) -> float:
     """

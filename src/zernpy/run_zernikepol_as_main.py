@@ -30,7 +30,7 @@ root = Path(__file__).resolve().parents[1]  # one step on top in parent folder, 
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))  # append to the start path to a root folder of a repo for correct import in a session
 
-# Warning below should be ignored in the script context, since root path should be added before for the proper import
+# Import of local modules (not from installed library by a package manager)
 import zernpy.zernikepol as zp
 from zernpy.zernikepol import ZernPol, generate_random_phases, fit_polynomials, generate_phases_image, zernikes_surface
 
