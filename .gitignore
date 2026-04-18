@@ -16,6 +16,10 @@ Documents/
 .idea/
 .vscode/
 src/zernpy/calculations/*.jpg
+src/zernpy/ignored/
+
+# tests bound to the local environments
+run_all_local_tests.cmd  
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

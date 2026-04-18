@@ -35,7 +35,7 @@ pi_char = "\u03C0"  # Unicode char code for pi
 
 # %% Exchange ZernPol class call to calculation functions
 @njit(cache=True)
-def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float, np.ndarray]) -> np.ndarray:
+def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Provide composed Zernike polynomial value calculation for compilation by numba.
 
@@ -50,8 +50,8 @@ def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float
 
     Returns
     -------
-    np.ndarray
-        Polynomial value(-s).
+    Union[float, np.ndarray] (float | np.ndarray)
+        Polynomial value(-s) depending on used only float values for r and therat or arrays as inputs.
 
     """
     m, n = orders  # transfer definition of a polynomial
@@ -154,13 +154,14 @@ def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float
         return np.power(r, n)
     elif n > 10 and abs(m) == n-2:  # equation for high order polynomials (orders with abs(m) == n-2)
         return float(n)*np.power(r, n) - float(n-1)*np.power(r, n-2)
-    # Polynomial value as the multiplication of calculated above components
+    # Polynomial value as the multiplication of 3 parts: normalization, radial, triangular
     return norm*triangular*radial
 
 
 # %% PSF pixel value calc.
 @njit(cache=True)
-def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.ndarray:
+def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float,
+                                r: float) -> Union[float, np.ndarray]:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -186,8 +187,8 @@ def diffraction_integral_r_comp(orders: tuple, alpha: float, phi: float, p: Unio
 
     Returns
     -------
-    numpy.ndarray
-        Values of the diffraction integral.
+    Union[float, np.ndarray] (float | np.ndarray)
+        Value(-s) of the diffraction integral.
 
     """
     phase_arg = (alpha*zernpol_value(orders, p, phi) - r*p*np.cos(phi - theta))*1j
@@ -439,7 +440,7 @@ def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: f
 
 @njit(cache=True)
 def diffraction_integral_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, phi: float,
-                                     p: float, theta: float, r: float) -> float:
+                                     p: float, theta: float, r: float) -> np.ndarray:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 

@@ -31,7 +31,7 @@ keywords = ["zernike-polynomials", "zernike-psf"]
 [tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
 where = ["src"]
 include = ["zernpy*"]
-exclude = ["tests"]
+exclude = ["tests", "ignored"]
 
 [tool.setuptools.exclude-package-data]
 zernpy = ["*.png"]  # should exclude image files from distribution

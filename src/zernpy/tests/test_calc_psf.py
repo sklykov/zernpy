@@ -24,6 +24,13 @@ else:
 
 # Testing functions
 def test_psf_kernel_calc():
+    """
+    Test common calculation of PSF kernel + comparison with the result of exact equation - Airy pattern.
+
+    Returns
+    -------
+    None
+    """
     NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.28  # Common physical properties
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
@@ -52,6 +59,13 @@ def test_psf_kernel_calc():
 
 
 def test_zernpsf_usage():
+    """
+    Test wrong initialization parameters for ZernPSF, at the end - normal one.
+
+    Returns
+    -------
+    None
+    """
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 5.0; ampl = 0.55  # Common physical properties
     zp1 = ZernPol(m=0, n=2)  # defocus
     test_init = True  # flag, if set to False, the test failed (e.g., expected Error not caught)
@@ -101,6 +115,13 @@ def test_zernpsf_usage():
 
 
 def test_save_load_zernpsf():
+    """
+    Test saving and loading of PSF kernel stored in a json file.
+
+    Returns
+    -------
+    None
+    """
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
     zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional classes for testing reading and reassigning values
     NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.0; ampl = 0.11  # Common physical properties
@@ -118,6 +139,13 @@ def test_save_load_zernpsf():
 
 
 def test_numba_compilation():
+    """
+    Test compilation by numba of the calculation functions.
+
+    Returns
+    -------
+    None
+    """
     force_get_psf_compilation()  # force compilation of computation methods
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12

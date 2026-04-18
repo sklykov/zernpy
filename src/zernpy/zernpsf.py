@@ -12,7 +12,7 @@ import warnings
 import matplotlib.pyplot as plt
 from math import pi
 import time
-from typing import Union, Sequence
+from typing import Union, Sequence, Optional, Tuple
 from importlib.metadata import version
 
 # Check if numba library installed for importing compilable methods
@@ -378,7 +378,7 @@ class ZernPSF:
             t1 = time.perf_counter()  # for explicit showing of performance
             if self.kernel_size*self.kernel_size >= 301:
                 print("Kernel calculation started...")
-        # Calculation using the vectorised form
+        # Calculation using the vectorized form
         if self.zernpol is not None:
             if not accelerated or (accelerated and not numba_installed):
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
@@ -450,7 +450,7 @@ class ZernPSF:
         Parameters
         ----------
         image : numpy.ndarray
-            Sample image, not colour.
+            Sample gray-scaled (2D array) image.
         scale2original : bool
             Convolution resulting image will be rescaled to the max intensity of the provided image if True. The default is True.
 
@@ -775,7 +775,7 @@ def _sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff
         return ""
 
 
-def force_get_psf_compilation(verbose_report: bool = False) -> Union[tuple, None]:
+def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[ZernPSF, ZernPSF]]:
     """
     Force compilation of computing functions for round and ellipse 'precise' shaped objects.
 

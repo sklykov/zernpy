@@ -18,8 +18,7 @@ from scipy.ndimage import convolve
 import json
 from matplotlib.patches import Circle
 from functools import partial
-from typing import Union
-# import time
+from typing import Union, Optional
 
 # Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
 try:
@@ -306,13 +305,13 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
         Estimated kernel size.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    m, n = define_orders(zernike_pol)  # get polynomial orders
     size_ext = 0   # additional size depending on some parameters below
-    if m == 0 and n == 0:  # Airy
+    if m == 0 and n == 0:  # Airy profile
         if 0.25 < NA < 1.0:
-            multiplier = 5.0*(1.0 - NA) + 1.5
+            multiplier = 5.0*(1.0 - NA) + 1.5 + alpha
         else:
-            multiplier = 4.5 + 2.5*sqrt(1.0 / NA)
+            multiplier = 4.5 + 2.5*sqrt(1.0 / NA) + 1.25*alpha
     else:
         multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided radial order n
         if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
@@ -386,7 +385,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         Matrix with PSF values.
 
     """
-    (m, n) = define_orders(zernike_pol)  # get polynomial orders
+    m, n = define_orders(zernike_pol)  # get polynomial orders
     # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
     alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
     # Empirical estimation of the sufficient size for the kernel
@@ -776,7 +775,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
     """
     single_pol_used = False; osa_indices = []  # flag for saving different parameters
     if not hasattr(zernike_pol, '__len__'):
-        (m, n) = define_orders(zernike_pol); single_pol_used = True  # get polynomial orders
+        m, n = define_orders(zernike_pol); single_pol_used = True  # get polynomial orders
     else:
         for zernpol in zernike_pol:
             osa_indices.append(zernpol.get_indices()[1])
@@ -818,7 +817,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
     return str(json_file_path.absolute())
 
 
-def read_psf(file_path: str) -> dict:
+def read_psf(file_path: str) -> Optional[dict]:
     """
     Read the saved PSF data from the *json file.
 
