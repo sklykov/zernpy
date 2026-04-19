@@ -13,9 +13,7 @@ For running collected here tests, it's enough to run the command "pytest" from t
 import numpy as np
 import random
 
-# %% Imports from modules
-if __name__ != "__main__":
-    from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors, generate_phases_image
+from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors, generate_phases_image
 
 
 # %% Test functions

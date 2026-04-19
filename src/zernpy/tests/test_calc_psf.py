@@ -13,13 +13,10 @@ import numpy as np
 from pathlib import Path
 import os
 
-# Importing the written in the modules test functions for letting pytest library their automatic exploration
-if __name__ != "__main__":
-    from ..calculations.calc_psfs import (get_psf_kernel)
-    from ..zernpsf import ZernPSF, force_get_psf_compilation
-    from ..zernikepol import ZernPol
-else:
-    from zernpy import ZernPol
+# Relative import from the modules - designed to be used only by pytest runs
+from ..calculations.calc_psfs import (get_psf_kernel)
+from ..zernpsf import ZernPSF, force_get_psf_compilation
+from ..zernikepol import ZernPol
 
 
 # Testing functions

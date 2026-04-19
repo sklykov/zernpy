@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test the implemented calculation functions for module calc_zernike_pol and ZernPol static methods by using pytest library.
+Test the implemented calculation functions for the module 'calc_zernike_pol' and the static methods from 'ZernPol' by using pytest library.
 
 The pytest library available on: https://docs.pytest.org/en/latest/contents.html
 For running collected here tests, it's enough to run the command "pytest" from the repository location in the command line.
@@ -12,43 +12,67 @@ For running collected here tests, it's enough to run the command "pytest" from t
 import math
 import numpy as np
 
-# Importing the written in the modules test functions for letting pytest library their automatic exploration
-if __name__ != "__main__":
-    from ..calculations.calc_zernike_pol import (compare_radial_calculations, compare_radial_derivatives,
-                                                 compare_recursive_coeffs_radials, compare_recursive_coeffs_radials_dr,
-                                                 check_high_orders_recursion)
-    from ..zernikepol import ZernPol
+from ..calculations.calc_zernike_pol import (compare_radial_calculations, compare_radial_derivatives, compare_recursive_coeffs_radials,
+                                             compare_recursive_coeffs_radials_dr, check_high_orders_recursion)
+from ..zernikepol import ZernPol
 
 
-# Testing implemented equations for tabular R(m, n) from References by comparing with the exact ones (with factorials)
+# %% Func-s to be run by pytest
 def test_tabular_orders():
-    compare_radial_calculations(max_order=10)
+    """
+    # Test implemented equations for tabular R(m, n) from the References by comparing with the exact ones (with factorials usage).
 
-
-# Testing implemented tabular and recursive equations for R(m, n) by comparing with the exact ones (with factorials)
-# Also, testing implemented recursive scheme for finding the polynomials coefficients for each order and comparison
-# with the exact equations (with factorials)
-def test_recursive_orders():
+    Returns
+    -------
+    None
+    """
     compare_radial_calculations(max_order=17)
+
+
+def test_recursive_orders():
+    """
+    Test implemented recursive scheme for finding the polynomials coefficients for each order and comparison with the exact equations.
+
+    Exact equations are based on factorials usage for coefficients calculation.
+
+    Returns
+    -------
+    None
+    """
     compare_recursive_coeffs_radials()
     check_high_orders_recursion()
 
 
-# Testing derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
 def test_tabular_derivatives():
-    compare_radial_derivatives(max_order=10)
+    """
+    Test derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials).
 
-
-# Testing recursive and derived equations for derivatives dR(m, n)/dr by comparing with the exact ones (with factorials)
-# Also, testing implemented recursive scheme for finding the polynomials coefficients for each order and comparison
-# with the exact equations (with factorials) - derivative cases
-def test_recursive_derivatives():
+    Returns
+    -------
+    None
+    """
     compare_radial_derivatives(max_order=17)
+
+
+def test_recursive_derivatives():
+    """
+    Test implemented recursive scheme for finding derivatives dR(m, n)/dr for each order and comparison  with the exact equations.
+
+    Returns
+    -------
+    None
+    """
     compare_recursive_coeffs_radials_dr()
 
 
-# Testing sum of Zernike polynomials
 def test_sum_zernikes():
+    """
+    Test summing of several Zernike polynomials, generation of phase profile and plotting method.
+
+    Returns
+    -------
+    None
+    """
     zp1 = ZernPol(osa_index=1); zp2 = ZernPol(noll_index=2); ampls = [-0.5, 0.5]; theta = math.pi/3; r = 1.0
     sum_pols = ZernPol.sum_zernikes(coefficients=ampls, polynomials=[zp1, zp2], r=r, theta=theta)
     sum_pols_manual = math.cos(theta) - math.sin(theta)  # manual calculation of specified above sum
@@ -79,8 +103,14 @@ def test_sum_zernikes():
                                                        + f" and have abs(min) = {abs(np.min(sum_pols_d - sum_pols))}")
 
 
-# Testing the calculation of polynomial values for edge cases
 def test_pol_values_edge_cases():
+    """
+    Test edge cases for proper denial / reporting.
+
+    Returns
+    -------
+    None
+    """
     zp = ZernPol(osa=8)  # test polynomial, could be any
     # Combination list + float
     r = [0, 0.1, 0.2, 0.5]; theta = 0.2; values = zp.polynomial_value(r, theta)

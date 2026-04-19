@@ -582,7 +582,6 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
     if not isinstance(max_order, int) and max_order < 2:
         print("NOTE that max_order by default set to 2")
         max_order = 2
-
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = [(0, 0)]
     for order in range(1, max_order):
@@ -591,13 +590,7 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
-
-    # Generation numpy array with radii
-    n_points = 21
-    test_r = np.zeros(shape=(n_points, ))
-    for i in range(n_points):
-        test_r[i] = i/(n_points-1)
-    test_r = np.round(test_r, 4)
+    n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -631,7 +624,6 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
     if not isinstance(max_order, int) and max_order < 2:
         print("NOTE that max_order by default set to 2")
         max_order = 2
-
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = [(0, 0)]
     for order in range(1, max_order):
@@ -640,13 +632,7 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
-
-    # Generation numpy array with radii
-    n_points = 21
-    test_r = np.zeros(shape=(n_points, ))
-    for i in range(n_points):
-        test_r[i] = i/(n_points-1)
-    test_r = np.round(test_r, 4)
+    n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
@@ -680,20 +666,11 @@ def compare_recursive_coeffs_radials() -> np.ndarray:
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
-    # Generation numpy array with radii
-    n_points = 101
-    test_r = np.zeros(shape=(n_points, ))
-    for i in range(n_points):
-        test_r[i] = i/(n_points-1)
-    test_r = np.round(test_r, 4)
+    n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
         diff[i, :] = radial_polynomial_eq(order, test_r) - radial_polynomial_coeffs(order, test_r)
-        # diff[i, :] = radial_polynomial_coeffs(order, test_r)
-        # diff[i, :] = radial_polynomial_eq(order, test_r)
-        # if np.max(np.abs(diff)) > 1.0:
-        #     print(order, np.max(np.abs(diff)))
     diff = np.round(diff, 9)
     assert np.max(np.abs(diff)) < 2E-2, (f"Order {order} has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
@@ -723,18 +700,11 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
-    # Generation numpy array with radii
-    n_points = 101
-    test_r = np.zeros(shape=(n_points, ))
-    for i in range(n_points):
-        test_r[i] = i/(n_points-1)
-    test_r = np.round(test_r, 4)
+    n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
         diff[i, :] = radial_derivative_eq(order, test_r) - radial_polynomial_coeffs_dr(order, test_r)
-        # if np.max(np.abs(diff)) > 1.0:
-        #     print(order, np.max(np.abs(diff)))
     diff = np.round(diff, 9)
     assert np.max(np.abs(diff)) < 5E-2, (f"Order {order} has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
@@ -760,12 +730,7 @@ def check_high_orders_recursion() -> np.ndarray:
         for n_azimuthals in range(0, order):
             m += 2
             orders_list.append((m, n))
-    # Generation numpy array with radii
-    n_points = 51
-    test_r = np.zeros(shape=(n_points, ))
-    for i in range(n_points):
-        test_r[i] = i/(n_points-1)
-    test_r = np.round(test_r, 4)
+    n_points = 51; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, order in enumerate(orders_list):
