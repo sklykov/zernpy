@@ -15,7 +15,6 @@ import time
 from typing import Union
 
 # %% Checking and import the numba library for speeding up the calculation
-methods_compiled = False  # flag for storing if the methods compiled
 try:
     from numba import njit
 except ModuleNotFoundError:
@@ -554,21 +553,8 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
     return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
-# %% Utility functions
-def set_methods_compiled():
-    """
-    Reset the flag by external call.
-
-    Returns
-    -------
-    None.
-
-    """
-    global methods_compiled; methods_compiled = True
-
-
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel_comp', 'methods_compiled', 'set_methods_compiled']
+__all__ = ['get_psf_kernel_comp']
 
 # %% Tests
 if __name__ == '__main__':
@@ -594,12 +580,6 @@ if __name__ == '__main__':
                             show_kernel=True, kernel_size=21, verbose=True)
     # For several (calculated their sum)
     if test_few_polynomials:
-        # First, checking below sequentially all functions to be compilable
-        # pols = ((-2, 2), (1, 3)); ampls = np.asarray([-0.4, 0.6])
-        # diffraction_integral_r_pols_comp(pols, ampls, phi=0.2, p=0.1, theta=0.3, r=0.5)
-        # radial_integral_pols_comp(pols, ampls, r=0.5, theta=0.3, phi=1.01, n_int_r_points=300)
-        # get_psf_point_r_pols_comp(pols, ampls, r=0.5, theta=0.3, n_int_r_points=250, n_int_phi_points=320)
-        # Second, test all at once for calling the function
         zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.86, 0.4, 0.7)
         get_psf_kernel_comp(pols, pixel_size*0.7, alpha=coeffs, wavelength=wavelength, NA=NA, normalize_values=True,
                             show_kernel=True, kernel_size=24, verbose=True)

@@ -30,10 +30,7 @@ from .calculations.calc_psfs import (get_psf_kernel, lambda_char, radial_integra
 from .zernikepol import ZernPol
 from .utils.intmproc import DispenserManager
 if numba_installed:
-    from .calculations.calc_psfs_numba import get_psf_kernel_comp, methods_compiled, set_methods_compiled
-    num_methods_compiled = methods_compiled
-else:
-    methods_compiled = False
+    from .calculations.calc_psfs_numba import get_psf_kernel_comp
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -61,8 +58,7 @@ class ZernPSF:
     # Class predefined values along with their types for providing reference how the default values computed
     kernel: np.ndarray = np.ones(shape=(1, 1)); kernel_size: int = 1  # by default, single point as the 2D matrix [[1.0]]
     NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5  # in um (or other physical unit)
-    zernpol: ZernPol = ZernPol(m=0, n=0)  # by default, Piston as the zero case (Airy pattern)
-    polynomials = ()  # empty tuple - holder for provided Sequence with instances of ZernPol
+    zernpol: Optional[ZernPol] = None; polynomials: tuple = ()  # several provided polynomials will be stored in the last var.
     __physical_props_set: bool = False  # flag for saving that physical properties have been provided
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
     pixel_size_nyquist_eStr = "{:.3e}".format(pixel_size_nyquist)
@@ -129,7 +125,7 @@ class ZernPSF:
                         if m == 0 and n == 0:
                             self.airy = True  # check if Airy pattern is among provided polynomials
                 if all_are_polls:
-                    self.polynomials = zernpol; self.zernpol = None
+                    self.polynomials = tuple(zernpol); self.zernpol = None
                     unique_osa_orders = set(osa_orders)  # check that all OSA orders are unique
                     if len(osa_orders) > len(unique_osa_orders):
                         raise ValueError("There might be some repeated polynomials provided, "
@@ -789,7 +785,7 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
     """
     if numba_installed:
         if verbose_report:
-            print("Precompilation started..."); t1 = time.perf_counter()  # for explicit showing of performance
+            print("Precompilation of 'zernpy' started...", flush=True); t1 = time.perf_counter()  # for explicit showing of performance
         # Check the version of numba for guarantee working of compilation calls
         try:
             if int(numba_ver_n[0]) == 0:
@@ -811,15 +807,13 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
         zpsf_mpc.kernel_size = 3  # force to calculate only small kernel size for saving sometime
         # print("Precompilation kernel size for several pol.:", zpsf_mpc.kernel_size)
         zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
-        set_methods_compiled()  # setting the flag implicitly in the module
-        global num_methods_compiled; num_methods_compiled = True  # setting copied variable in this script
         if verbose_report:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
             if passed_time_ms > 1000:
-                print(f"Precompilation took: {round(passed_time_ms/1000.0, 2)} sec.")
+                print(f"Precompilation took: {round(passed_time_ms/1000.0, 2)} sec.", flush=True)
             else:
-                print(f"Precompilation took: {passed_time_ms} ms.")
-            print("--------------------------------------------")
+                print(f"Precompilation took: {passed_time_ms} ms.", flush=True)
+            print("--------------------------------------------", flush=True)
         return zpsf_prc, zpsf_mpc
     else:
         __warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
