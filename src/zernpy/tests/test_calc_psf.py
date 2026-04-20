@@ -14,8 +14,8 @@ from pathlib import Path
 import os
 
 # Relative import from the modules - designed to be used only by pytest runs
-from ..calculations.calc_psfs import (get_psf_kernel)
-from ..zernpsf import ZernPSF, force_get_psf_compilation
+from ..calculations.calc_psfs import get_psf_kernel
+from ..zernpsf import ZernPSF, force_get_psf_compilation, clean_zernpy_cache
 from ..zernikepol import ZernPol
 
 
@@ -143,7 +143,7 @@ def test_numba_compilation():
     -------
     None
     """
-    force_get_psf_compilation()  # force compilation of computation methods
+    force_get_psf_compilation()  # force compilational of computation methods
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12
     zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6); zpsf7 = ZernPSF(zp6)  # defocus
@@ -151,4 +151,5 @@ def test_numba_compilation():
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
     kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
-    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not one calculation of kernel methods have significant differences"
+    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not computational of a kernel methods have significant differences"
+    assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

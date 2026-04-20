@@ -13,10 +13,12 @@ import warnings
 from math import pi
 import time
 from typing import Union
+import logging
 
 # %% Checking and import the numba library for speeding up the calculation
 try:
     from numba import njit
+    logging.getLogger('numba').setLevel(logging.WARNING)  # disable many DEBUG level logs caused by numba during compilation
 except ModuleNotFoundError:
     pass
 

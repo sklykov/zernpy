@@ -821,5 +821,31 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
         return None
 
 
+def clean_zernpy_cache() -> bool:
+    """
+    Clean locally cached files created by numba after compilation of computation methods from the 'calc_psfs_numba' module.
+
+    Returns
+    -------
+    bool \n
+        Flag if local cache is assumed (at least 6 cached files successfully removed) to be cleaned.
+
+    """
+    _local_cache_cleaned = False  # flag to show that local numba cache found and has been cleaned
+    if numba_installed:
+        root = Path(__file__).resolve().parent; cache_folder = root.joinpath("calculations").joinpath("__pycache__")
+        if cache_folder.exists() and cache_folder.is_dir():
+            _n_cleaned = 0
+            for obj in cache_folder.iterdir():
+                if obj.is_file() and (obj.suffix == ".nbc" or obj.suffix == ".nbi"):
+                    try:
+                        obj.unlink(missing_ok=True); _n_cleaned += 1
+                    except (PermissionError, OSError):
+                        _n_cleaned = 0; break  # automatically breaks loop assuming that invalid permission is universal
+            if _n_cleaned >= 6:  # 8 - minimal count of caches created by numba, assume that cache is cleaned if no error encountered
+                _local_cache_cleaned = True
+    return _local_cache_cleaned
+
+
 # %% Define default export classes and methods used with import * statement (import * from zernpsf)
-__all__ = ['ZernPSF', 'force_get_psf_compilation']
+__all__ = ['ZernPSF', 'force_get_psf_compilation', 'clean_zernpy_cache']
