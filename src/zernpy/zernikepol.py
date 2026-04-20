@@ -25,8 +25,8 @@ from .props.properties import polynomial_names, short_polynomial_names, warn_mes
 
 # %% Module parameters
 __docformat__ = "numpydoc"
-polar_vectors = namedtuple("PolarVectors", "R Theta")  # re-used below as the return type from the method
-zernikes_surface = namedtuple("ZernikesSurface", "ZernSurf R Theta")  # used as the input type
+polar_vectors = namedtuple("polar_vectors", "R Theta")  # re-used below as the return type from the method
+zernikes_surface = namedtuple("zernikes_surface", "ZernSurf R Theta")  # used as the input type
 
 
 # %% Zernike Pol. class
@@ -719,14 +719,14 @@ class ZernPol:
             (m, n) - contains azimuthal and radial orders as integers.
 
         """
-        osa_index = -1; noll_index = -1; fringe_index = -1; m = -1; n = -1
+        osa_index: int = -1; noll_index: int = -1; fringe_index: int = -1; m: int = -1; n: int = -1
         highest_order = 56  # default value, limited by the allowed maximal radial order + 2
-        if "osa_index" in kwargs.keys():
-            osa_index = kwargs.get("osa_index")
-        elif "noll_index" in kwargs.keys():
-            noll_index = kwargs.get("noll_index")
-        elif "fringe_index" in kwargs.keys():
-            fringe_index = kwargs.get("fringe_index")
+        if "osa_index" in kwargs:
+            osa_index = int(kwargs["osa_index"])
+        elif "noll_index" in kwargs:
+            noll_index = int(kwargs["noll_index"])
+        elif "fringe_index" in kwargs:
+            fringe_index = int(kwargs["fringe_index"])
             highest_order = 250  # to guarantee that right Fringe index found
         # Define m, n orders up to the specified above highest order (radial)
         stop_search = False
@@ -942,7 +942,7 @@ class ZernPol:
             Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.
 
         """
-        S = 0.0  # default value - sum
+        S: Union[float, np.ndarray]
         if len(coefficients) != len(polynomials):
             raise ValueError("Lengths of lists with polynomials and their amplitudes aren't equal")
         elif len(coefficients) == 0:
@@ -978,7 +978,7 @@ class ZernPol:
     @staticmethod
     def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = round(np.pi/240, 7)) -> polar_vectors:
         """
-        Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         defined by the specification of r_step and theta_rad_step parameters.
@@ -998,7 +998,7 @@ class ZernPol:
         Returns
         -------
         polar_vectors
-            namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+            namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
             Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
 
         """
@@ -1017,7 +1017,7 @@ class ZernPol:
     @staticmethod
     def gen_equal_polar_mesh(n_points: int = 250) -> polar_vectors:
         """
-        Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         equal and defined by the parameter n_points.
@@ -1030,7 +1030,7 @@ class ZernPol:
         Returns
         -------
         polar_vectors
-            namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+            namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
             Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
 
         """
@@ -1041,7 +1041,7 @@ class ZernPol:
 
     @staticmethod
     def plot_profile(polynomial, color_map: str = "coolwarm", show_title: bool = True, use_defaults: bool = True,
-                     projection: str = "2d", polar_coordinates: polar_vectors = ()):
+                     projection: str = "2d", polar_coordinates: polar_vectors = polar_vectors(np.zeros((2, )), np.zeros((2, )))):
         """
         Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
 
@@ -1088,7 +1088,7 @@ class ZernPol:
                 r, theta = polar_coordinates.R, polar_coordinates.Theta
             # Get profile or surface to plot
             amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
-            zern_surface = ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True)
+            zern_surface = np.asarray(ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True))
             # Select plotting function between 2D and 3D plotting functions
             if projection == "3d" or projection == "3D":
                 plot_sum_fig_3d(zern_surface, r, theta, color_map)
@@ -1127,7 +1127,7 @@ class ZernPol:
         Returns
         -------
         zernikes_surface
-            namedtuple("ZernikesSurface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
+            namedtuple("zernikes_surface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
             ZernSurf variable is 2D matrix with the sum of the input polynomials on generated polar coordinates (R, Theta).
 
         """
@@ -1140,8 +1140,8 @@ class ZernPol:
 
     @staticmethod
     def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: Sequence[float] = (), polynomials: Sequence = (), use_defaults: bool = True,
-                                 zernikes_sum_surface: zernikes_surface = (), show_range: bool = True, color_map: str = "coolwarm",
-                                 projection: str = "2d") -> plt.Figure:
+                                 zernikes_sum_surface: zernikes_surface = zernikes_surface(np.zeros((2, 2)), np.zeros((2, )), np.zeros((2, ))),
+                                 show_range: bool = True, color_map: str = "coolwarm", projection: str = "2d") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
 
@@ -1159,7 +1159,7 @@ class ZernPol:
             Coefficients of Zernike polynomials for calculation of their sum. The default is ().
         polynomials : Sequence[ZernPol], optional
             Initialized polynomials as class instances of ZernPol class specified in this module. The default is ().
-        zernikes_sum_surface : namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional
+        zernikes_sum_surface : namedtuple("zernikes_surface", "ZernSurf R Theta") , optional
             This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
             This tuple could be generated by the call of the static method gen_zernikes_surface().
             Check the method signature for details. The default is ().
@@ -1192,7 +1192,7 @@ class ZernPol:
                 polar_vectors = ZernPol.gen_equal_polar_mesh()
             else:
                 polar_vectors = ZernPol.gen_polar_coordinates()
-            zernikes_sum = ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta, get_surface=True)
+            zernikes_sum = np.asarray(ZernPol.sum_zernikes(coefficients, polynomials, polar_vectors.R, polar_vectors.Theta, get_surface=True))
             if projection == "3d" or projection == "3D":
                 figure = subplot_sum_on_fig_3d(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
                                                show_range_colorbar=show_range, color_map=color_map)
@@ -1315,7 +1315,7 @@ class ZernPol:
 
 
 # %% Independent functions defs.
-def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol]:
+def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol, ...]:
     """
     Generate tuple with ZernPol instances (ultimately, representing polynomials) indexed using OSA scheme, starting with Piston(m=0,n=0).
 
@@ -1356,7 +1356,7 @@ def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol]:
 
 
 def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height: int = 513,
-                           round_digits: int = 4) -> Tuple[np.ndarray, np.ndarray, Tuple[ZernPol]]:
+                           round_digits: int = 4) -> Tuple[np.ndarray, np.ndarray, Tuple[ZernPol, ...]]:
     """
     Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.
 
@@ -1428,9 +1428,7 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
             euclidean_dist = np.linalg.norm(center - np.asarray([i, j]))
             if euclidean_dist > img_radius:
                 phases_image[i, j] = 0.0
-    # Final conversion
-    polynomials_list = tuple(polynomials_list)
-    return phases_image, polynomials_amplitudes, polynomials_list
+    return phases_image, polynomials_amplitudes, tuple(polynomials_list)
 
 
 def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple = (), img_width: int = 513,

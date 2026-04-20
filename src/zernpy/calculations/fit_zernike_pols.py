@@ -212,28 +212,3 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
     else:
         raise ValueError("There isn't any polynomials provided")
     return zernike_coefficients
-
-
-# %% Basic tests
-if __name__ == "__main__":
-    phases_sample = 4*np.ones(shape=(3, 4), dtype="uint8")
-    crop_deforms1, polar_coordinates1 = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(4, 4), dtype="int16")
-    crop_deforms2, polar_coordinates2 = crop_phases_img(phases_sample)
-    crop_deforms2a, polar_coordinates2a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(6, 6))
-    crop_deforms3, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(3, 3))
-    crop_deforms4, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(5, 5))
-    crop_deforms5, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(4, 6))
-    crop_deforms6, polar_coordinates6 = crop_phases_img(phases_sample)
-    crop_deforms6a, polar_coordinates6a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(7, 6))
-    crop_deforms7, polar_coordinates7 = crop_phases_img(phases_sample)
-    crop_deforms7a, polar_coordinates7a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(5, 5))
-    crop_deforms81, polar_coordinates = crop_phases_img(phases_sample)
-    crop_deforms82, polar_coordinates = crop_phases_img(phases_sample, crop_radius=0.5)
-    thetas_grads = polar_coordinates[1]*(180.0/np.pi)

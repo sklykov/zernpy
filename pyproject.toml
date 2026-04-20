@@ -7,21 +7,29 @@ authors = [
 ]
 description = "Calculation of real Zernike polynomials values, associated PSFs, plotting of their profiles in polar coordinates"
 readme = "README.md"
-# license = {file = "LICENSE"}  # includes the whole text in METADATA, maybe not so convienient
+# license = {file = "LICENSE"}  # includes the whole text in METADATA, maybe not so convenient
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
+
 dependencies = [
     "numpy",
     "matplotlib",
 	"scipy",
 ]
+[project.optional-dependencies]
+performance = ["numba>=0.57.1"]
+dev = ["ruff", "mypy", "pytest"]
+all = [
+    "numba>=0.57.1",
+]
+
 keywords = ["zernike-polynomials", "zernike-psf"]
 
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
-# But the the links themselves are mapped / parced by the PyPi website
+# But the the links themselves are mapped / parsed by the PyPi website
 "Homepage" = "https://pypi.org/project/zernpy/"
 "Repository" = "https://github.com/sklykov/zernpy/"
 "Bug Tracker" = "https://github.com/sklykov/zernpy/issues/"
@@ -42,3 +50,31 @@ version = {attr = "zernpy.__version__"}  # Variable set in the __init__.py
 [build-system]
 requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true  # mypy will warn if any of options below not valid
+warn_redundant_casts = true  # warn about unnecessary cast(): from typing import cast
+warn_unused_ignores = true  # warn about unused comments '# type: ignore'
+show_error_codes = true  # enables error code in a report
+pretty = true  # better report
+no_implicit_optional=true  # throws error on: def f(x: int = None): ...
+# Note: flags below introduces too strict type checks
+# disallow_untyped_defs = true  # all parameters and return types must be fully annotated
+# check_untyped_defs = true  # mypy checks untyped expressions and tries to infer types
+# warn_return_any = true  # Any couldn't be used as return type
+# disallow_any_generics = true  # forbid bare generics like list, dict, tuple... -> instead List[float]
+exclude = [
+    '^tests/',
+    '^build/',
+    '^dist/',
+]
+[[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
+module = ["numba", "joblib"]
+ignore_missing_imports = true
+[[tool.mypy.overrides]]  # ignore found errors in the specific test files
+module = [
+    "zernpy.run_zernpsf_as_main",
+    "zernpy.run_zernikepol_as_main",
+]
+ignore_errors = true

@@ -16,7 +16,6 @@ from math import sqrt, pi, e
 import time
 from scipy.ndimage import convolve
 import json
-from matplotlib.patches import Circle
 from functools import partial
 from typing import Union, Optional
 
@@ -28,21 +27,18 @@ except ModuleNotFoundError:
     joblib_installed = False
 
 # %% Local (package-scoped) imports
-if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from calc_zernike_pol import define_orders
-else:
-    from .calc_zernike_pol import define_orders
+from .calc_zernike_pol import define_orders
+
 
 # %% Module parameters
 __docformat__ = "numpydoc"
 um_char = "\u00B5"  # Unicode char code for micrometers
 lambda_char = "\u03BB"  # Unicode char code for lambda (wavelength)
 pi_char = "\u03C0"  # Unicode char code for pi
-# print(um_char, lambda_char, pi_char)  # check the codes for characters from above
 
 
 # %% Reference - Airy profile for Z(0, 0)
-def airy_ref_pattern(r: float):
+def airy_ref_pattern(r: float) -> float:
     """
     Return Airy pattern radial function J1(r)/r.
 
@@ -68,7 +64,8 @@ def airy_ref_pattern(r: float):
 
 
 # %% PSF pixel value calc.
-def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float, r: float) -> np.array:
+def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float, np.ndarray], theta: float,
+                           r: float) -> Union[complex, np.ndarray]:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -262,17 +259,16 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
 
     # Vectorized or parallelized form of for loop for even and odd phi-s
     if not joblib_installed or paralleljobs is None:
-        even_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
-        even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
-        odd_sums = [radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
-        odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+        even_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
+                                for i in range(2, n_int_phi_points-2, 2)])
+        odd_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
+                               for i in range(1, n_int_phi_points-1, 2)])
+        even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     else:
         if paralleljobs is not None and isinstance(paralleljobs, Parallel):
-            even_sums = paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(2, n_int_phi_points-2, 2))
-            odd_sums = paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(1, n_int_phi_points-1, 2))
-            # even_sum = sum(even_sums, start=even_sum); odd_sum = sum(even_sums, start=odd_sum)
-            even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums); odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
-
+            even_sums = np.asarray(paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(2, n_int_phi_points-2, 2)))
+            odd_sums = np.asarray(paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(1, n_int_phi_points-1, 2)))
+            even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral(zernike_pol, r, theta, 0.0, alpha, n_int_r_points)
     yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha, n_int_r_points)
@@ -335,7 +331,7 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
 
 
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
-                   n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
+                   n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: Optional[str] = None, normalize_values: bool = False,
                    airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
                    test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
@@ -483,7 +479,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
             plt.figure(fig_title, figsize=(6, 6))
         else:
             plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}", figsize=(6, 6))
-        plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
+        plt.imshow(kernel, cmap=plt.colormaps["viridis"], origin='upper'); plt.tight_layout()
     return kernel
 
 
@@ -591,10 +587,11 @@ def get_psf_point_r_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
     # Vectorized or parallelized form of for loop for even and odd phi-s
-    even_sums = [radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
-    even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
-    odd_sums = [radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
-    odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    even_sums = np.asarray([radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                            for i in range(2, n_int_phi_points-2, 2)])
+    odd_sums = np.asarray([radial_integral_pols(polynomials, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                           for i in range(1, n_int_phi_points-1, 2)])
+    even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral_pols(polynomials, amplitudes, r, theta, 0.0, n_int_r_points)
     yB = radial_integral_pols(polynomials, amplitudes, r, theta, 2.0*pi, n_int_r_points)
@@ -722,8 +719,9 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
         Result of convolution (used scipy.ndimage.convolve).
 
     """
-    img_type = img.dtype; img = np.copy(img)  # get the image type and copy its content to a new container
-    convolved_img = convolve(np.float64(img), psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)  # convolution using scipy
+    img_type = img.dtype; img = np.copy(img).astype(np.float64)  # get the image type and copy its content to a new container
+    convolved_img: np.ndarray
+    convolved_img = convolve(img, psf_kernel, mode='reflect'); conv_coeff = np.sum(psf_kernel)  # convolution using scipy
     if conv_coeff > 0.0:
         convolved_img /= conv_coeff  # correct the convolution result by dividing to the kernel sum
     if scale2original:
@@ -735,8 +733,8 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
 
 # %% Save and read the calculated PSF matrices
 def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: Union[float, np.ndarray],
-             kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str = None,
-             overwrite: bool = True, additional_file_name: str = None) -> str:
+             kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: Optional[str] = None,
+             overwrite: bool = True, additional_file_name: Optional[str] = None) -> str:
     """
     Save the calculated PSF kernel along with the used for the calculation parameters.
 
@@ -774,6 +772,8 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
 
     """
     single_pol_used = False; osa_indices = []  # flag for saving different parameters
+    if isinstance(expansion_coefficient, np.ndarray):
+        ampls = expansion_coefficient.copy().tolist()
     if not hasattr(zernike_pol, '__len__'):
         m, n = define_orders(zernike_pol); single_pol_used = True  # get polynomial orders
     else:
@@ -793,12 +793,12 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         if single_pol_used:
             json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{additional_file_name}_{expansion_coefficient}.json")
         else:
-            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{additional_file_name}_{expansion_coefficient}.json")
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{additional_file_name}_{ampls}.json")
     else:
         if single_pol_used:
             json_file_path = saved_psfs_folder.joinpath(f"psf_{(m, n)}_{expansion_coefficient}.json")
         else:
-            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{expansion_coefficient}.json")
+            json_file_path = saved_psfs_folder.joinpath(f"psf_{osa_indices}_{ampls}.json")
     # Data composing for recording
     data4serialization = {}   # python dictionary is similar to the JSON file structure and can be dumped directly there
     data4serialization['PSF Kernel'] = psf_kernel.tolist(); data4serialization['NA'] = NA; data4serialization['Wavelength'] = wavelength
@@ -807,7 +807,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
     if single_pol_used:
         data4serialization["Expansion Coefficient"] = expansion_coefficient; data4serialization["Polynomial"] = zernike_pol.get_indices()[1]
     else:
-        data4serialization["Amplitudes"] = expansion_coefficient.tolist(); data4serialization["Polynomials"] = osa_indices
+        data4serialization["Amplitudes"] = ampls; data4serialization["Polynomials"] = osa_indices
     # File presence check and recording
     if json_file_path.exists() and not overwrite:
         _warn_message = "The file already exists, the content won't be overwritten."; warnings.warn(_warn_message)
@@ -890,87 +890,3 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 # %% Define standard exports from this module
 __all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral',
            'get_kernel_size', 'um_char', 'lambda_char', 'get_bumped_circle', 'get_psf_kernel_zerns']
-
-# %% Tests
-if __name__ == '__main__':
-    from zernpy import ZernPol
-    plt.ion(); plt.close('all')  # close all plots before plotting new ones
-    # Physical parameters of a system (an objective)
-    wavelength = 0.55  # in micrometers
-    NA = 0.95  # objective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
-    # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
-    resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
-    pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
-    pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
-
-    # Flags for performing tests
-    check_zero_case = True  # checking that integral equation is corresponding to the Airy pattern (zero case)
-    check_sign_coeff = False  # checking the same amplitude applied for the same polynomial (trefoil)
-    check_performance_optimizations = False  # checking optimization of calculations
-    check_various_pols = False  # checking the shape of some Zernike polynomials for comparing with the link below
-    check_warnings = False  # flag for checking the warning producing
-    check_io = False  # check save / read kernels
-    show_convolution_results = False  # check result of convolution of several kernel with the disk
-
-    # Definition of some Zernike polynomials for further tests
-    pol1 = (0, 0); pol2 = (-1, 1); pol3 = (0, 2); pol4 = (-2, 2); pol5 = (-3, 3); pol6 = (2, 2); pol7 = (-1, 3); pol8 = (0, 4)
-    pol9 = (-4, 4); pol7z = ZernPol(m=pol7[0], n=pol7[1])
-    pol1z = ZernPol(m=pol1[0], n=pol1[1]); pol2z = ZernPol(m=pol2[0], n=pol2[1]); pol3z = ZernPol(m=pol3[0], n=pol3[1])
-
-    if check_zero_case:
-        kern_zc = get_psf_kernel(pol1z, len2pixels=wavelength/5.5, alpha=-0.4, wavelength=0.55, NA=0.65,
-                                 show_kernel=True, normalize_values=True)
-        kern_zc_ref = get_psf_kernel(pol1z, len2pixels=wavelength/5.5, alpha=-0.4, wavelength=0.55, NA=0.65, airy_pattern=True,
-                                     show_kernel=True, normalize_values=True)
-        diff = kern_zc_ref - kern_zc; plt.figure("Difference Airy and Piston", figsize=(6, 6))
-        plt.imshow(diff, cmap=plt.cm.viridis, origin='upper')
-
-    if check_sign_coeff:
-        kern_sign_n = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=-0.5, wavelength=wavelength, NA=NA, normalize_values=False)
-        kern_sign_p = get_psf_kernel(pol5, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=False)
-
-    if check_performance_optimizations:
-        t1 = time.perf_counter()
-        kern_sign = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
-                                   NA=NA, normalize_values=True, show_kernel=False)
-        print("Calc. time for 'for loops' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
-        t1 = time.perf_counter()
-        kern_sign2 = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
-                                    NA=NA, normalize_values=True, show_kernel=False, test_vectorized=True, fig_id="Vector. Form")
-        print("Calc. time for 'vectorized' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
-        t1 = time.perf_counter()
-        kern_sign3 = get_psf_kernel(ZernPol(m=-3, n=3), len2pixels=pixel_size, alpha=0.2, wavelength=wavelength,
-                                    NA=NA, normalize_values=True, show_kernel=False, test_parallel=True, fig_id="Parallel. Form")
-        print("Calc. time for 'parallelized' form ms:", int(round(1000*(time.perf_counter() - t1), 0)))
-        kern_diff1 = np.round(kern_sign - kern_sign2, 9); kern_diff2 = np.round(kern_sign - kern_sign3, 9)
-
-    if check_various_pols:
-        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
-                                  show_kernel=True)
-        kern_ast = get_psf_kernel(pol6, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
-                                  show_kernel=True)
-        kern_coma = get_psf_kernel(pol7, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True,
-                                   show_kernel=True)
-        kern_spher = get_psf_kernel(pol8, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength,
-                                    NA=NA, normalize_values=True, show_kernel=True)
-        kern_4foil = get_psf_kernel(pol9, len2pixels=pixel_size, alpha=0.5, wavelength=wavelength,
-                                    NA=NA, normalize_values=True, show_kernel=True)
-
-    if check_warnings:
-        kern_def = get_psf_kernel(pol3z, len2pixels=1.0, alpha=0.5, wavelength=wavelength, NA=NA, normalize_values=True)
-    if show_convolution_results:
-        # Generate the ideal centralized circle with the blurred edges
-        radius = 4.0; sample = get_bumped_circle(radius); plt.figure("Sample disk"); m_center, n_center = sample.shape
-        m_center = m_center // 2; n_center = n_center // 2; axes_img = plt.imshow(sample, cmap=plt.cm.viridis, origin='upper')
-        plt.tight_layout(); axes_img.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
-        # Visualize results of convolution with various PSFs
-        kern_def = get_psf_kernel(pol3z, len2pixels=pixel_size, alpha=0.7, wavelength=wavelength,
-                                  NA=NA, normalize_values=True, show_kernel=True)
-        conv_def = convolute_img_psf(img=sample, psf_kernel=kern_def, scale2original=True)
-        plt.figure("Defocused"); axes_img2 = plt.imshow(conv_def, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
-        axes_img2.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))
-        kern_coma = get_psf_kernel(pol7z, len2pixels=pixel_size, alpha=-0.45, wavelength=wavelength,
-                                   NA=NA, normalize_values=True, show_kernel=True)
-        conv_coma = convolute_img_psf(img=sample, psf_kernel=kern_coma, scale2original=True)
-        plt.figure("*Coma"); axes_img3 = plt.imshow(conv_coma, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
-        axes_img3.axes.add_patch(Circle((n_center, m_center), radius, edgecolor='red', facecolor='none'))

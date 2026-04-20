@@ -10,14 +10,9 @@ Collection of Zernike polynomial calculation methods.
 import numpy as np
 import math
 import time
-from pathlib import Path
-# from decimal import Decimal
+from typing import Union
 
-# %% Local (package-scoped) imports
-if __name__ == "__main__" or __name__ == Path(__file__).stem or __name__ == "__mp_main__":
-    from find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
-else:
-    from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
+from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -80,7 +75,7 @@ def normalization_factor(zernike_pol) -> float:
         return np.sqrt(2*(n + 1))
 
 
-def radial_polynomial(zernike_pol, r):
+def radial_polynomial(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate radial polynomial R(m, n) value for input r lying in the range [0, 1].
 
@@ -205,7 +200,7 @@ def radial_polynomial(zernike_pol, r):
                 - radial_polynomial((m, n-2), r))  # general recurrence formula from [1]
 
 
-def radial_derivative(zernike_pol, r):
+def radial_derivative(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate the derivative of radial polynomial dR(m, n)/dr value for input r lying in the range [0, 1].
 
@@ -327,7 +322,7 @@ def radial_derivative(zernike_pol, r):
                 - radial_derivative((m, n-2), r))
 
 
-def radial_polynomial_eq(zernike_pol, r):
+def radial_polynomial_eq(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate the radial polynomial R(m, n) using exact equation from the Reference below.
 
@@ -348,6 +343,7 @@ def radial_polynomial_eq(zernike_pol, r):
         Depending on the type of theta, return float or numpy.ndarray with calculated values of radial polynomial.
 
     """
+    value: Union[float, np.ndarray]  # fix for mypy checks
     if isinstance(r, float):
         value = 0.0
     elif isinstance(r, np.ndarray):
@@ -362,7 +358,7 @@ def radial_polynomial_eq(zernike_pol, r):
     return value
 
 
-def radial_derivative_eq(zernike_pol, r):
+def radial_derivative_eq(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate the derivative of radial polynomial R(m, n) on r (eq. dR(m, n)/dr).
 
@@ -379,6 +375,7 @@ def radial_derivative_eq(zernike_pol, r):
         Depending on the type of theta, return float or numpy.ndarray with calculated values of radial polynomial derivative.
 
     """
+    value: Union[float, np.ndarray]  # fix for mypy checks
     if isinstance(r, float):
         value = 0.0
     elif isinstance(r, np.ndarray):
@@ -395,7 +392,7 @@ def radial_derivative_eq(zernike_pol, r):
     return value
 
 
-def triangular_function(zernike_pol, theta):
+def triangular_function(zernike_pol, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Return triangular component of the Zernike polynomial.
 
@@ -426,7 +423,7 @@ def triangular_function(zernike_pol, theta):
         return -np.sin(m*theta)
 
 
-def triangular_derivative(zernike_pol, theta):
+def triangular_derivative(zernike_pol, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Return derivative of triangular function of the Zernike polynomial.
 
@@ -453,7 +450,7 @@ def triangular_derivative(zernike_pol, theta):
         return -m*np.cos(m*theta)
 
 
-def radial_polynomial_coeffs(zernike_pol, r):
+def radial_polynomial_coeffs(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate radial polynomial using recursive finding algorithm of each coefficient for radial component (e.g. R^6).
 
@@ -481,6 +478,7 @@ def radial_polynomial_coeffs(zernike_pol, r):
     if n <= MAX_RADIAL_ORDER_COEFFS:
         pols_coeffs = find_coeffs_orders((m, n))
     # Initial value for sum calculation
+    r_sum: Union[float, np.ndarray]
     if isinstance(r, float):
         r_sum = 0.0
     elif isinstance(r, np.ndarray):
@@ -506,7 +504,7 @@ def radial_polynomial_coeffs(zernike_pol, r):
     return r_sum
 
 
-def radial_polynomial_coeffs_dr(zernike_pol, r):
+def radial_polynomial_coeffs_dr(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculate radial polynomial derivative using recursive finding algorithm of each coefficient for radial component.
 
@@ -531,6 +529,7 @@ def radial_polynomial_coeffs_dr(zernike_pol, r):
     if n <= MAX_RADIAL_ORDER_COEFFS_dR:
         pols_coeffs = find_coeffs_orders_dr((m, n))
     # Initial value for sum calculation
+    r_sum: Union[float, np.ndarray]
     if isinstance(r, float):
         r_sum = 0.0
     elif isinstance(r, np.ndarray):
@@ -593,12 +592,11 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
     n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
-    for i, order in enumerate(orders_list):
-        diff[i, :] = radial_polynomial(order, test_r) - radial_polynomial_eq(order, test_r)
+    for i, orders in enumerate(orders_list):
+        diff[i, :] = radial_polynomial(orders, test_r) - radial_polynomial_eq(orders, test_r)
     diff = np.round(diff, 9)
-    assert np.max(np.abs(diff)) < 1E-9, (f"Order {order} has inconsistency between tabular/recursion"
+    assert np.max(np.abs(diff)) < 1E-9, ("Computation of Rmn has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
-    print("Difference between analytical and implemented equations for Zernike pol-s is negligible, test passed")
     return diff
 
 
@@ -635,12 +633,11 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
     n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
-    for i, order in enumerate(orders_list):
-        diff[i, :] = radial_derivative(order, test_r) - radial_derivative_eq(order, test_r)
+    for i, orders in enumerate(orders_list):
+        diff[i, :] = radial_derivative(orders, test_r) - radial_derivative_eq(orders, test_r)
     diff = np.round(diff, 9)
-    assert np.max(np.abs(diff)) < 1E-9, (f"Order {order} has inconsistency between tabular/recursion"
+    assert np.max(np.abs(diff)) < 1E-9, ("Computation of dRmn/dr has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
-    print("Difference between analytical and implemented equations for derivatives of Zernike pol-s is negligible, test passed")
     return diff
 
 
@@ -669,12 +666,11 @@ def compare_recursive_coeffs_radials() -> np.ndarray:
     n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
-    for i, order in enumerate(orders_list):
-        diff[i, :] = radial_polynomial_eq(order, test_r) - radial_polynomial_coeffs(order, test_r)
+    for i, orders in enumerate(orders_list):
+        diff[i, :] = radial_polynomial_eq(orders, test_r) - radial_polynomial_coeffs(orders, test_r)
     diff = np.round(diff, 9)
-    assert np.max(np.abs(diff)) < 2E-2, (f"Order {order} has inconsistency between tabular/recursion"
+    assert np.max(np.abs(diff)) < 2E-2, ("Computation of Rmn has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
-    print("Difference between exact equation and pols. coeffs. finding algorithm is negligible, test passed")
     return diff
 
 
@@ -703,12 +699,11 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
-    for i, order in enumerate(orders_list):
-        diff[i, :] = radial_derivative_eq(order, test_r) - radial_polynomial_coeffs_dr(order, test_r)
+    for i, orders in enumerate(orders_list):
+        diff[i, :] = radial_derivative_eq(orders, test_r) - radial_polynomial_coeffs_dr(orders, test_r)
     diff = np.round(diff, 9)
-    assert np.max(np.abs(diff)) < 5E-2, (f"Order {order} has inconsistency between tabular/recursion"
+    assert np.max(np.abs(diff)) < 5E-2, ("Computation of Rmn has inconsistency between tabular/recursion"
                                          + f" and exact implementations, diff: {np.max(np.abs(diff))}")
-    print("Difference between exact equation and pols. coeffs. finding algorithm is negligible, test passed")
     return diff
 
 
@@ -733,11 +728,10 @@ def check_high_orders_recursion() -> np.ndarray:
     n_points = 51; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
-    for i, order in enumerate(orders_list):
-        diff[i, :] = radial_polynomial_coeffs(order, test_r)
+    for i, orders in enumerate(orders_list):
+        diff[i, :] = radial_polynomial_coeffs(orders, test_r)
     diff = np.round(diff, 6)
-    assert np.max(np.abs(diff)) <= 1.0, f"Order {order} has inconsistency in max abs value: {np.max(np.abs(diff))}"
-    print("Abs max in calculated recursively radial polynomials <= 1.0, test passed")
+    assert np.max(np.abs(diff)) <= 1.0, f"Rmn has inconsistency in max abs value (should be <= 1.0): {np.max(np.abs(diff))}"
     return diff
 
 
@@ -791,19 +785,3 @@ def time_radial_pols():
         calc_times_ms.append(round(1000*(t2-t1), 3))
     print("Timed calc. using exact equation rad. pol.", zpols, ":", calc_times_ms)
 
-
-# %% Tests
-if __name__ == '__main__':
-    R = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]; R = np.asarray(R)
-    Theta = [i*np.pi/3 for i in range(6)]; Theta = np.asarray(Theta)
-    orders = (-2, 2); r = 0.5
-    ZR = radial_polynomial(orders, R); ZR1 = radial_polynomial(orders, r)
-    TR = triangular_function(orders, Theta)
-    diff = compare_radial_calculations(max_order=20)
-    diff_deriv = compare_radial_derivatives(max_order=18)
-    # Test specific implementations
-    orders = (-8, 52); r = 0.95; val = radial_polynomial_coeffs(orders, r)
-    time_radial_pols()  # initial estimation of performance of calculations
-    diff_coeffs = compare_recursive_coeffs_radials()
-    diff_deriv_coeffs = compare_recursive_coeffs_radials_dr()
-    high_R = check_high_orders_recursion()

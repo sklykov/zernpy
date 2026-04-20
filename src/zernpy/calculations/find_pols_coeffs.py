@@ -185,7 +185,7 @@ def check_special_orders(orders: tuple) -> dict:
         Polynomials coefficients with radial order: value pairs.
 
     """
-    special_coefficients = None
+    special_coefficients = {}
     m, n = orders
     if abs(m) == n:
         special_coefficients = make_orders_coeffs({n: 1}, n)
@@ -209,7 +209,7 @@ def check_special_orders_dr(orders: tuple) -> dict:
         Derivatives of polynomials coefficients with radial order: value pairs.
 
     """
-    special_coefficients = None
+    special_coefficients = {}
     m, n = orders
     if abs(m) == n:
         special_coefficients = make_orders_coeffs({n-1: n}, n-1)
@@ -248,10 +248,10 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
         initial_coefficients = initial_coefficients_test
     else:
         initial_coefficients = precalculated_initial_coeffs
-    if orders in initial_coefficients.keys():
+    if orders in initial_coefficients:
         # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients[orders]  # return stored in the dictionary value
-    elif check_special_orders(orders) is not None:
+    elif check_special_orders(orders):
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
             if orders not in precalculated_initial_coeffs.keys():
@@ -311,10 +311,10 @@ def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
         initial_coefficients_dr = initial_coefficients_test_dr
     else:
         initial_coefficients_dr = precalculated_initial_coeffs_dr
-    if orders in initial_coefficients_dr.keys():
+    if orders in initial_coefficients_dr:
         # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients_dr[orders]  # return stored in the dictionary value
-    elif check_special_orders_dr(orders) is not None:
+    elif check_special_orders_dr(orders):
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
             if orders not in precalculated_initial_coeffs_dr.keys():

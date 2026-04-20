@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import warnings
 from math import pi
 import time
-from typing import Union
+from typing import Union, Optional
 import logging
 
 # %% Checking and import the numba library for speeding up the calculation
@@ -72,7 +72,7 @@ def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float
         radial = np.power(r, 0)
     # 1st order
     elif ((m == -1) and (n == 1)) or ((m == 1) and (n == 1)):
-        radial = r
+        radial = np.power(r, 1)  # explicit for avoiding mypy confusing
     # 2nd order
     elif ((m == -2) and (n == 2)) or ((m == 2) and (n == 2)):
         radial = np.power(r, 2)  # r^2
@@ -260,10 +260,9 @@ def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_
 
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    even_sums = [radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)]
-    even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
-    odd_sums = [radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)]
-    odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    even_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)])
+    odd_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)])
+    even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral_comp(orders, r, theta, 0.0, alpha, n_int_r_points)
     yB = radial_integral_comp(orders, r, theta, 2.0*pi, alpha, n_int_r_points)
@@ -273,7 +272,7 @@ def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_
 
 # %% PSF kernel calc. (accelerated)
 def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.ndarray], wavelength: float, NA: float, n_int_r_points: int = 320,
-                        n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: str = None, normalize_values: bool = False,
+                        n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: Optional[str] = None, normalize_values: bool = False,
                         kernel_size: int = 3, fig_id: str = "", suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix (kernel) with the PSF mask values.
@@ -341,12 +340,12 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     else:
         if not isinstance(alpha, np.ndarray):
             alpha = np.asarray(alpha)
-        polynomials_orders = []  # for checking and providing for further compilation polynomials in a tuple
+        polynomials_orders_l = []  # for checking and providing for further compilation polynomials in a tuple
         for pol in zernike_pol:
-            m, n = pol.get_mn_orders(); polynomials_orders.append((m, n))
+            m, n = pol.get_mn_orders(); polynomials_orders_l.append((m, n))
             if n > 10 and (abs(m) != n or abs(m) != n-2):
                 raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
-        polynomials_orders = tuple(polynomials_orders)  # convert list to tuple
+        polynomials_orders = tuple(polynomials_orders_l)  # convert list to tuple
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
@@ -400,11 +399,11 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
             plt.figure(fig_title, figsize=(6, 6))
         else:
             if not hasattr(zernike_pol, "__len__"):
-                plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}",
+                plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: {np.round(alpha, 2)}*wavelength {fig_id}",
                            figsize=(6, 6))
             else:
                 plt.figure(f"Sum of provided #{len(zernike_pol)} of polynomials {fig_id}", figsize=(6, 6))
-        plt.imshow(kernel, cmap=plt.cm.viridis, origin='upper'); plt.tight_layout()
+        plt.imshow(kernel, cmap=plt.colormaps["viridis"], origin='upper'); plt.tight_layout()
     return kernel
 
 
@@ -542,12 +541,11 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
 
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    even_sums = [radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
-                 for i in range(2, n_int_phi_points-2, 2)]
-    even_sums = np.asarray(even_sums); even_sum = np.sum(even_sums)
-    odd_sums = [radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
-                for i in range(1, n_int_phi_points-1, 2)]
-    odd_sums = np.asarray(odd_sums); odd_sum = np.sum(odd_sums)
+    even_sums = np.asarray([radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                 for i in range(2, n_int_phi_points-2, 2)])
+    odd_sums = np.asarray([radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
+                for i in range(1, n_int_phi_points-1, 2)])
+    even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, 0.0, n_int_r_points)
     yB = radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, 2.0*pi, n_int_r_points)
@@ -557,31 +555,3 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
 
 # %% Define standard exports from this module
 __all__ = ['get_psf_kernel_comp']
-
-# %% Tests
-if __name__ == '__main__':
-    from zernpy import ZernPol  # for polynomials initialization
-    plt.ion(); plt.close('all')  # close all plots before plotting new ones
-    # Physical parameters of a system (an objective)
-    wavelength = 0.55  # in micrometers
-    NA = 0.95  # objective property, ultimately NA = d/2*f, there d - aperture diameter, f - distance to the object (focal length for an image)
-    # Note that ideal Airy pattern will be (2*J1(x)/x)^2, there x = k*NA*r, there r - radius in the polar coordinates on the image
-    resolution = 0.61*wavelength/NA  # ultimate theoretical physical resolution of an objective
-    pixel_size_nyquist = 0.5*resolution  # Nyquist's resolution needed for using theoretical physical resolution above
-    pixel_size = 0.95*pixel_size_nyquist  # the relation between um / pixels for calculating the coordinate in physical units for each pixel
-
-    # Flags for testing various scenarios
-    test_single_polynomial = False; test_few_polynomials = True
-
-    # Testing implemented calculations for single polynomial
-    if test_single_polynomial:
-        get_psf_kernel_comp(ZernPol(m=0, n=0), pixel_size*0.7, alpha=1.5, wavelength=wavelength, NA=NA, normalize_values=True,
-                            show_kernel=True, kernel_size=11, verbose=True)
-        print("*******************************************")
-        get_psf_kernel_comp(ZernPol(m=0, n=4), pixel_size*0.7, alpha=0.75, wavelength=wavelength, NA=NA, normalize_values=True,
-                            show_kernel=True, kernel_size=21, verbose=True)
-    # For several (calculated their sum)
-    if test_few_polynomials:
-        zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.86, 0.4, 0.7)
-        get_psf_kernel_comp(pols, pixel_size*0.7, alpha=coeffs, wavelength=wavelength, NA=NA, normalize_values=True,
-                            show_kernel=True, kernel_size=24, verbose=True)

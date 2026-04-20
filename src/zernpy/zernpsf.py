@@ -65,11 +65,11 @@ class ZernPSF:
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
     alpha: float = expansion_coeff / wavelength  # the role of amplitude for PSF calculation
     airy: bool = False  # flag if the Piston is provided as the Zernike polynomial
-    __ParallelCalc: DispenserManager = None; __integration_params: list = []  # for speeding up the calculations using several Processes
+    __ParallelCalc: Optional[DispenserManager] = None; __integration_params: list = []  # for speeding up the calculations using Processes
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
     k: float = 2.0*pi/wavelength  # angular frequency
     json_file_path: str = ""  # shifted to the __init__ method to prevent putting path to API doc (by pydoc)
-    coefficients: np.ndarray = None; amplitudes: np.ndarray = None  # for storing amplitudes of polynomials
+    coefficients: Optional[np.ndarray] = None; amplitudes: Optional[np.ndarray] = None  # for storing amplitudes of polynomials
     # Dev. Note: always carefully check the definition of variables above, since the error in their definition may cause hard traceable bug
 
     def __init__(self, zernpol: Union[ZernPol, Sequence[ZernPol]]):
@@ -95,13 +95,13 @@ class ZernPSF:
 
         """
         self.json_file_path = str(Path(__file__).parent.absolute())  # initialize default path as the root folder containing the script
-        if not hasattr(zernpol, '__len__') and isinstance(zernpol, ZernPol):
+        if isinstance(zernpol, ZernPol):
             self.zernpol = zernpol; m, n = self.zernpol.get_mn_orders()
             if m == 0 and n == 0:
                 self.airy = True
             else:
                 self.airy = False
-        elif hasattr(zernpol, '__len__'):
+        else:
             seq_length = len(zernpol)
             # Empty sequence as the input not acceptable
             if seq_length == 0:
@@ -132,8 +132,6 @@ class ZernPSF:
                                          + f"# of provided: {len(osa_orders)} and # of unique: {len(unique_osa_orders)}")
                 else:
                     raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
-        else:
-            ValueError("ZernPSF class requires single 'ZernPol' instance or Sequence (class with __len__ attr.) with 'ZernPol' instances")
 
     # %% Set properties
     def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
@@ -180,6 +178,7 @@ class ZernPSF:
             raise ValueError("Wavelength should be positive real number")
         self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         self.NA = NA; self.wavelength = wavelength  # save as the class properties
+        self.amplitudes: np.ndarray  # set explicitly expected data type
         # Sanity check of provided wavelength, pixel physical size (Nyquist criteria)
         self.pixel_size_nyquist = 0.5*0.5*wavelength/NA  # based on half of the Abbe resolution limit, see references in the docstring
         self.pixel_size_nyquist_eStr = "{:.3e}".format(self.pixel_size_nyquist)  # formatting calculated pixel size in scientific notation
@@ -190,7 +189,7 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        if hasattr(expansion_coeff, '__len__'):
+        if not isinstance(expansion_coeff, float):
             coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
             if coeffs_len != len(self.polynomials):
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
@@ -250,7 +249,7 @@ class ZernPSF:
                 self.kernel_size += 1  # kernel size should odd
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
-    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int) -> None:
+    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int):
         """
         Set calculation properties: kernel size, number of integration points on polar coordinates.
 
@@ -308,7 +307,7 @@ class ZernPSF:
 
     # %% Calculation
     def calculate_psf_kernel(self, suppress_warnings: bool = False, normalized: bool = True, verbose_info: bool = False,
-                             accelerated: bool = None) -> np.ndarray:
+                             accelerated: Optional[bool] = None) -> np.ndarray:
         """
         Calculate PSF kernel using the specified or default calculation parameters and physical values.
 
@@ -388,6 +387,7 @@ class ZernPSF:
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                   suppress_warns=suppress_warnings, n_int_phi_points=self.n_int_phi_points)
         elif len(self.polynomials) > 0:
+            self.amplitudes: np.ndarray  # set explicitly expected data type
             if not accelerated or (accelerated and not numba_installed):
                 self.kernel = get_psf_kernel_zerns(polynomials=self.polynomials, amplitudes=self.amplitudes, len2pixels=self.pixel_size,
                                                    wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
@@ -436,7 +436,8 @@ class ZernPSF:
             fig_title = f"Composed kernel for #{len(self.polynomials)} polynomials: {orders} {id_str}"
         if not plt.isinteractive():
             plt.ion()
-        plt.figure(fig_title, figsize=(6, 6)); plt.imshow(self.kernel, cmap=plt.cm.viridis, origin='upper'); plt.colorbar(); plt.tight_layout()
+        plt.figure(fig_title, figsize=(6, 6)); plt.imshow(self.kernel, cmap=plt.colormaps["viridis"], origin='upper')
+        plt.colorbar(); plt.tight_layout()
 
     # %% Utilities
     def convolute_img(self, image: np.ndarray, scale2original: bool = True) -> np.ndarray:
@@ -477,10 +478,10 @@ class ZernPSF:
         target_disk = get_bumped_circle(radius, max_intensity)  # get the sample image of the even centered circle with blurred edges
         if not plt.isinteractive():
             plt.ion()
-        plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.cm.viridis, origin='upper')
+        plt.figure("Sample Image: Disk", figsize=(6, 6)); plt.imshow(target_disk, cmap=plt.colormaps["viridis"], origin='upper')
         plt.axis('off'); plt.tight_layout()
         convolved_img = self.convolute_img(image=target_disk); plt.figure("Convolved PSF and Disk", figsize=(6, 6))
-        plt.imshow(convolved_img, cmap=plt.cm.viridis, origin='upper'); plt.axis('off'); plt.tight_layout()
+        plt.imshow(convolved_img, cmap=plt.colormaps["viridis"], origin='upper'); plt.axis('off'); plt.tight_layout()
 
     def crop_kernel(self, min_part_of_max: float = 0.01):
         """
@@ -529,7 +530,7 @@ class ZernPSF:
                 self.kernel_size = self.kernel.shape[0]
 
     # %% I/O methods
-    def save_json(self, abs_path: Union[str, Path] = None, overwrite: bool = False):
+    def save_json(self, abs_path: Union[str, Path, None] = None, overwrite: bool = False):
         """
         Save class attributes (PSF kernel, physical properties, etc.) in the JSON file for further reloading and avoiding long computation.
 
@@ -548,10 +549,11 @@ class ZernPSF:
         """
         if abs_path is None:
             abs_path = Path(self.json_file_path).joinpath("saved_psfs")  # default folder for storing saved JSON files (root for the package)
-        if not Path.exists(abs_path):
-            abs_path = ""  # the folder "saved_psfs" will be created in the root of the package
         if isinstance(abs_path, Path):
-            abs_path = str(abs_path)  # convert to the expected string format
+            if not Path.exists(abs_path):
+                abs_path = ""  # the folder "saved_psfs" will be created in the root of the package
+            else:
+                abs_path = str(abs_path)  # convert to the expected string format
         if self.kernel_size == 1:
             self.__warn_message = "Kernel most likely hasn't been calculated, the kernel size == 1 - default value"
             warnings.warn(self.__warn_message); self.__warn_message = ""
@@ -562,13 +564,14 @@ class ZernPSF:
                                            n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol,
                                            overwrite=overwrite, folder_path=abs_path)
         elif len(self.polynomials) > 0:  # saving several polynomials
+            self.coefficients: np.ndarray   # set explicitly data type for mypy
             self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
                                            expansion_coefficient=self.coefficients, pixel_size=self.pixel_size,
                                            kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
                                            n_int_points_phi=self.n_int_phi_points, zernike_pol=self.polynomials,
                                            overwrite=overwrite, folder_path=abs_path)
 
-    def read_json(self, abs_path: Union[str, Path] = None):
+    def read_json(self, abs_path: Union[str, Path, None] = None):
         """
         Read the JSON file with the saved attributes and setting it for the class.
 
@@ -588,7 +591,7 @@ class ZernPSF:
             abs_path = str(abs_path)
         json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
-            wavelen: float; na: float; a: float; pols: list; ps: float; read_props = 0
+            wavelen: float; na: float; a: Union[float, Sequence[float]]; pols: list; ps: float; read_props = 0
             for key, item in json_data.items():
                 # Calculation properties + calculated kernel
                 if key == "PSF Kernel":
@@ -607,7 +610,7 @@ class ZernPSF:
                 elif key == "Expansion Coefficient":
                     a = item; read_props += 1
                 elif key == "Amplitudes":
-                    a = np.asarray(item); read_props += 1
+                    a = item; read_props += 1
                 elif key == "Pixel Size":
                     ps = item; read_props += 1
                 # Getting and reassigning used polynomial(-s)
@@ -624,7 +627,7 @@ class ZernPSF:
                     else:
                         for index in osa_indices:
                             pols.append(ZernPol(osa=index))
-                        self.polynomials = pols; self.zernpol = None; self.airy = False
+                        self.polynomials = tuple(pols); self.zernpol = None; self.airy = False
             # Assign read physical properties
             if read_props == 8:
                 self.set_physical_props(NA=na, wavelength=wavelen, expansion_coeff=a, pixel_physical_size=ps)
@@ -708,7 +711,7 @@ class ZernPSF:
         """
         if self.kernel_size < 3 and self.zernpol is not None:
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
-                                               wavelength=self.wavelength)
+                                               wavelength=self.wavelength, NA=self.NA)
         if self.zernpol is None:
             self.kernel_size = 3
         self.kernel = np.zeros(shape=(self.kernel_size, self.kernel_size)); i_center = self.kernel_size//2; j_center = self.kernel_size//2

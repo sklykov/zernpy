@@ -11,7 +11,7 @@ from multiprocessing import Process, Event, Queue
 import os
 import warnings
 import time
-from typing import Callable, Any, Union  # Callable[..., Any] - should check for any callable instance accepting / returning any types
+from typing import Callable, Any, Union , Optional  # Callable[..., Any] - providing any callable instance accepting / returning any types
 # from collections.abc import Sequence  # for more broad typing check - Sequence[Any] | np.ndarray - accept list, set, tuple, str or np.ndarray
 
 
@@ -19,11 +19,13 @@ from typing import Callable, Any, Union  # Callable[..., Any] - should check for
 class DispenserManager():
     """Manager for the distributing calculation job on several Processes."""
 
-    __MAX_WORKERS: int = os.cpu_count(); workers_number: int = __MAX_WORKERS // 2; __warn_message: str = ""
+    __cpu_count = os.cpu_count()
+    __MAX_WORKERS: int = __cpu_count if __cpu_count is not None else 1
+    workers_number: int = __MAX_WORKERS // 2; __warn_message: str = ""
     __workers_pool: list = []; __results: list = []; __triggers: list = []; __initialized: bool = False
-    __global_live_trigger: Event = None; __queues: list = []; __parameters_vector: list = []
+    __global_live_trigger: Any = None; __queues: list = []; __parameters_vector: list = []
 
-    def __init__(self, compute_func: Callable[..., Any], params_list: list, n_workers: int = None, verbose_info: bool = False):
+    def __init__(self, compute_func: Callable[..., Any], params_list: list, n_workers: Optional[int] = None, verbose_info: bool = False):
         """
         Initialize main handling class along with provided (automatically calculated) number of workers.
 
@@ -82,7 +84,7 @@ class DispenserManager():
         self.__global_live_trigger = Event(); self.__global_live_trigger.set(); time.sleep(0.01)
         # print(f"Initializing {self.workers_number} Processes")
         for i in range(self.workers_number):
-            trigger_event = Event(); queue = Queue(); self.__triggers.append(trigger_event)
+            trigger_event = Event(); queue: Queue = Queue(); self.__triggers.append(trigger_event)
             worker = IndiWorker(keep_run_trigger=self.__global_live_trigger, trigger=trigger_event, data_queue=queue, compute_func=compute_func)
             worker.start(); received_confirmation = False  # for waiting of initializaton of the Process
             while not received_confirmation:
@@ -125,7 +127,8 @@ class DispenserManager():
         """
         if self.__initialized:
             computed_tasks = 0; init_step = True; indices2process = [i for i in range(len(self.__parameters_vector))]
-            processing_indices = [None]*len(self.__workers_pool); task_assigned = [False]*len(self.__workers_pool); self.done_jobs_percentage = 0
+            processing_indices = [None]*len(self.__workers_pool); task_assigned = [False]*len(self.__workers_pool)
+            self.done_jobs_percentage = 0
             while computed_tasks < len(self.__results):
                 if init_step:
                     current_param_index = 0
@@ -236,9 +239,9 @@ class DispenserManager():
 class IndiWorker(Process):
     """Individual Worker based on Process() class for performing computations using provided function."""
 
-    __keep_event: Event = None; __trigger: Event; __data_queue: Queue
+    __keep_event: Any = None; __trigger: Any; __data_queue: Any
 
-    def __init__(self, keep_run_trigger: Event, trigger: Event, data_queue: Queue, compute_func):
+    def __init__(self, keep_run_trigger: Any, trigger: Any, data_queue: Any, compute_func: Callable[..., Any]):
         """
         Process from multiprocessing based class.
 
@@ -275,11 +278,6 @@ class IndiWorker(Process):
             while self.__keep_event.is_set():
                 self.__trigger.wait()  # wait that the parameter is transferred
                 if self.__trigger.is_set() and self.__keep_event.is_set():
-                    # attempts = 0
-                    # if not self.__data_queue.empty() and attempts < 11:
-                    #     parameter = self.__data_queue.get_nowait()
-                    # else:
-                    #     time.sleep(0.001); attempts += 1
                     parameter = self.__data_queue.get()
                     # print(f"Start computing for parameter {parameter}", flush=True)
                     result = self.computation(parameter)  # computation work
@@ -335,7 +333,7 @@ __all__ = ['DispenserManager']
 if __name__ == "__main__":
     params = [10*(i+1) for i in range(177)]  # ... computation points
     # Direct computation - for loop for performance check
-    t1 = time.perf_counter(); results_for = [None]*len(params)
+    t1 = time.perf_counter(); results_for = [0.0]*len(params)
     for i, par in enumerate(params):
         results_for[i] = test_plus(par)
     elapsed_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
