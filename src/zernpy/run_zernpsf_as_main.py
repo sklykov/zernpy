@@ -8,15 +8,15 @@ Run a few methods from 'zernpsf' as the main one for performing tests in IDE.
 
 """
 import sys
+from contextlib import suppress
 from pathlib import Path
-import numpy as np
 
 # Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 import matplotlib
-try:
+import numpy as np
+
+with suppress(ImportError):
     matplotlib.use('Qt5Agg')
-except ImportError:  # will be thrown in the environment doesn't contain Qt-like library
-    pass
 import matplotlib.pyplot as plt
 
 # Include local modules (project folder) on the top of the sys.path environment for proper import
@@ -25,8 +25,8 @@ if str(root) not in sys.path:
     sys.path.insert(0, str(root))  # append to the start path to a root folder of a repo for correct import in a session
 
 # Import of local modules (not from installed library by a package manager)
-from zernpy.zernikepol import ZernPol
 import zernpy.zernpsf as zpsf
+from zernpy.zernikepol import ZernPol
 from zernpy.zernpsf import ZernPSF, force_get_psf_compilation
 
 print("Path to a project:", zpsf.__file__, flush=True); actual_repo_imported = "site-packages" not in str(zpsf.__file__)

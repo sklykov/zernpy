@@ -7,17 +7,18 @@ Calculation and plotting of associated with polynomials PSFs.
 
 """
 # %% Global imports
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import jv
-from pathlib import Path
-import warnings
-from math import sqrt, pi, e
-import time
-from scipy.ndimage import convolve
 import json
+import time
+import warnings
 from functools import partial
-from typing import Union, Optional
+from math import e, pi, sqrt
+from pathlib import Path
+from typing import Optional, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.ndimage import convolve
+from scipy.special import jv
 
 # Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
 try:
@@ -28,7 +29,6 @@ except ModuleNotFoundError:
 
 # %% Local (package-scoped) imports
 from .calc_zernike_pol import define_orders
-
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -54,10 +54,7 @@ def airy_ref_pattern(r: float) -> float:
 
     """
     r = round(r, 12)
-    if r == 0.0:
-        ratio = jv(1, 1E-11)/1E-11
-    else:
-        ratio = jv(1, r)/r
+    ratio = jv(1, 1E-11)/1E-11 if r == 0.0 else jv(1, r)/r
     # NOTE that the values produced by exact equation below is off with the direct computation of diffraction integral
     # apporoximate coefficient is 0.986711 for a central point. Most likely, the difference because of numerical integration
     return 4.0*pow(ratio, 2)
@@ -405,9 +402,9 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     # Check that the calibration coefficient is sufficient for calculation
     pixel_size_nyquist = 0.5*0.61*wavelength/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
-        __warn_message = f"Provided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
+        __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
     # Calculate the PSF kernel for usage in convolution operation
     # mean_time_integration = 0.0; n = 0
     if not joblib_installed or not test_parallel:
@@ -470,7 +467,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
         __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
     # Plotting the calculated kernel
     if show_kernel:
         if airy_pattern:
@@ -657,7 +654,7 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
     # Verbose info preparation
     if verbose:
         calculated_points = 0  # for explicit showing of performance
@@ -697,7 +694,7 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
         __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
     return kernel
 
 
@@ -810,7 +807,8 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         data4serialization["Amplitudes"] = ampls; data4serialization["Polynomials"] = osa_indices
     # File presence check and recording
     if json_file_path.exists() and not overwrite:
-        _warn_message = "The file already exists, the content won't be overwritten."; warnings.warn(_warn_message)
+        _warn_message = "\nThe file already exists, the content won't be overwritten."
+        warnings.warn(_warn_message, stacklevel=2)
     if not json_file_path.exists() or (json_file_path.exists() and overwrite):
         with open(json_file_path, 'w') as json_write_file:
             json.dump(data4serialization, json_write_file)

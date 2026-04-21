@@ -7,11 +7,9 @@ Fitting of Zernike polynomials to the provided deformations on an image.
 
 """
 # %% Global imports
-import numpy as np
 import warnings
 
-# %% Local imports
-
+import numpy as np
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -76,14 +74,14 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
                 __warn_message = "Phases image isn't square, results of fitting could be ambiguous"
                 img_min_size = min(rows, cols); img_max_size = max(rows, cols)
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             else:
                 img_min_size = rows; img_max_size = rows
             if rows % 2 == 0 or cols % 2 == 0:
-                __warn_message = ("Phases image provided with even rows or columns, "
+                __warn_message = ("\nPhases image provided with even rows or columns, "
                                   + "it's error prone to define exact image center")
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             if img_min_size < 3:
                 raise ValueError("Provided image is too small (min size < 3) for producing any meaningful result")
             # Calculate center of the input image - depending on its sizes
@@ -114,7 +112,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
                                   + " or with 1 pixel difference between them. \n"
                                   + "Note that additional border pixels are included to crop.")
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             # Calculate polar coordinates of pixels
             recalibrate_radii = False; recalibration_coeff = 1.0; vector_index = 0
             # Cropping phases, collecting data on cropping process
@@ -185,7 +183,7 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
     # Calculate polynomials values in the unit circle defined by polar coordinates
     zernike_values = np.zeros(shape=(vector_length, len(polynomials)))
     # Checking that all polynomials are unique
-    if not len(polynomials) == 0:
+    if len(polynomials) != 0:
         provided_orders = []
         for polynomial in polynomials:
             provided_orders.append(polynomial.get_mn_orders())

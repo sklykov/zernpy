@@ -7,8 +7,8 @@ Plotting the Zernike polynomials values over unit circle.
 
 """
 # %% Global imports
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 # %% Module parameters
 __docformat__ = "numpydoc"

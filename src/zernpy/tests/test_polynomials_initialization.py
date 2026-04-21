@@ -11,8 +11,8 @@ For running collected here tests, it's enough to run the command "pytest" from t
 """
 import math
 
-from ..zernikepol import ZernPol
 from ..run_zernikepol_as_main import check_conformity
+from ..zernikepol import ZernPol
 
 
 def test_polynomials_initialization():
@@ -178,7 +178,7 @@ def test_explicit_initialization():
     assert zp1 == zp2, "Implemented method '==' isn't correct"
 
     zp1 = ZernPol(fringe=21); zp2 = ZernPol(noll=8)
-    assert not zp1 == zp2, "Implemented method '==' isn't correct"
+    assert zp1 != zp2, "Implemented method '==' isn't correct"
 
     zp1 = ZernPol(fringe=17); zp2 = ZernPol(osa=14)
     assert zp1 == zp2, "Implemented method '==' isn't correct"

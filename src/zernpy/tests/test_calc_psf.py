@@ -9,14 +9,15 @@ For running collected here tests, it's enough to run the command "pytest" from t
 @licence: MIT
 
 """
-import numpy as np
-from pathlib import Path
 import os
+from pathlib import Path
+
+import numpy as np
 
 # Relative import from the modules - designed to be used only by pytest runs
 from ..calculations.calc_psfs import get_psf_kernel
-from ..zernpsf import ZernPSF, force_get_psf_compilation, clean_zernpy_cache
 from ..zernikepol import ZernPol
+from ..zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
 
 
 # Testing functions

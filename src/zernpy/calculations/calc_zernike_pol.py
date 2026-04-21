@@ -7,10 +7,11 @@ Collection of Zernike polynomial calculation methods.
 
 """
 # %% Global imports
-import numpy as np
 import math
 import time
-from typing import Union, List
+from typing import List, Union
+
+import numpy as np
 
 from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
 
@@ -586,9 +587,8 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
     for order in range(1, max_order):
         m = -order; n = order
         orders_list.append((m, n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            orders_list.append((m, n))
+        for _ in range(0, order):
+            m += 2; orders_list.append((m, n))
     n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
@@ -627,9 +627,8 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
     for order in range(1, max_order):
         m = -order; n = order
         orders_list.append((m, n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            orders_list.append((m, n))
+        for _ in range(0, order):
+            m += 2; orders_list.append((m, n))
     n_points = 21; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
@@ -660,9 +659,8 @@ def compare_recursive_coeffs_radials() -> np.ndarray:
     for order in range(15, MAX_RADIAL_ORDER_COEFFS+2):
         m = -order; n = order
         orders_list.append((m, n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            orders_list.append((m, n))
+        for _ in range(0, order):
+            m += 2; orders_list.append((m, n))
     n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
@@ -693,9 +691,8 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     for order in range(15, MAX_RADIAL_ORDER_COEFFS_dR+2):
         m = -order; n = order
         orders_list.append((m, n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            orders_list.append((m, n))
+        for _ in range(0, order):
+            m += 2; orders_list.append((m, n))
     n_points = 101; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))
@@ -722,9 +719,8 @@ def check_high_orders_recursion() -> np.ndarray:
     for order in range(MAX_RADIAL_ORDER_COEFFS+1, MAX_RADIAL_ORDER_COEFFS+6):
         m = -order; n = order
         orders_list.append((m, n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            orders_list.append((m, n))
+        for _ in range(0, order):
+            m += 2; orders_list.append((m, n))
     n_points = 51; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
     # Testing that exact calculation and implementation of tabular / recursive are the same
     diff = np.ones(shape=(len(orders_list), n_points))

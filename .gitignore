@@ -17,6 +17,7 @@ Documents/
 .vscode/
 src/zernpy/calculations/*.jpg
 src/zernpy/ignored/
+!Command_Hints_Mypy_Ruff.txt
 
 # tests bound to the local environments
 run_all_local_tests.cmd  

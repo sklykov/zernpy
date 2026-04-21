@@ -7,11 +7,12 @@ Experiment with the multiprocessing speeding up of calculations.
 
 """
 # %% Global imports
-from multiprocessing import Process, Event, Queue
 import os
-import warnings
 import time
-from typing import Callable, Any, Union, Optional, List
+import warnings
+from multiprocessing import Event, Process, Queue
+from typing import Any, Callable, List, Optional, Union
+
 # Callable[..., Any] - providing any callable instance accepting / returning any types
 # from collections.abc import Sequence  # for more broad typing check - Sequence[Any] | np.ndarray - accept list, set, tuple, str or np.ndarray
 
@@ -64,13 +65,13 @@ class DispenserManager():
             if n_workers > self.__MAX_WORKERS:
                 self.__warn_message = (f"Provided more workers than available detected by os.cpu_count() method: {self.__MAX_WORKERS}. "
                                        + f"By default, number of workers is set to: {self.workers_number}")
-                warnings.warn(self.__warn_message)
+                warnings.warn(self.__warn_message, stacklevel=2)
             else:
                 self.workers_number = n_workers
         elif n_workers is not None and n_workers < 2:
             self.__warn_message = ("Provided number of workers is meaningless for spreading jobs on workers. "
                                    + f"Default number of workers will be used: {self.workers_number}")
-            warnings.warn(self.__warn_message)
+            warnings.warn(self.__warn_message, stacklevel=2)
         # Checking input parameters - compute function / method
         if not callable(compute_func):
             raise TypeError("Provided computing function isn't callable (not callable(compute_func) - True)")
@@ -84,7 +85,7 @@ class DispenserManager():
         # Initializing the pool with Processes
         self.__global_live_trigger = Event(); self.__global_live_trigger.set(); time.sleep(0.01)
         # print(f"Initializing {self.workers_number} Processes")
-        for i in range(self.workers_number):
+        for _ in range(self.workers_number):
             trigger_event = Event(); queue: Queue = Queue(); self.__triggers.append(trigger_event)
             worker = IndiWorker(keep_run_trigger=self.__global_live_trigger, trigger=trigger_event, data_queue=queue, compute_func=compute_func)
             worker.start(); received_confirmation = False  # for waiting of initializaton of the Process
@@ -95,7 +96,7 @@ class DispenserManager():
                         received_confirmation = True; break
                     else:
                         self.__warn_message = f"Not recognized confirmation message '{confirmation}', contact the developer"
-                        warnings.warn(self.__warn_message); break
+                        warnings.warn(self.__warn_message, stacklevel=2); break
                 else:
                     time.sleep(0.005)
             self.__workers_pool.append(worker); self.__queues.append(queue)
@@ -130,7 +131,7 @@ class DispenserManager():
             computed_tasks = 0; init_step = True; indices2process = [i for i in range(len(self.__parameters_vector))]
             processing_indices = [0]*len(self.__workers_pool); task_assigned = [False]*len(self.__workers_pool)
             self.done_jobs_percentage = 0
-            while computed_tasks < len(self.__results):
+            while computed_tasks < len(self.__results):  # noqa: SIM113
                 if init_step:
                     current_param_index = 0
                     for proc_i in range(len(self.__workers_pool)):
@@ -170,8 +171,8 @@ class DispenserManager():
                         self.done_jobs_percentage = done_jobs_percent
             return self.__results
         else:
-            self.__warn_message = ("All workers have been released, no computation has been performed")
-            warnings.warn(self.__warn_message); return None
+            self.__warn_message = ("\nAll workers have been released, no computation has been performed")
+            warnings.warn(self.__warn_message, stacklevel=2); return None
 
     def close(self):
         """

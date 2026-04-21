@@ -6,14 +6,15 @@ PSF class definition based on Zernike polynomial for computation of its kernel f
 
 """
 # %% Global imports
-import numpy as np
-from pathlib import Path
-import warnings
-import matplotlib.pyplot as plt
-from math import pi
 import time
-from typing import Union, Sequence, Optional, Tuple
+import warnings
 from importlib.metadata import version
+from math import pi
+from pathlib import Path
+from typing import Optional, Sequence, Tuple, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Check if numba library installed for importing compilable methods
 numba_installed = False  # default value for checking if 'numba' library is installed
@@ -25,10 +26,21 @@ except ModuleNotFoundError:
     pass
 
 # %% Local (package-scoped) imports
-from .calculations.calc_psfs import (get_psf_kernel, lambda_char, radial_integral_s, radial_integral, get_kernel_size,
-                                     convolute_img_psf, get_bumped_circle, save_psf, read_psf, get_psf_kernel_zerns)
-from .zernikepol import ZernPol
+from .calculations.calc_psfs import (
+    convolute_img_psf,
+    get_bumped_circle,
+    get_kernel_size,
+    get_psf_kernel,
+    get_psf_kernel_zerns,
+    lambda_char,
+    radial_integral,
+    radial_integral_s,
+    read_psf,
+    save_psf,
+)
 from .utils.intmproc import DispenserManager
+from .zernikepol import ZernPol
+
 if numba_installed:
     from .calculations.calc_psfs_numba import get_psf_kernel_comp
 
@@ -197,7 +209,7 @@ class ZernPSF:
                     # Sanity check for the expansion coefficient of the polynomial
                     self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
                     if len(self.__warn_message) > 0:
-                        warnings.warn(self.__warn_message); self.__warn_message = ""
+                        warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
                     self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
                 else:
                     raise ValueError(f"Length of provided coefficients ({coeffs_len}) is not equal to stored number "
@@ -208,7 +220,7 @@ class ZernPSF:
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
                 self.__warn_message = _sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
                 if len(self.__warn_message) > 0:
-                    warnings.warn(self.__warn_message); self.__warn_message = ""
+                    warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
                 self.amplitudes = self.coefficients / self.wavelength
         else:
             # Check consistency of provided type of polynomials and coefficients
@@ -221,7 +233,7 @@ class ZernPSF:
             # Sanity check for the expansion coefficient of the polynomial
             self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
-                warnings.warn(self.__warn_message); self.__warn_message = ""
+                warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
         # Kernel size estimation (could be changed explicitly in the method 'set_calculation_props'). Redefine it for each call
         if self.zernpol is not None:  # for single polynomial
@@ -285,12 +297,12 @@ class ZernPSF:
             kernel_size += 1; print("Note that kernel_size should be odd integer for centering PSF kernel")
         if self.__physical_props_set:
             if kernel_size < self.kernel_size:
-                self.__warn_message = (f"Empirically estimated kernel size = {self.kernel_size} based on the physical properties "
+                self.__warn_message = (f"\nEmpirically estimated kernel size = {self.kernel_size} based on the physical properties "
                                        + f"is larger than provided size = {kernel_size}. PSF may be truncated.")
-                warnings.warn(self.__warn_message); self.__warn_message = ""
+                warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         else:
-            self.__warn_message = "Please set the physical properties first for estimation of kernel size and after call this method"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            self.__warn_message = "\nPlease set the physical properties first for estimation of kernel size and after call this method"
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         self.kernel_size = kernel_size  # overwrite stored property, show before all warnings if kernel size is inconsistent
         # Sanity checks for n_integration_points_r and n_integration_points_phi
         if n_integration_points_r < 20:
@@ -301,7 +313,7 @@ class ZernPSF:
         # Associated with slow calculations warnings
         if n_integration_points_r > 500 and n_integration_points_phi > 400:
             self.__warn_message = "Selected integration precision may be unnecessary for PSF calculation and slow down it significantly"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         if abs(n_integration_points_phi - 300) < 40 and abs(n_integration_points_r - 320) < 50 and self.kernel_size > 25:
             print(f"Note that the approximate calc. time: {int(round(self.kernel_size*self.kernel_size*38.5/1000, 0))} sec.")
 
@@ -354,10 +366,10 @@ class ZernPSF:
 
         """
         if len(self.__warn_message) > 0 and not suppress_warnings:
-            warnings.warn(self.__warn_message)
+            warnings.warn(self.__warn_message, stacklevel=2)
         if not self.__physical_props_set and not suppress_warnings:
             self.kernel_size = 19; self.__warn_message = "\nPhysical properties haven't been set before, the default ones will be used"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         global numba_installed  # access the flag
         # Check provided flag
         if numba_installed and accelerated is None:
@@ -367,7 +379,7 @@ class ZernPSF:
         # Check if accelerated flag set to True but no numba installed
         if accelerated and not numba_installed and not suppress_warnings:
             self.__warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         # For providing performance verbose report
         if verbose_info:
             t1 = time.perf_counter()  # for explicit showing of performance
@@ -555,8 +567,8 @@ class ZernPSF:
             else:
                 abs_path = str(abs_path)  # convert to the expected string format
         if self.kernel_size == 1:
-            self.__warn_message = "Kernel most likely hasn't been calculated, the kernel size == 1 - default value"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            self.__warn_message = "\nKernel most likely hasn't been calculated, the kernel size == 1 - default value"
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         if self.zernpol is not None:  # single polynomial saving
             self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
                                            expansion_coefficient=self.expansion_coeff, pixel_size=self.pixel_size,
@@ -607,9 +619,7 @@ class ZernPSF:
                     na = item; read_props += 1
                 elif key == "Wavelength":
                     wavelen = item; read_props += 1
-                elif key == "Expansion Coefficient":
-                    a = item; read_props += 1
-                elif key == "Amplitudes":
+                elif key == "Expansion Coefficient" or key == "Amplitudes":
                     a = item; read_props += 1
                 elif key == "Pixel Size":
                     ps = item; read_props += 1
@@ -632,11 +642,11 @@ class ZernPSF:
             if read_props == 8:
                 self.set_physical_props(NA=na, wavelength=wavelen, expansion_coeff=a, pixel_physical_size=ps)
             else:
-                self.__warn_message = "Provided json file doesn't contain all necessary keys for physical / calculation properties"
-                warnings.warn(self.__warn_message); self.__warn_message = ""
+                self.__warn_message = "\nProvided json file doesn't contain all necessary keys for physical / calculation properties"
+                warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         else:
-            self.__warn_message = "Provided path doesn't contain valid JSON data"
-            warnings.warn(self.__warn_message); self.__warn_message = ""
+            self.__warn_message = "\nProvided path doesn't contain valid JSON data"
+            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
 
     # %% Parallelized computing methods
     def initialize_parallel_workers(self):
@@ -791,12 +801,11 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
             print("Precompilation of 'zernpy' started...", flush=True); t1 = time.perf_counter()  # for explicit showing of performance
         # Check the version of numba for guarantee working of compilation calls
         try:
-            if int(numba_ver_n[0]) == 0:
-                if int(numba_ver_n[1]) <= 57:
-                    if int(numba_ver_n[2]) < 1:
-                        __warn_message = "\nRecommended numba version for compilation >= 0.57.1"; warnings.warn(__warn_message)
+            if int(numba_ver_n[0]) == 0 and int(numba_ver_n[1]) <= 57 and int(numba_ver_n[2]) < 1:
+                __warn_message = "\nRecommended numba version for compilation >= 0.57.1"; warnings.warn(__warn_message, stacklevel=2)
         except ValueError:
-            __warn_message = "\nCannot parse 'numba' version, expected in format 'x.yy.zz' - all integers"; warnings.warn(__warn_message)
+            __warn_message = "\nCannot parse 'numba' version, expected in format 'x.yy.zz' - all integers"
+            warnings.warn(__warn_message, stacklevel=2)
         # Compilation of methods for single polynomial PSF calculation
         NA = 0.2; wavelength = 0.55; pixel_size = wavelength / 0.82; ampl = 0.042
         zp_prc = ZernPol(m=-1, n=1); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
@@ -820,7 +829,7 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
         return zpsf_prc, zpsf_mpc
     else:
         __warn_message = "\nAcceleration isn't possible because 'numba' library not installed in the current environment"
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
         return None
 
 

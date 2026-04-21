@@ -8,20 +8,19 @@ Run a few methods from 'zernikepol' as the main one for performing tests in IDE.
 
 """
 # %% Imports and checking its validity
-import sys
-from pathlib import Path
 import math
-import numpy as np
+import sys
 import time
+from contextlib import suppress
+from pathlib import Path
 from typing import Tuple
-# import warnings
 
 # Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 import matplotlib
-try:
+import numpy as np
+
+with suppress(ImportError):   # will be thrown in the environment doesn't contain Qt-like library
     matplotlib.use('Qt5Agg')
-except ImportError:  # will be thrown in the environment doesn't contain Qt-like library
-    pass
 import matplotlib.pyplot as plt
 
 # Note: the trick below is needed only if in a development environment is already installed this package (previous version) from pypi
@@ -32,7 +31,7 @@ if str(root) not in sys.path:
 
 # Import of local modules (not from installed library by a package manager)
 import zernpy.zernikepol as zp
-from zernpy.zernikepol import ZernPol, generate_random_phases, fit_polynomials, generate_phases_image, zernikes_surface
+from zernpy.zernikepol import ZernPol, fit_polynomials, generate_phases_image, generate_random_phases, zernikes_surface
 
 print("Path to a project:", zp.__file__, flush=True); actual_repo_imported = "site-packages" not in str(zp.__file__)
 
@@ -63,9 +62,8 @@ def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]
     for order in range(min_order, max_order+1):
         m = -order; n = order
         zernpols.append(ZernPol(m=m, n=n))
-        for n_azimuthals in range(0, order):
-            m += 2
-            zernpols.append(ZernPol(m=m, n=n))
+        for _ in range(0, order):
+            m += 2; zernpols.append(ZernPol(m=m, n=n))
     # Generation numpy array with radii
     n_points = 251
     test_r = np.zeros(shape=(n_points, ))
@@ -74,13 +72,13 @@ def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]
     test_r = np.round(test_r, 6)
     # Measuring performance of radial polynomials calculations using recursive implementation
     t1 = time.perf_counter()
-    for i, polynomial in enumerate(zernpols):
+    for polynomial in zernpols:
         polynomial.radial(test_r)  # calculate radial polynomials over vector of radii
     t2 = time.perf_counter()
     t_recursive_ms = round(1000*(t2-t1), 3)
     # Measuring performance of radial polynomials calculations using exact implementation
     t1 = time.perf_counter()
-    for i, polynomial in enumerate(zernpols):
+    for polynomial in zernpols:
         polynomial.radial(test_r, use_exact_eq=True)  # calculate radial polynomials over vector of radii
     t2 = time.perf_counter()
     t_exact_ms = round(1000*(t2-t1), 3)

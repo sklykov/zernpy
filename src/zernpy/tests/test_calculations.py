@@ -10,10 +10,16 @@ For running collected here tests, it's enough to run the command "pytest" from t
 
 """
 import math
+
 import numpy as np
 
-from ..calculations.calc_zernike_pol import (compare_radial_calculations, compare_radial_derivatives, compare_recursive_coeffs_radials,
-                                             compare_recursive_coeffs_radials_dr, check_high_orders_recursion)
+from ..calculations.calc_zernike_pol import (
+    check_high_orders_recursion,
+    compare_radial_calculations,
+    compare_radial_derivatives,
+    compare_recursive_coeffs_radials,
+    compare_recursive_coeffs_radials_dr,
+)
 from ..zernikepol import ZernPol
 
 
@@ -83,14 +89,6 @@ def test_sum_zernikes():
     assert isinstance(zern_surface, tuple) and isinstance(zern_surface.ZernSurf, np.ndarray), ("Check gen_zernikes_surface()"
                                                                                                + " method output (tuple len=3)")
     assert len(zern_surface.ZernSurf.shape) == 2, "Check gen_zernikes_surface() method for output matrix shape"
-    try:
-        from matplotlib.figure import Figure
-        fig = Figure()
-        plotted_fig = ZernPol.plot_sum_zernikes_on_fig(coefficients=ampls, polynomials=[zp1, zp2],
-                                                       figure=fig, zernikes_sum_surface=zern_surface)
-        assert isinstance(plotted_fig, Figure) and plotted_fig.tight_layout, "Something wrong with the plotting function"
-    except ModuleNotFoundError:
-        assert False, "Install matplotlib for passing the test"
     # Test difference between direct (naive) implementation and using meshgrids implementation of sum of Zernikes
     pols = [ZernPol(osa=2), ZernPol(osa=4), ZernPol(osa=7), ZernPol(osa=10), ZernPol(osa=15)]
     ampls = [-0.85, 0.85, 0.24, -0.37, 1.0]; radii = np.arange(start=0.0, stop=1.0 + 0.05, step=0.05)

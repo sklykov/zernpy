@@ -8,20 +8,31 @@ Also, provides a few functions useful for fitting set of Zernike polynomials to 
 
 """
 # %% Global imports
-import numpy as np
+import random
 import warnings
 from collections import namedtuple
+from typing import Optional, Sequence, Tuple, Union
+
 import matplotlib.pyplot as plt
-import random
-from typing import Union, Sequence, Tuple
+import numpy as np
 
 # %% Local (package-scoped) imports
-from .calculations.calc_zernike_pol import (normalization_factor, radial_polynomial, triangular_function, triangular_derivative,
-                                            radial_derivative, radial_polynomial_eq, radial_derivative_eq, radial_polynomial_coeffs,
-                                            radial_polynomial_coeffs_dr, MAX_RADIAL_ORDER_COEFFS, MAX_RADIAL_ORDER_COEFFS_dR)
-from .plotting.plot_zerns import plot_sum_fig, subplot_sum_on_fig, plot_sum_fig_3d, subplot_sum_on_fig_3d
+from .calculations.calc_zernike_pol import (
+    MAX_RADIAL_ORDER_COEFFS,
+    MAX_RADIAL_ORDER_COEFFS_dR,
+    normalization_factor,
+    radial_derivative,
+    radial_derivative_eq,
+    radial_polynomial,
+    radial_polynomial_coeffs,
+    radial_polynomial_coeffs_dr,
+    radial_polynomial_eq,
+    triangular_derivative,
+    triangular_function,
+)
 from .calculations.fit_zernike_pols import crop_phases_img, fit_zernikes
-from .props.properties import polynomial_names, short_polynomial_names, warn_mess_r_long, warn_mess_dr_long, warn_mess_slow_calc
+from .plotting.plot_zerns import plot_sum_fig, plot_sum_fig_3d, subplot_sum_on_fig, subplot_sum_on_fig_3d
+from .props.properties import polynomial_names, short_polynomial_names, warn_mess_dr_long, warn_mess_r_long, warn_mess_slow_calc
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -75,25 +86,24 @@ class ZernPol:
         key = ""
         # Zernike polynomial specified with key arguments m, n - check firstly for these parameters
         if len(kwargs.keys()) == 2:
-            if "n" in kwargs.keys() or "radial_order" in kwargs.keys():
+            if "n" in kwargs or "radial_order" in kwargs:
                 if self.__initialized:
                     raise ValueError("The polynomial has been already initialized, but radial_order/n/m parsed")
                 else:
                     # get the actual name of the key for radial order
-                    if "n" in kwargs.keys():
+                    if "n" in kwargs:
                         key = "n"
                     else:
                         key = "radial_order"
                     if isinstance(kwargs.get(key), int):
                         self.__n = int(kwargs[key])  # radial order acknowledged
                         # Below each time key arguments are checked in the list of keys
-                        if ("m" in kwargs.keys() or "l" in kwargs.keys() or "azimuthal_order" in kwargs.keys()
-                           or "angular_frequency" in kwargs.keys()):
-                            if "m" in kwargs.keys():
+                        if ("m" in kwargs or "l" in kwargs or "azimuthal_order" in kwargs or "angular_frequency" in kwargs):
+                            if "m" in kwargs:
                                 key = "m"
-                            elif "l" in kwargs.keys():
+                            elif "l" in kwargs:
                                 key = "l"
-                            elif "azimuthal_order" in kwargs.keys():
+                            elif "azimuthal_order" in kwargs:
                                 key = "azimuthal_order"
                             else:
                                 key = "angular_frequency"
@@ -261,10 +271,10 @@ class ZernPol:
         """
         name = ""
         if short:
-            if (self.__m, self.__n) in short_polynomial_names.keys():
+            if (self.__m, self.__n) in short_polynomial_names:
                 name = short_polynomial_names[(self.__m, self.__n)]
         else:
-            if (self.__m, self.__n) in polynomial_names.keys():
+            if (self.__m, self.__n) in polynomial_names:
                 name = polynomial_names[(self.__m, self.__n)]
         return name
 
@@ -388,9 +398,8 @@ class ZernPol:
         r = ZernPol._check_radii(r)  # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
         theta = ZernPol._check_angles(theta)  # Checking that angles lie in the range [0, 2*pi] and their type
         # Checking coincidence of shapes if theta and r are arrays
-        if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))):
-            if r.shape != theta.shape:
-                raise ValueError("Shape of input arrays r and theta is not equal")
+        if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))) and r.shape != theta.shape:
+            raise ValueError("Shape of input arrays r and theta is not equal")
         # Calculation using imported function from submodule depending on radial order, use different eq.
         nTr = normalization_factor(self)*triangular_function(self, theta)
         if not use_exact_eq:
@@ -399,14 +408,14 @@ class ZernPol:
             else:
                 # Raise warning about slow calculations for orders more than 50, only once
                 if self.__n > 50 and not self.__show_slow_calc_warn:
-                    warn_mess = f"ZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
-                    warnings.warn(warn_mess)
+                    warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
+                    warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
                 # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return nTr*radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
-                warnings.warn(self.__warn_mes_r + warn_mess_r_long)
+                warnings.warn(self.__warn_mes_r + warn_mess_r_long, stacklevel=2)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -466,14 +475,14 @@ class ZernPol:
             else:
                 # Raise warning about slow calculations for orders more than 50, only once
                 if self.__n > 50 and not self.__show_slow_calc_warn:
-                    warn_mess = f"ZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
-                    warnings.warn(warn_mess)
+                    warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
+                    warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
                 # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return radial_polynomial_coeffs(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS:
-                warnings.warn(self.__warn_mes_r + warn_mess_r_long)
+                warnings.warn(self.__warn_mes_r + warn_mess_r_long, stacklevel=2)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -558,13 +567,13 @@ class ZernPol:
                 # Raise warning about slow calculations for orders more than 50, only once
                 if self.__n > 48 and not self.__show_slow_calc_warn:
                     warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
-                    warnings.warn(warn_mess)
+                    warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
                 # Returning values using recursive scheme for finding the coefficients for all radial orders (e.g. R^6)
                 return radial_polynomial_coeffs_dr(self, r)
         else:
             if self.__n > MAX_RADIAL_ORDER_COEFFS_dR:
-                warnings.warn(self.__warn_mes_dr + warn_mess_dr_long)
+                warnings.warn(self.__warn_mes_dr + warn_mess_dr_long, stacklevel=2)
                 if isinstance(r, float):
                     return 0.0
                 elif isinstance(r, np.ndarray):
@@ -667,15 +676,10 @@ class ZernPol:
         """
         add_n = 1
         if m > 0:
-            if (n % 4) == 0:
+            if (n % 4) == 0 or ((n - 1) % 4) == 0:
                 add_n = 0
-            elif ((n - 1) % 4) == 0:
-                add_n = 0
-        elif m < 0:
-            if ((n - 2) % 4) == 0:
-                add_n = 0
-            elif ((n - 3) % 4) == 0:
-                add_n = 0
+        elif m < 0 and (((n - 2) % 4) == 0 or ((n - 3) % 4) == 0):
+            add_n = 0
         return (n*(n + 1))//2 + abs(m) + add_n
 
     @staticmethod
@@ -732,16 +736,15 @@ class ZernPol:
         for order in range(0, highest_order):
             m = -order  # azimuthal order
             n = order  # radial order
-            for polynomial in range(0, order+1):
+            for _ in range(0, order+1):
                 if osa_index >= 0:
                     if osa_index == ZernPol.get_osa_index(m, n):
                         stop_search = True; break
                 elif noll_index >= 0:
                     if noll_index == ZernPol.get_noll_index(m, n):
                         stop_search = True; break
-                elif fringe_index >= 0:
-                    if fringe_index == ZernPol.get_fringe_index(m, n):
-                        stop_search = True; break
+                elif fringe_index >= 0 and fringe_index == ZernPol.get_fringe_index(m, n):
+                    stop_search = True; break
                 m += 2
             if stop_search:
                 break
@@ -894,7 +897,7 @@ class ZernPol:
             if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                 warnings.warn("\nRequested calculation of surface (mesh) values with"
                               + " provided r or theta as not numpy.ndarray.\n"
-                              + "The surface will be generated automatically.")
+                              + "The surface will be generated automatically.", stacklevel=2)
             else:
                 r_size = np.size(r, 0); theta_size = np.size(theta, 0)
                 theta_grid, r_grid = np.meshgrid(theta, r); S = np.zeros(shape=(r_size, theta_size))
@@ -959,7 +962,7 @@ class ZernPol:
             elif get_surface:
                 if not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                     warnings.warn("\nRequested calculation of surface (mesh) values with  provided r or theta as not numpy.ndarray.\n"
-                                  + "The surface will be generated automatically.")
+                                  + "The surface will be generated automatically.", stacklevel=2)
                 else:
                     r_size = np.size(r, 0); theta_size = np.size(theta, 0); S = np.zeros(shape=(r_size, theta_size))
                     for i, coefficient in enumerate(coefficients):
@@ -1040,7 +1043,7 @@ class ZernPol:
 
     @staticmethod
     def plot_profile(polynomial, color_map: str = "coolwarm", show_title: bool = True, use_defaults: bool = True,
-                     projection: str = "2d", polar_coordinates: polar_vectors = polar_vectors(np.zeros((2, )), np.zeros((2, )))):
+                     projection: str = "2d", polar_coordinates: Optional[polar_vectors] = None):
         """
         Plot the provided Zernike polynomial (instance of ZernPol class) on the matplotlib figure.
 
@@ -1062,7 +1065,7 @@ class ZernPol:
             Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
         polar_coordinates : polar_vectors, optional
             If the flag 'use_defaults' is False, this named tuple is used for accessing polar coordinates for plotting.
-            The default is ().
+            The default is None.
 
         Raises
         ------
@@ -1075,8 +1078,8 @@ class ZernPol:
 
         """
         if isinstance(polynomial, ZernPol):
-            if not use_defaults and len(polar_coordinates) != 2:
-                raise ValueError("Polar coordinates isn't provided as a tuple with values R, Theta")
+            if not use_defaults and polar_coordinates is None:
+                raise ValueError("\nPolar coordinates isn't provided as a tuple with values R, Theta")
             # Get polar coordinates
             if use_defaults:
                 if projection == "3d" or projection == "3D":
@@ -1084,7 +1087,10 @@ class ZernPol:
                 else:
                     r, theta = ZernPol.gen_polar_coordinates()
             else:
-                r, theta = polar_coordinates.R, polar_coordinates.Theta
+                if polar_coordinates is not None:
+                    r, theta = polar_coordinates.R, polar_coordinates.Theta
+                else:
+                    raise ValueError("\nPolar coordinates isn't provided as a tuple with values R, Theta")
             # Get profile or surface to plot
             amplitudes = [1.0]; zernikes = [polynomial]  # for reusing the sum function of polynomials
             zern_surface = np.asarray(ZernPol.sum_zernikes(amplitudes, zernikes, r, theta, get_surface=True))
@@ -1139,7 +1145,7 @@ class ZernPol:
 
     @staticmethod
     def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: Sequence[float] = (), polynomials: Sequence = (), use_defaults: bool = True,
-                                 zernikes_sum_surface: zernikes_surface = zernikes_surface(np.zeros((2, 2)), np.zeros((2, )), np.zeros((2, ))),
+                                 zernikes_sum_surface: Optional[zernikes_surface] = None,
                                  show_range: bool = True, color_map: str = "coolwarm", projection: str = "2d") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
@@ -1158,10 +1164,10 @@ class ZernPol:
             Coefficients of Zernike polynomials for calculation of their sum. The default is ().
         polynomials : Sequence[ZernPol], optional
             Initialized polynomials as class instances of ZernPol class specified in this module. The default is ().
-        zernikes_sum_surface : namedtuple("zernikes_surface", "ZernSurf R Theta") , optional
+        zernikes_sum_surface : namedtuple("zernikes_surface", "ZernSurf R Theta"), optional
             This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
             This tuple could be generated by the call of the static method gen_zernikes_surface().
-            Check the method signature for details. The default is ().
+            Check the method signature for details. The default is None.
         show_range : bool, optional
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
         color_map : str, optional
@@ -1184,8 +1190,8 @@ class ZernPol:
         """
         if use_defaults and len(coefficients) == 0 and len(polynomials) == 0:
             raise ValueError("\nInput Sequence with coefficients or with polynomials is empty along with the flag 'use_defaults' - True")
-        if not use_defaults and len(zernikes_sum_surface) != 3:
-            raise ValueError("Zernike surface isn't provided as a tuple with values Sum surface, R, Theta")
+        if not use_defaults and zernikes_sum_surface is None:
+            raise ValueError("\nZernike surface isn't provided as a tuple with values Sum surface, R, Theta")
         if use_defaults:
             if projection == "3d" or projection == "3D":
                 polar_vectors = ZernPol.gen_equal_polar_mesh()
@@ -1199,12 +1205,15 @@ class ZernPol:
                 figure = subplot_sum_on_fig(figure, zernikes_sum, polar_vectors.R, polar_vectors.Theta,
                                             show_range_colorbar=show_range, color_map=color_map)
         else:
-            if projection == "3d" or projection == "3D":
-                figure = subplot_sum_on_fig_3d(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
-                                               zernikes_sum_surface.Theta, show_range_colorbar=show_range, color_map=color_map)
+            if zernikes_sum_surface is not None:
+                if projection == "3d" or projection == "3D":
+                    figure = subplot_sum_on_fig_3d(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
+                                                   zernikes_sum_surface.Theta, show_range_colorbar=show_range, color_map=color_map)
+                else:
+                    figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
+                                                zernikes_sum_surface.Theta, show_range_colorbar=show_range, color_map=color_map)
             else:
-                figure = subplot_sum_on_fig(figure, zernikes_sum_surface.ZernSurf, zernikes_sum_surface.R,
-                                            zernikes_sum_surface.Theta, show_range_colorbar=show_range, color_map=color_map)
+                raise ValueError("\nZernike surface isn't provided as a tuple with values Sum surface, R, Theta")
         return figure
 
     @staticmethod
@@ -1255,7 +1264,7 @@ class ZernPol:
         """
         # Trying to convert known (list, tuple) data types into numpy, if they provided as input
         if not isinstance(radii, np.ndarray) and not isinstance(radii, float):
-            if isinstance(radii, list) or isinstance(radii, tuple) or isinstance(radii, set):
+            if isinstance(radii, (list, tuple, set)):
                 radii = np.asarray(radii)  # convert list or tuple to np.array
             else:
                 radii = float(radii)  # attempt to convert r to float number, will raise ValueError if it's impossible
@@ -1263,9 +1272,8 @@ class ZernPol:
         if isinstance(radii, np.ndarray):
             if np.min(radii) < 0.0 or np.max(radii) > 1.0:
                 raise ValueError("\nMinimal or maximal value of radii laying outside unit circle [0.0, 1.0]")
-        elif isinstance(radii, float):
-            if radii > 1.0 or radii < 0.0:
-                raise ValueError("Radius laying outside unit circle [0.0, 1.0]")
+        elif isinstance(radii, float) and (radii > 1.0 or radii < 0.0):
+            raise ValueError("Radius laying outside unit circle [0.0, 1.0]")
         return radii
 
     @staticmethod
@@ -1294,7 +1302,7 @@ class ZernPol:
         """
         # Check input parameter type and attempt to convert to acceptable types
         if not isinstance(angles, np.ndarray) and not isinstance(angles, float):
-            if isinstance(angles, list) or isinstance(angles, tuple) or isinstance(angles, set):
+            if isinstance(angles, (list, tuple, set)):
                 angles = np.asarray(angles)  # convert list or tuple to np.array
             else:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
@@ -1302,14 +1310,13 @@ class ZernPol:
         if isinstance(angles, np.ndarray):
             if np.max(angles) - np.min(angles) > 2.0*np.pi:
                 _warn_message_ = "\nTheta angles defined in range outside of interval [0.0, 2.0*pi]"
-                warnings.warn(_warn_message_)
+                warnings.warn(_warn_message_, stacklevel=2)
             elif np.max(angles) > 2.0*np.pi or np.min(angles) < 0.0:
                 _warn_message_ = "\nMax or min of theta angles lies outside of interval [0.0, 2.0*pi]"
-                warnings.warn(_warn_message_)
-        elif isinstance(angles, float):
-            if angles < 0.0 or angles > 2.0*np.pi:
-                _warn_message_ = "\nMax or min of theta angles lies outside of interval [0.0, 2.0*pi]"
-                warnings.warn(_warn_message_)
+                warnings.warn(_warn_message_, stacklevel=2)
+        elif isinstance(angles, float) and angles < 0.0 or angles > 2.0*np.pi:
+            _warn_message_ = "\nMax or min of theta angles lies outside of interval [0.0, 2.0*pi]"
+            warnings.warn(_warn_message_, stacklevel=2)
         return angles
 
 
@@ -1337,13 +1344,13 @@ def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol, ...]:
     # Sanity check of max_order parameter
     if not isinstance(max_order, int):
         __warning_mess = "\nThe parameter max_order provided not as integer, there will be attempt to convert it to int"
-        warnings.warn(__warning_mess)
+        warnings.warn(__warning_mess, stacklevel=2)
         max_order = int(max_order)
     if max_order < 0:
         raise ValueError("The maximum order should be not less than 0")
     if max_order > 30:
         __warning_mess = "\nCalculation polynomial values with orders higher than 30 is really slow"
-        warnings.warn(__warning_mess)
+        warnings.warn(__warning_mess, stacklevel=2)
     polynomials_list = [ZernPol(m=0, n=0)]  # list starting with piston
     for order in range(1, max_order + 1):  # going through all specified orders
         m = -order  # azimuthal order

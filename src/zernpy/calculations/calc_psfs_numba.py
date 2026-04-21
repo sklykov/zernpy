@@ -7,13 +7,14 @@ Calculation accelerated by numba library compilation and plotting of associated 
 
 """
 # %% Global imports
-import numpy as np
-import matplotlib.pyplot as plt
+import logging
+import time
 import warnings
 from math import pi
-import time
-from typing import Union, Optional
-import logging
+from typing import Optional, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 # %% Checking and import the numba library for speeding up the calculation
 try:
@@ -328,7 +329,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     # Provide performance tip if the provided kernel size is quite big for calculations
     if size > 85 and not suppress_warns:
         __warn_message = f"\nCalculation of provided kernel size ({size}x{size}) may take more than 20 seconds"
-        warnings.warn(__warn_message); __warn_message = ""
+        warnings.warn(__warn_message, stacklevel=2); __warn_message = ""
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Get the orders of polynomial and check if the equation for compilation was implemented
     single_polynomial_provided = False  # flag for using single polynomial functions
@@ -351,7 +352,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
-        warnings.warn(__warn_message); __warn_message = ""
+        warnings.warn(__warn_message, stacklevel=2); __warn_message = ""
     # Calculate the PSF kernel for usage in convolution operation
     if verbose:
         calculated_points = 0  # for explicit showing of performance
@@ -392,7 +393,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     if kernel_border_max > np.max(kernel)/20.0 and not suppress_warns:
         __warn_message = (f"\nThe calculated size for PSF ({size}) isn't sufficient for its proper representation, "
                           + "because the maximum value on the kernel border is bigger than 5% of maximum overall kernel")
-        warnings.warn(__warn_message)
+        warnings.warn(__warn_message, stacklevel=2)
     # Plotting the calculated kernel
     if show_kernel:
         if fig_title is not None and len(fig_title) > 0:

@@ -80,3 +80,19 @@ module = [
     "zernpy.run_zernikepol_as_main"
 ]
 ignore_errors = true
+
+[tool.ruff]
+line-length = 145  # my own preference
+indent-width = 4
+target-version = "py311"
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "SIM"]
+ignore = ["E702", "E402",   # used in the IDE
+		  "SIM108",  # many ternany operator replacements in a code
+		  "SIM113",  # potentially can break a logic in a loop
+		  ]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
