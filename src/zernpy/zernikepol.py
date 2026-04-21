@@ -85,7 +85,7 @@ class ZernPol:
                     else:
                         key = "radial_order"
                     if isinstance(kwargs.get(key), int):
-                        self.__n = kwargs.get(key)  # radial order acknowledged
+                        self.__n = int(kwargs[key])  # radial order acknowledged
                         # Below each time key arguments are checked in the list of keys
                         if ("m" in kwargs.keys() or "l" in kwargs.keys() or "azimuthal_order" in kwargs.keys()
                            or "angular_frequency" in kwargs.keys()):
@@ -98,7 +98,7 @@ class ZernPol:
                             else:
                                 key = "angular_frequency"
                             if isinstance(kwargs.get(key), int):
-                                self.__m = kwargs.get(key)  # azimuthal order acknowledged
+                                self.__m = int(kwargs[key])  # azimuthal order acknowledged
                                 # Checking that the provided orders are reasonable
                                 if not (self.__n - abs(self.__m)) % 2 == 0:  # see [1]
                                     raise ValueError("Failed sanity check: n - |m| == even number")
@@ -127,21 +127,20 @@ class ZernPol:
                         raise ValueError("Radial order n provided not as an integer")
         elif len(kwargs.keys()) == 1:
             # OSA / ANSI index used for Zernike polynomial initialization
-            if ("osa_index" in kwargs.keys() or "osa" in kwargs.keys() or "ansi_index" in kwargs.keys()
-               or "ansi" in kwargs.keys()):
+            if ("osa_index" in kwargs or "osa" in kwargs or "ansi_index" in kwargs or "ansi" in kwargs):
                 if self.__initialized:
                     raise ValueError("The polynomial has been already initialized, but osa_index/osa... parsed")
                 else:
-                    if "osa_index" in kwargs.keys():
+                    if "osa_index" in kwargs:
                         key = "osa_index"
-                    elif "osa" in kwargs.keys():
+                    elif "osa" in kwargs:
                         key = "osa"
-                    elif "ansi_index" in kwargs.keys():
+                    elif "ansi_index" in kwargs:
                         key = "ansi_index"
-                    elif "ansi" in kwargs.keys():
+                    elif "ansi" in kwargs:
                         key = "ansi"
                     if isinstance(kwargs.get(key), int):
-                        osa_i = kwargs.get(key)
+                        osa_i = int(kwargs[key])
                         if osa_i < 0:
                             raise ValueError("OSA / ANSI index should be non-negative integer")
                         elif osa_i > 1539:
@@ -155,16 +154,16 @@ class ZernPol:
                     else:
                         raise ValueError("OSA / ANSI index provided not as an integer")
             # Noll index used for Zernike polynomial initialization
-            elif "noll_index" in kwargs.keys() or "noll" in kwargs.keys():
+            elif "noll_index" in kwargs or "noll" in kwargs:
                 if self.__initialized:
                     raise ValueError("The polynomial has been already initialized, but noll_index/noll parsed")
                 else:
-                    if "noll_index" in kwargs.keys():
+                    if "noll_index" in kwargs:
                         key = "noll_index"
-                    elif "noll" in kwargs.keys():
+                    elif "noll" in kwargs:
                         key = "noll"
                     if isinstance(kwargs.get(key), int):
-                        noll_i = kwargs.get(key)
+                        noll_i = int(kwargs[key])
                         if noll_i < 1:
                             raise ValueError("Noll index should be not less than 1 integer")
                         elif noll_i > 1540:
@@ -178,16 +177,16 @@ class ZernPol:
                     else:
                         raise ValueError("Noll index provided not as an integer")
             # Fringe / Univ. of Arizona index used for Zernike polynomial initialization
-            elif "fringe_index" in kwargs.keys() or "fringe" in kwargs.keys():
+            elif "fringe_index" in kwargs or "fringe" in kwargs:
                 if self.__initialized:
                     raise ValueError("The polynomial has been already initialized, but fringe_index/fringe parsed")
                 else:
-                    if "fringe_index" in kwargs.keys():
+                    if "fringe_index" in kwargs:
                         key = "fringe_index"
-                    elif "fringe" in kwargs.keys():
+                    elif "fringe" in kwargs:
                         key = "fringe"
                     if isinstance(kwargs.get(key), int):
-                        fringe_i = kwargs.get(key)
+                        fringe_i = int(kwargs[key])
                         if fringe_i < 1:
                             raise ValueError("Fringe index should be not less than 1 integer")
                         else:
@@ -1227,7 +1226,7 @@ class ZernPol:
                 axes[i, j].grid(False)  # demanded by pcolormesh function, if not called - deprecation warning
                 if j > ignored_column-1:
                     zps = [ZernPol(osa=k)]; zernike_surface, r, theta = ZernPol.gen_zernikes_surface(coefficients=ampls, polynomials=zps)
-                    axes[i, j].pcolormesh(theta, r, zernike_surface, cmap=plt.cm.coolwarm, shading='nearest'); k += 1
+                    axes[i, j].pcolormesh(theta, r, zernike_surface, cmap=plt.colormaps['coolwarm'], shading='nearest'); k += 1
                 axes[i, j].axis('off')  # off polar coordinate axes
             ignored_column -= 1
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1); fig.tight_layout()

@@ -57,17 +57,19 @@ warn_unused_configs = true  # mypy will warn if any of options below not valid
 warn_redundant_casts = true  # warn about unnecessary cast(): from typing import cast
 warn_unused_ignores = true  # warn about unused comments '# type: ignore'
 show_error_codes = true  # enables error code in a report
-pretty = true  # better report
+pretty = true  # better formatted report in a console
+strict_equality = true  # checks proper usage of ==, !=, in
 no_implicit_optional=true  # throws error on: def f(x: int = None): ...
 # Note: flags below introduces too strict type checks
 # disallow_untyped_defs = true  # all parameters and return types must be fully annotated
-# check_untyped_defs = true  # mypy checks untyped expressions and tries to infer types
+check_untyped_defs = true  # mypy checks untyped expressions and tries to infer types
 # warn_return_any = true  # Any couldn't be used as return type
 # disallow_any_generics = true  # forbid bare generics like list, dict, tuple... -> instead List[float]
 exclude = [
     '^tests/',
     '^build/',
     '^dist/',
+	'^src/zernpy/tests/'
 ]
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
 module = ["numba", "joblib"]
@@ -75,6 +77,6 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]  # ignore found errors in the specific test files
 module = [
     "zernpy.run_zernpsf_as_main",
-    "zernpy.run_zernikepol_as_main",
+    "zernpy.run_zernikepol_as_main"
 ]
 ignore_errors = true

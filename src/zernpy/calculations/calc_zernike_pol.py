@@ -10,7 +10,7 @@ Collection of Zernike polynomial calculation methods.
 import numpy as np
 import math
 import time
-from typing import Union
+from typing import Union, List
 
 from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
 
@@ -744,7 +744,7 @@ def time_radial_pols():
     None.
 
     """
-    calc_times_ms = []  # for storing calculation times
+    calc_times_ms: List[float] = []  # for storing calculation times
     zp1 = (2, 16); zp2 = (0, 18); zp3 = (-2, 20); zp4 = (6, 22); zp5 = (-4, 24); r = 0.425
     zpols = [zp1, zp2, zp3, zp4, zp5]
     for zp in zpols:

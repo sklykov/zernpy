@@ -11,7 +11,8 @@ from multiprocessing import Process, Event, Queue
 import os
 import warnings
 import time
-from typing import Callable, Any, Union , Optional  # Callable[..., Any] - providing any callable instance accepting / returning any types
+from typing import Callable, Any, Union, Optional, List
+# Callable[..., Any] - providing any callable instance accepting / returning any types
 # from collections.abc import Sequence  # for more broad typing check - Sequence[Any] | np.ndarray - accept list, set, tuple, str or np.ndarray
 
 
@@ -22,7 +23,7 @@ class DispenserManager():
     __cpu_count = os.cpu_count()
     __MAX_WORKERS: int = __cpu_count if __cpu_count is not None else 1
     workers_number: int = __MAX_WORKERS // 2; __warn_message: str = ""
-    __workers_pool: list = []; __results: list = []; __triggers: list = []; __initialized: bool = False
+    __workers_pool: list = []; __results: list = []; __triggers: List[Any] = []; __initialized: bool = False
     __global_live_trigger: Any = None; __queues: list = []; __parameters_vector: list = []
 
     def __init__(self, compute_func: Callable[..., Any], params_list: list, n_workers: Optional[int] = None, verbose_info: bool = False):
@@ -127,7 +128,7 @@ class DispenserManager():
         """
         if self.__initialized:
             computed_tasks = 0; init_step = True; indices2process = [i for i in range(len(self.__parameters_vector))]
-            processing_indices = [None]*len(self.__workers_pool); task_assigned = [False]*len(self.__workers_pool)
+            processing_indices = [0]*len(self.__workers_pool); task_assigned = [False]*len(self.__workers_pool)
             self.done_jobs_percentage = 0
             while computed_tasks < len(self.__results):
                 if init_step:
