@@ -2,12 +2,11 @@
 name = "zernpy"
 dynamic = ["version"]  # Discovering of the version by the setuptools (see below: in the 'file' or 'attr')
 authors = [
-    {name = "Sergei Klykov"},
-    {email = "sergej.klykow@gmail.com"}
+    { name = "Sergei Klykov" },
+    { email = "sergej.klykow@gmail.com" }
 ]
 description = "Calculation of real Zernike polynomials values, associated PSFs, plotting of their profiles in polar coordinates"
 readme = "README.md"
-# license = {file = "LICENSE"}  # includes the whole text in METADATA, maybe not so convenient
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,19 +16,17 @@ classifiers = [
 dependencies = [
     "numpy",
     "matplotlib",
-	"scipy",
+    "scipy",
 ]
 [project.optional-dependencies]
 performance = ["numba>=0.57.1"]
 dev = ["ruff", "mypy", "pytest"]
-all = [
-    "numba>=0.57.1",
-]
+all = ["numba>=0.57.1"]
 
 keywords = ["zernike-polynomials", "zernike-psf"]
 
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
-# But the the links themselves are mapped / parsed by the PyPi website
+# But the links themselves are mapped / parsed by the PyPi website
 "Homepage" = "https://pypi.org/project/zernpy/"
 "Repository" = "https://github.com/sklykov/zernpy/"
 "Bug Tracker" = "https://github.com/sklykov/zernpy/issues/"
@@ -39,13 +36,15 @@ keywords = ["zernike-polynomials", "zernike-psf"]
 [tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
 where = ["src"]
 include = ["zernpy*"]
-exclude = ["tests", "ignored"]
+exclude = ["zernpy.tests*"]  # only packages should be specified, folders - exclude in MANIFEST.in
+namespaces = false  # forbid treating a folder as a module without explicit __init__.py presence
 
-[tool.setuptools.exclude-package-data]
-zernpy = ["*.png"]  # should exclude image files from distribution
+[tool.setuptools]
+include-package-data = false  # forbid to make a confusion on the src/zernpy/tests folder presence
+# confusion is produced because it is an importable module
 
 [tool.setuptools.dynamic]
-version = {attr = "zernpy.__version__"}  # Variable set in the __init__.py
+version = { attr = "zernpy.__version__" }  # Variable set in the __init__.py
 
 [build-system]
 requires = ["setuptools>=75.0"]
@@ -59,7 +58,7 @@ warn_unused_ignores = true  # warn about unused comments '# type: ignore'
 show_error_codes = true  # enables error code in a report
 pretty = true  # better formatted report in a console
 strict_equality = true  # checks proper usage of ==, !=, in
-no_implicit_optional=true  # throws error on: def f(x: int = None): ...
+no_implicit_optional = true  # throws error on: def f(x: int = None): ...
 # Note: flags below introduces too strict type checks
 # disallow_untyped_defs = true  # all parameters and return types must be fully annotated
 check_untyped_defs = true  # mypy checks untyped expressions and tries to infer types
@@ -69,7 +68,7 @@ exclude = [
     '^tests/',
     '^build/',
     '^dist/',
-	'^src/zernpy/tests/'
+    '^src/zernpy/tests/'
 ]
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
 module = ["numba", "joblib"]
@@ -87,10 +86,10 @@ indent-width = 4
 target-version = "py311"
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B", "SIM"]
-ignore = ["E702", "E402",   # used in the IDE
-		  "SIM108",  # many ternany operator replacements in a code
-		  "SIM113",  # potentially can break a logic in a loop
-		  ]
+ignore = ["E702", "E402", # used in the IDE
+    "SIM108", # many ternany operator replacements in a code
+    "SIM113", # potentially can break logic in a loop
+]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

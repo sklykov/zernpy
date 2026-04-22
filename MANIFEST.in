@@ -1,3 +1,4 @@
-exclude src/zernpy/*.png
-
-recursive-exclude src/zernpy/readme_images *
+recursive-exclude tests *
+recursive-exclude src/zernpy/tests *
+exclude src/zernpy/run_zernikepol_as_main.py
+exclude src/zernpy/run_zernpsf_as_main.py
