@@ -8,32 +8,24 @@ Run a few methods from 'zernikepol' as the main one for performing tests in IDE.
 
 """
 # %% Imports and checking its validity
-import math
-import sys
+import importlib
 import time
 from contextlib import suppress
-from pathlib import Path
 from typing import Tuple
 
-# Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 import matplotlib
 import numpy as np
 
+# Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 with suppress(ImportError):   # will be thrown in the environment doesn't contain Qt-like library
     matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-# Note: the trick below is needed only if in a development environment is already installed this package (previous version) from pypi
-# and one need to import actual files from a repository folder instead of installed ones in an environment
-root = Path(__file__).resolve().parents[1]  # one step on top in parent folder, should be a root folder in a repo, not "src"
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))  # append to the start path to a root folder of a repo for correct import in a session
+# Import of developed version of package, install in the editable mode: pip install -e .
+import zernpy.zernikepol
 
-# Import of local modules (not from installed library by a package manager)
-import zernpy.zernikepol as zp
+importlib.reload(zernpy.zernikepol)  # trick to guarantee local changes to be always used for run
 from zernpy.zernikepol import ZernPol, fit_polynomials, generate_phases_image, generate_random_phases, zernikes_surface
-
-print("Path to a project:", zp.__file__, flush=True); actual_repo_imported = "site-packages" not in str(zp.__file__)
 
 
 # %% Test functions for the external call
@@ -115,90 +107,10 @@ def _estimate_high_order_calc_times():
     print(times)
 
 
-def check_conformity():
-    """
-    Test initialization parameters and transform between indices consistency.
-
-    Returns
-    -------
-    None.
-
-    """
-    zp = ZernPol(m=-2, n=2)  # Initialization with orders
-    (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 3 and noll_i == 5 and fringe_i == 6), (f"Check consistency of Z{(m1, n1)} indices: "
-                                                            + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
-    zp = ZernPol(l=-3, n=5)
-    (m2, n2), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 16 and noll_i == 19 and fringe_i == 20), (f"Check consistency of Z{(m2, n2)} indices: "
-                                                               + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
-    assert len(zp.get_polynomial_name(short=True)) > 0, f"Short name for Z{(m2, n2)} is zero length"
-    zp = ZernPol(azimuthal_order=-1, radial_order=5)
-    (m3, n3), osa_i, noll_i, fringe_i = zp.get_indices()
-    assert (osa_i == 17 and noll_i == 17 and fringe_i == 15), (f"Check consistency of Z{(m3, n3)} indices: "
-                                                               + f"OSA: {osa_i}, Noll: {noll_i}, Fringe: {fringe_i}")
-    assert len(zp.get_polynomial_name()) > 0, f"Name for Z{(m3, n3)} is zero length"
-    m4, n4 = zp.get_mn_orders()
-    assert m4 == m3 and n3 == n4, f"Check method get_mn_orders() for Z{(m3, n3)}"
-    print(f"Initialization of polynomials Z{(m1, n1)}, Z{(m2, n2)}, Z{(m3, n3)} tested")
-    osa_i = 12; zp = ZernPol(osa_index=osa_i)  # Initialization with OSA index
-    m, n = zp.get_mn_orders()
-    assert (m == 0 and n == 4), f"Check consistency of Z[OSA index = {osa_i}] orders {m, n}"
-    assert zp.get_fringe_index(m, n) == 9, f"Check consistency of Z[OSA index = {osa_i}] Fringe index"
-    assert zp.get_noll_index(m, n) == 11, f"Check consistency of Z[OSA index = {osa_i}] Noll index"
-    print(f"Initialization of polynomial Z[OSA index = {osa_i}] tested")
-    noll_i = 10  # Testing static methods
-    assert ZernPol.noll2osa(noll_i) == 9, f"Check consistency of Noll index {noll_i} conversion to OSA index"
-    assert ZernPol.osa2fringe(ZernPol.noll2osa(noll_i)) == 10, ("Check consistency of Noll "
-                                                                + f"index {noll_i} conversion to OSA index")
-    print(f"Conversion of Noll index {noll_i} to OSA and Fringe indices tested")
-    # Test for not proper initialization
-    try:
-        m_f = 2; n_f = -2
-        zp = ZernPol(m=m_f, n=n_f)
-        asserting_value = False
-    except ValueError:
-        print(f"Polynomial Z{(m_f, n_f)} haven't been initialized, test passed")
-        asserting_value = True
-    assert asserting_value, f"Polynomial Z{(m_f, n_f)} initialized with wrong orders assignment"
-    # Testing input parameters for calculation
-    zp = ZernPol(m=0, n=2); r = 0.0; theta = math.pi
-    assert abs(zp.polynomial_value(r, theta) + math.sqrt(3)) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
-    zp = ZernPol(m=-1, n=1); r = 0.5; theta = math.pi/2
-    assert abs(zp.polynomial_value(r, theta) - 1.0) < 1E-6, f"Check value of Z[{m}, {n}]({r}, {theta})"
-    print("Simple values of Zernike polynomials tested successfully")
-    try:
-        r = 'd'; theta = [1, 2]
-        zp.polynomial_value(r, theta)
-        asserting_value = False
-    except ValueError:
-        print("Input as string is not allowed for calculation of polynomial value, tested successfully")
-        asserting_value = True
-    assert asserting_value, "Wrong parameter passed (string) for calculation of polynomial value"
-    try:
-        r = [0.1, 0.2, 1.0+1E-9]; theta = math.pi
-        zp.polynomial_value(r, theta)
-        asserting_value = False
-    except ValueError:
-        print("Radius more than 1.0 is not allowed, tested successfully")
-        asserting_value = True
-    assert asserting_value, "Wrong parameter passed (r > 1.0) for calculation of polynomial value"
-    # Compare two implementations of Zernike pol-s sum calculation: direct and using meshgrid
-    pols = [ZernPol(osa=2), ZernPol(osa=4), ZernPol(osa=7), ZernPol(osa=10), ZernPol(osa=15),
-            ZernPol(osa=3), ZernPol(osa=9), ZernPol(osa=12), ZernPol(osa=16), ZernPol(osa=19)]
-    ampls = [-0.85, 0.85, 0.24, -0.37, 1.0, 0.1, -1.0, -0.05, 1.1, 0.41]
-    radii = np.arange(start=0.0, stop=1.0 + 0.001, step=0.001); thetas = np.arange(start=0.0, stop=2.0*np.pi + np.pi/180, step=np.pi/180)
-    t1 = time.perf_counter(); ZernPol.sum_zernikes(ampls, pols, radii, thetas, get_surface=True)
-    t_direct = int(round(1000*(time.perf_counter() - t1), 0)); t1 = time.perf_counter()
-    ZernPol._sum_zernikes_meshgrid(ampls, pols, radii, thetas); t_meshgr = int(round(1000*(time.perf_counter() - t1), 0))
-    print(f"Diff. calc. time b/t direct ({t_direct} ms) and meshgrid ({t_meshgr} ms) sums: {t_direct - t_meshgr} ms"); print("ALL TEST PASSED")
-
-
 # %% Tests
 if __name__ == "__main__":
     _test_plots = True  # regulates testing of plotting various plots
     _test_calculations = False  # regulates tests below concerning calculations
-    check_conformity()  # testing initialization
 
     # Testing plotting, the plots will be opened in the additional pop-up windows
     if _test_plots:

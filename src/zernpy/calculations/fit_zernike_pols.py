@@ -71,14 +71,14 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
             cropped_radii_vector = np.zeros(shape=(rows*cols,)); cropped_thetas_vector = np.zeros(shape=(rows*cols,))
             # Check input image shape
             if rows != cols:
-                __warn_message = "Phases image isn't square, results of fitting could be ambiguous"
+                __warn_message = "\nPhase profile (image) isn't square, results of fitting could be ambiguous"
                 img_min_size = min(rows, cols); img_max_size = max(rows, cols)
                 if not suppress_warns:
                     warnings.warn(__warn_message, stacklevel=2)
             else:
                 img_min_size = rows; img_max_size = rows
             if rows % 2 == 0 or cols % 2 == 0:
-                __warn_message = ("\nPhases image provided with even rows or columns, "
+                __warn_message = ("\nPhase profile (image) provided with even rows or columns, "
                                   + "it's error prone to define exact image center")
                 if not suppress_warns:
                     warnings.warn(__warn_message, stacklevel=2)

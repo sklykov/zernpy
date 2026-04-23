@@ -73,12 +73,9 @@ exclude = [
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
 module = ["numba", "joblib"]
 ignore_missing_imports = true
-[[tool.mypy.overrides]]  # ignore found errors in the specific test files
-module = [
-    "zernpy.run_zernpsf_as_main",
-    "zernpy.run_zernikepol_as_main"
-]
-ignore_errors = true
+# [[tool.mypy.overrides]]  # ignore any errors in specific test files - retained for ref.
+# module = ["zernpy.run_zernpsf_as_main"]
+# ignore_errors = true
 
 [tool.ruff]
 line-length = 145  # my own preference

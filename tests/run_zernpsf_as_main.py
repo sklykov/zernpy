@@ -7,36 +7,34 @@ Run a few methods from 'zernpsf' as the main one for performing tests in IDE.
 @licence: MIT, @year: 2026
 
 """
-import sys
+import importlib
 from contextlib import suppress
 from pathlib import Path
 
-# Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 import matplotlib
 import numpy as np
 
+# Explicit backend assignment for matplotlib - for compatibility between running configurations in Spyder and PyCharm IDEs
 with suppress(ImportError):
     matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-# Include local modules (project folder) on the top of the sys.path environment for proper import
-root = Path(__file__).resolve().parents[1]  # one step on top in parent folder, should be a root folder in a repo, not "src"
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))  # append to the start path to a root folder of a repo for correct import in a session
+# Import of developed version of package, install in the editable mode: pip install -e .
+import zernpy.zernikepol
+import zernpy.zernpsf
 
-# Import of local modules (not from installed library by a package manager)
-import zernpy.zernpsf as zpsf
+importlib.reload(zernpy.zernikepol)  # trick to guarantee local changes to be always used for run
+importlib.reload(zernpy.zernpsf)
+
 from zernpy.zernikepol import ZernPol
 from zernpy.zernpsf import ZernPSF, force_get_psf_compilation
-
-print("Path to a project:", zpsf.__file__, flush=True); actual_repo_imported = "site-packages" not in str(zpsf.__file__)
 
 # %% Test as the main script
 if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
     wavelength_um = 0.55  # used below in a several calls
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
-    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False; check_test = False
+    check_airy = False; check_common_psf = True; check_io_kernel = False; check_parallel_calculation = False; check_test = False
     check_faster_airy = True; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
