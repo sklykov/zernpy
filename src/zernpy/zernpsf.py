@@ -2,7 +2,7 @@
 """
 PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.
 
-@author: Sergei Klykov, @year: 2025, @licence: MIT \n
+@author: Sergei Klykov, @year: 2025, @license: MIT \n
 
 """
 # %% Global imports
@@ -649,11 +649,11 @@ class ZernPSF:
             warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
 
     # %% Parallelized computing methods
-    def initialize_parallel_workers(self):
+    def __initialize_parallel_workers(self):
         """
         Initialize 4 Processes() for performing integration.
 
-        See intmproc.py script (utils module) for implementation details.
+        See intmproc.py script (utils module) for implementation details.\n
         Tests showed that this way doesn't provide performance gain.
 
         Returns
@@ -666,7 +666,7 @@ class ZernPSF:
             self.__ParallelCalc = DispenserManager(compute_func=radial_integral_s, params_list=self.__integration_params,
                                                    n_workers=4, verbose_info=False)
 
-    def get_psf_point_r_parallel(self, r: float, theta: float) -> float:
+    def __get_psf_point_r_parallel(self, r: float, theta: float) -> float:
         """
         Parallel implementation of numerical integration.
 
@@ -702,7 +702,7 @@ class ZernPSF:
         integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
         return np.power(np.abs(integral_sum), 2)*integral_normalization
 
-    def get_kernel_parallel(self, normalize_values: bool = True) -> np.ndarray:
+    def __get_kernel_parallel(self, normalize_values: bool = True) -> np.ndarray:
         """
         Parallelized implementation of PSF kernel calculation.
 
@@ -734,7 +734,7 @@ class ZernPSF:
                 theta = np.arctan2((i - i_center), (j - j_center))  # The PSF also has the angular dependency, not only the radial one
                 theta += np.pi  # shift angles to the range [0, 2pi]
                 if self.zernpol is not None:
-                    self.kernel[i, j] = self.get_psf_point_r_parallel(r=distance, theta=theta); calculated_points += 1
+                    self.kernel[i, j] = self.__get_psf_point_r_parallel(r=distance, theta=theta); calculated_points += 1
                 # print(f"Calculated point {[i, j]} from {[self.kernel_size-1, self.kernel_size-1]}")
                 print(f"Calculated point #{calculated_points} from {self.kernel_size*self.kernel_size}, takes ms: ",
                       int(round(1000*(time.perf_counter() - t1), 0)))
@@ -742,7 +742,7 @@ class ZernPSF:
             self.kernel /= np.max(self.kernel)
         return self.kernel
 
-    def deinitialize_workers(self):
+    def __deinitialize_workers(self):
         """
         Release initialized before Processes for performing parallel computation.
 

@@ -120,28 +120,19 @@
                         <li>
                                 <a class="function" href="#ZernPSF.read_json">read_json</a>
                         </li>
-                        <li>
-                                <a class="function" href="#ZernPSF.initialize_parallel_workers">initialize_parallel_workers</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ZernPSF.get_psf_point_r_parallel">get_psf_point_r_parallel</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ZernPSF.get_kernel_parallel">get_kernel_parallel</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ZernPSF.deinitialize_workers">deinitialize_workers</a>
-                        </li>
                 </ul>
 
             </li>
             <li>
                     <a class="function" href="#force_get_psf_compilation">force_get_psf_compilation</a>
             </li>
+            <li>
+                    <a class="function" href="#clean_zernpy_cache">clean_zernpy_cache</a>
+            </li>
     </ul>
 
 
-            <footer>zernpy ver. 0.1.0, 2026 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.1.1, 2026 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -157,7 +148,7 @@ zernpy<wbr>.zernpsf    </h1>
 
                         <div class="docstring"><p>PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.</p>
 
-<p>@author: Sergei Klykov, @year: 2025, @licence: MIT</p>
+<p>@author: Sergei Klykov, @year: 2025, @license: MIT</p>
 </div>
 
                 
@@ -296,8 +287,8 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
                             </div>
                             <div id="ZernPSF.zernpol" class="classattr">
                                 <div class="attr variable">
-            <span class="name">zernpol</span><span class="annotation">: <a href="zernikepol.html#ZernPol">zernpy.zernikepol.ZernPol</a></span>        =
-<span class="default_value">&lt;<a href="zernikepol.html#ZernPol">zernpy.zernikepol.ZernPol</a> object&gt;</span>
+            <span class="name">zernpol</span><span class="annotation">: Optional[<a href="zernikepol.html#ZernPol">zernpy.zernikepol.ZernPol</a>]</span>        =
+<span class="default_value">None</span>
 
         
     </div>
@@ -308,7 +299,7 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
                             </div>
                             <div id="ZernPSF.polynomials" class="classattr">
                                 <div class="attr variable">
-            <span class="name">polynomials</span>        =
+            <span class="name">polynomials</span><span class="annotation">: tuple</span>        =
 <span class="default_value">()</span>
 
         
@@ -428,7 +419,7 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
                             </div>
                             <div id="ZernPSF.coefficients" class="classattr">
                                 <div class="attr variable">
-            <span class="name">coefficients</span><span class="annotation">: numpy.ndarray</span>        =
+            <span class="name">coefficients</span><span class="annotation">: Optional[numpy.ndarray]</span>        =
 <span class="default_value">None</span>
 
         
@@ -440,7 +431,7 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
                             </div>
                             <div id="ZernPSF.amplitudes" class="classattr">
                                 <div class="attr variable">
-            <span class="name">amplitudes</span><span class="annotation">: numpy.ndarray</span>        =
+            <span class="name">amplitudes</span><span class="annotation">: Optional[numpy.ndarray]</span>        =
 <span class="default_value">None</span>
 
         
@@ -507,7 +498,7 @@ should be less than this limit.</li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">set_calculation_props</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">n_integration_points_r</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">n_integration_points_phi</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+        <span class="name">set_calculation_props</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">n_integration_points_r</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">n_integration_points_phi</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -550,7 +541,7 @@ Number of integration points used for calculation diffraction integral on the po
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">calculate_psf_kernel</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">suppress_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">normalized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">verbose_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">accelerated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+        <span class="name">calculate_psf_kernel</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">suppress_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">normalized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">verbose_info</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">accelerated</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
 
         
     </div>
@@ -656,7 +647,7 @@ String with ID for making unique Figure. The default is "".</li>
 
 <ul>
 <li><strong>image</strong> (numpy.ndarray):
-Sample image, not colour.</li>
+Sample gray-scaled (2D array) image.</li>
 <li><strong>scale2original</strong> (bool):
 Convolution resulting image will be rescaled to the max intensity of the provided image if True. The default is True.</li>
 </ul>
@@ -743,7 +734,7 @@ Part of kernel max that is used for checking rows / columns for cropping. The de
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">save_json</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
+        <span class="name">save_json</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -774,7 +765,7 @@ Flag for overwriting the existing file. The default is False.</li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">read_json</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
+        <span class="name">read_json</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -798,117 +789,12 @@ Absolute path to the file. If None is provided, then the stored in the attribute
 
 
                             </div>
-                            <div id="ZernPSF.initialize_parallel_workers" class="classattr">
-                                <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">initialize_parallel_workers</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#ZernPSF.initialize_parallel_workers"></a>
-    
-            <div class="docstring"><p>Initialize 4 Processes() for performing integration.</p>
-
-<p>See intmproc.py script (utils module) for implementation details.
-Tests showed that this way doesn't provide performance gain.</p>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>None.</strong></li>
-</ul>
-</div>
-
-
-                            </div>
-                            <div id="ZernPSF.get_psf_point_r_parallel" class="classattr">
-                                <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">get_psf_point_r_parallel</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">r</span><span class="p">:</span> <span class="nb">float</span>, </span><span class="param"><span class="n">theta</span><span class="p">:</span> <span class="nb">float</span></span><span class="return-annotation">) -> <span class="nb">float</span>:</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#ZernPSF.get_psf_point_r_parallel"></a>
-    
-            <div class="docstring"><p>Parallel implementation of numerical integration.</p>
-
-<h6 id="parameters">Parameters</h6>
-
-<ul>
-<li><strong>r</strong> (float):
-Input radial polar coordinate.</li>
-<li><strong>theta</strong> (float):
-Input angular polar coordinate.</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>float</strong>: Each point for PSF kernel.</li>
-</ul>
-</div>
-
-
-                            </div>
-                            <div id="ZernPSF.get_kernel_parallel" class="classattr">
-                                <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">get_kernel_parallel</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">normalize_values</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#ZernPSF.get_kernel_parallel"></a>
-    
-            <div class="docstring"><p>Parallelized implementation of PSF kernel calculation.</p>
-
-<p>Note it's much less effective than common calculate_psf_kernel() method.</p>
-
-<h6 id="parameters">Parameters</h6>
-
-<ul>
-<li><strong>normalize_values</strong> (bool, optional):
-Flag to normalize values. The default is True.</li>
-</ul>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>numpy.ndarray</strong>: PSF kernel.</li>
-</ul>
-</div>
-
-
-                            </div>
-                            <div id="ZernPSF.deinitialize_workers" class="classattr">
-                                <div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">deinitialize_workers</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
-
-        
-    </div>
-    <a class="headerlink" href="#ZernPSF.deinitialize_workers"></a>
-    
-            <div class="docstring"><p>Release initialized before Processes for performing parallel computation.</p>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>None.</strong></li>
-</ul>
-</div>
-
-
-                            </div>
                 </section>
                 <section id="force_get_psf_compilation">
                     <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">force_get_psf_compilation</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">verbose_report</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span>:</span></span>
+        <span class="name">force_get_psf_compilation</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">verbose_report</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n"><a href="#ZernPSF">ZernPSF</a></span><span class="p">,</span> <span class="n"><a href="#ZernPSF">ZernPSF</a></span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -923,6 +809,27 @@ Flag to normalize values. The default is True.</li>
 
 <ul>
 <li><strong>None or tuple with 2 used ZernPSF instances depending on 'numba_installed' flag.</strong></li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="clean_zernpy_cache">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">clean_zernpy_cache</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#clean_zernpy_cache"></a>
+    
+            <div class="docstring"><p>Clean locally cached files created by numba after compilation of computation methods from the 'calc_psfs_numba' module.</p>
+
+<h6 id="returns">Returns</h6>
+
+<ul>
+<li><strong>bool</strong>: Flag if local cache is assumed (at least 6 cached files successfully removed) to be cleaned.</li>
 </ul>
 </div>
 

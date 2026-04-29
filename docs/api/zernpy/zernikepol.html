@@ -129,7 +129,7 @@
     </ul>
 
 
-            <footer>zernpy ver. 0.1.0, 2026 Sergei Klykov</footer>
+            <footer>zernpy ver. 0.1.1, 2026 Sergei Klykov</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -147,7 +147,7 @@ zernpy<wbr>.zernikepol    </h1>
 
 <p>Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.</p>
 
-<p>@author: Sergei Klykov, @year: 2026, @licence: MIT</p>
+<p>@author: Sergei Klykov, @year: 2026, @license: MIT</p>
 </div>
 
                 
@@ -917,13 +917,13 @@ Depending on the input values and parameter get_surface - can be: float, 1D or 2
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">gen_polar_coordinates</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01309</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">PolarVectors</span>:</span></span>
+        <span class="name">gen_polar_coordinates</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01309</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">polar_vectors</span>:</span></span>
 
         
     </div>
     <a class="headerlink" href="#ZernPol.gen_polar_coordinates"></a>
     
-            <div class="docstring"><p>Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 defined by the specification of r_step and theta_rad_step parameters.</p>
@@ -946,7 +946,7 @@ Step for generation the vector with theta angles for an entire unit circle. The 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>polar_vectors</strong>: namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+<li><strong>polar_vectors</strong>: namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
 Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
 </ul>
 </div>
@@ -958,13 +958,13 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">gen_equal_polar_mesh</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">250</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">PolarVectors</span>:</span></span>
+        <span class="name">gen_equal_polar_mesh</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">250</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">polar_vectors</span>:</span></span>
 
         
     </div>
     <a class="headerlink" href="#ZernPol.gen_equal_polar_mesh"></a>
     
-            <div class="docstring"><p>Generate the named tuple "PolarVectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 equal and defined by the parameter n_points.</p>
@@ -979,7 +979,7 @@ Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The d
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>polar_vectors</strong>: namedtuple("PolarVectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
+<li><strong>polar_vectors</strong>: namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
 Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
 </ul>
 </div>
@@ -991,7 +991,7 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">plot_profile</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomial</span>,</span><span class="param">	<span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>,</span><span class="param">	<span class="n">show_title</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">projection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;2d&#39;</span>,</span><span class="param">	<span class="n">polar_coordinates</span><span class="p">:</span> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">PolarVectors</span> <span class="o">=</span> <span class="p">()</span></span><span class="return-annotation">):</span></span>
+        <span class="name">plot_profile</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">polynomial</span>,</span><span class="param">	<span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>,</span><span class="param">	<span class="n">show_title</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">projection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;2d&#39;</span>,</span><span class="param">	<span class="n">polar_coordinates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">polar_vectors</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -1018,7 +1018,7 @@ Use default parameters for polar coordinates generation. The default is True.</l
 Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".</li>
 <li><strong>polar_coordinates</strong> (polar_vectors, optional):
 If the flag 'use_defaults' is False, this named tuple is used for accessing polar coordinates for plotting.
-The default is ().</li>
+The default is None.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -1041,7 +1041,7 @@ The default is ().</li>
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">gen_zernikes_surface</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="n">Sequence</span>,</span><span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0174533</span>,</span><span class="param">	<span class="n">equal_n_coordinates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">250</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span>:</span></span>
+        <span class="name">gen_zernikes_surface</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="n">Sequence</span>,</span><span class="param">	<span class="n">r_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>,</span><span class="param">	<span class="n">theta_rad_step</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0174533</span>,</span><span class="param">	<span class="n">equal_n_coordinates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">250</span></span><span class="return-annotation">) -> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">zernikes_surface</span>:</span></span>
 
         
     </div>
@@ -1074,7 +1074,7 @@ Number of points used for generation of equal sized polar coordinates r, theta.<
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>zernikes_surface</strong>: namedtuple("ZernikesSurface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
+<li><strong>zernikes_surface</strong>: namedtuple("zernikes_surface", "ZernSurf R Theta") - tuple for storing mesh values for polar coordinates.
 ZernSurf variable is 2D matrix with the sum of the input polynomials on generated polar coordinates (R, Theta).</li>
 </ul>
 </div>
@@ -1086,7 +1086,7 @@ ZernSurf variable is 2D matrix with the sum of the input polynomials on generate
                     <div class="decorator">@staticmethod</div>
 
         <span class="def">def</span>
-        <span class="name">plot_sum_zernikes_on_fig</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">figure</span><span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>,</span><span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="n">Sequence</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">zernikes_sum_surface</span><span class="p">:</span> <span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">ZernikesSurface</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">show_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>,</span><span class="param">	<span class="n">projection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;2d&#39;</span></span><span class="return-annotation">) -> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>:</span></span>
+        <span class="name">plot_sum_zernikes_on_fig</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">figure</span><span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>,</span><span class="param">	<span class="n">coefficients</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">polynomials</span><span class="p">:</span> <span class="n">Sequence</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">use_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">zernikes_sum_surface</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">zernpy</span><span class="o">.</span><span class="n">zernikepol</span><span class="o">.</span><span class="n">zernikes_surface</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">show_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">color_map</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>,</span><span class="param">	<span class="n">projection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;2d&#39;</span></span><span class="return-annotation">) -> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>:</span></span>
 
         
     </div>
@@ -1109,10 +1109,10 @@ of Zernike polynomials sum or Use for plotting provided calculated beforehand su
 Coefficients of Zernike polynomials for calculation of their sum. The default is ().</li>
 <li><strong>polynomials</strong> (Sequence[ZernPol], optional):
 Initialized polynomials as class instances of ZernPol class specified in this module. The default is ().</li>
-<li><strong>zernikes_sum_surface</strong> (namedtuple("ZernikesSurface", "ZernSurf R Theta") , optional):
+<li><strong>zernikes_sum_surface</strong> (namedtuple("zernikes_surface", "ZernSurf R Theta"), optional):
 This tuple should contain the ZernSurf calculated on a mesh of polar coordinates R, Theta.
 This tuple could be generated by the call of the static method gen_zernikes_surface().
-Check the method signature for details. The default is ().</li>
+Check the method signature for details. The default is None.</li>
 <li><strong>show_range</strong> (bool, optional):
 Flag for showing range of provided values as the colorbar on the figure. The default is True.</li>
 <li><strong>color_map</strong> (str, optional):
@@ -1278,7 +1278,7 @@ Height of generated image. The default is 513.</li>
                     <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">generate_random_phases</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="n">Tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n"><a href="#ZernPol">ZernPol</a></span><span class="p">]]</span>:</span></span>
+        <span class="name">generate_random_phases</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>,</span><span class="param">	<span class="n">img_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">img_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">513</span>,</span><span class="param">	<span class="n">round_digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span></span><span class="return-annotation">) -> <span class="n">Tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n"><a href="#ZernPol">ZernPol</a></span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1315,7 +1315,7 @@ tuple with generated Zernike polynomials.</li>
                     <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">generate_polynomials</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></span><span class="return-annotation">) -> <span class="n">Tuple</span><span class="p">[</span><span class="n"><a href="#ZernPol">ZernPol</a></span><span class="p">]</span>:</span></span>
+        <span class="name">generate_polynomials</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">max_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span></span><span class="return-annotation">) -> <span class="n">Tuple</span><span class="p">[</span><span class="n"><a href="#ZernPol">ZernPol</a></span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>:</span></span>
 
         
     </div>

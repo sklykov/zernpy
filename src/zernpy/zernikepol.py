@@ -4,7 +4,7 @@ Main script with the class definition for accessing Zernike polynomial initializ
 
 Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
-@author: Sergei Klykov, @year: 2026, @licence: MIT \n
+@author: Sergei Klykov, @year: 2026, @license: MIT \n
 
 """
 # %% Global imports
@@ -1219,7 +1219,7 @@ class ZernPol:
     @staticmethod
     def _plot_zernikes_half_pyramid():
         """
-        Generate halb-pyramid with Zernikes polynomials.
+        Generate half-pyramid with Zernikes polynomials.
 
         Returns
         -------
@@ -1524,16 +1524,13 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
         meaning and type as explained before.
     """
-    zernike_coefficients = np.zeros(shape=(len(polynomials), ))
+    zernike_coefficients = np.zeros(shape=(len(polynomials), )); cropped_image = None
     logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings, strict_circle_border)
     if return_cropped_image:
         cropped_image = logic_mask*phases_image  # for debugging
     zernike_coefficients = fit_zernikes(cropped_phases_coordinates, polynomials)
     zernike_coefficients = np.round(zernike_coefficients, round_digits)
-    if return_cropped_image:
-        return zernike_coefficients, cropped_image
-    else:
-        return zernike_coefficients, None
+    return zernike_coefficients, cropped_image
 
 
 def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii_vector: np.ndarray,
