@@ -3,7 +3,19 @@ Logging of changes between package versions (generated and uploaded to pypi.org)
 
 All notable changes to this project will be documented in this file.    
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).    
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).  
+
+
+### [0.1.1] - 2026-04-29
+
+#### Added
+- Saving of compiled by numba computational methods and function for cleaning them up;
+- Automatic publishing workflow used by GitHub Actions.
+
+#### Changed 
+- GitHub Actions tests, added new Python version runtimes;
+- Typing definitions after setting up mypy testing rules; 
+- Codebase after applying ruff linter rules.
 
 
 ### [0.1.0] - 2026-01-07
