@@ -1,4 +1,8 @@
 ### 'zernpy' - Python package for calculation real-valued Zernike polynomials and associated 2D PSF kernels
+[![Tests](https://github.com/sklykov/zernpy/actions/workflows/test.yaml/badge.svg)](https://github.com/sklykov/zernpy/actions/workflows/test.yaml)
+[![PyPI](https://img.shields.io/pypi/v/zernpy)](https://pypi.org/project/zernpy/) 
+[![License](https://img.shields.io/github/license/sklykov/zernpy)](https://github.com/sklykov/zernpy/blob/main/LICENSE)
+[![Lint](https://img.shields.io/badge/lint-ruff-informational)](https://github.com/astral-sh/ruff)
 
 #### Project description and references
 This project is designed to compute the parameters, real values, and properties of Zernike polynomials using both exact (analytical) and recursive equations. 

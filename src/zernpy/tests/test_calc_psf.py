@@ -9,21 +9,26 @@ For running collected here tests, it's enough to run the command "pytest" from t
 @licence: MIT
 
 """
-import numpy as np
-from pathlib import Path
 import os
+from pathlib import Path
 
-# Importing the written in the modules test functions for letting pytest library their automatic exploration
-if __name__ != "__main__":
-    from ..calculations.calc_psfs import (get_psf_kernel)
-    from ..zernpsf import ZernPSF, force_get_psf_compilation
-    from ..zernikepol import ZernPol
-else:
-    from zernpy import ZernPol
+import numpy as np
+
+# Relative import from the modules - designed to be used only by pytest runs
+from ..calculations.calc_psfs import get_psf_kernel
+from ..zernikepol import ZernPol
+from ..zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
 
 
 # Testing functions
 def test_psf_kernel_calc():
+    """
+    Test common calculation of PSF kernel + comparison with the result of exact equation - Airy pattern.
+
+    Returns
+    -------
+    None
+    """
     NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.28  # Common physical properties
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
@@ -52,6 +57,13 @@ def test_psf_kernel_calc():
 
 
 def test_zernpsf_usage():
+    """
+    Test wrong initialization parameters for ZernPSF, at the end - normal one.
+
+    Returns
+    -------
+    None
+    """
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 5.0; ampl = 0.55  # Common physical properties
     zp1 = ZernPol(m=0, n=2)  # defocus
     test_init = True  # flag, if set to False, the test failed (e.g., expected Error not caught)
@@ -101,6 +113,13 @@ def test_zernpsf_usage():
 
 
 def test_save_load_zernpsf():
+    """
+    Test saving and loading of PSF kernel stored in a json file.
+
+    Returns
+    -------
+    None
+    """
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
     zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional classes for testing reading and reassigning values
     NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.0; ampl = 0.11  # Common physical properties
@@ -118,7 +137,14 @@ def test_save_load_zernpsf():
 
 
 def test_numba_compilation():
-    force_get_psf_compilation()  # force compilation of computation methods
+    """
+    Test compilation by numba of the calculation functions.
+
+    Returns
+    -------
+    None
+    """
+    force_get_psf_compilation()  # force compilational of computation methods
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12
     zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6); zpsf7 = ZernPSF(zp6)  # defocus
@@ -126,4 +152,5 @@ def test_numba_compilation():
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
     kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
-    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not one calculation of kernel methods have significant differences"
+    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not computational of a kernel methods have significant differences"
+    assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

@@ -7,6 +7,7 @@ Example of 'zernpy' script functionality usage.
 """
 # %% Global imports
 import numpy as np
+
 try:
     from zernpy import generate_polynomials
     zernpy_installed = True

@@ -44,7 +44,7 @@ def make_orders_coeffs(defined_coeff: dict, max_order: int, minus: bool = False)
     # Setting provided already defined coefficients to the initialized dictionary
     if len(defined_coeff.keys()) > 0:
         for key, value in defined_coeff.items():
-            if key in coefficients.keys():
+            if key in coefficients:
                 if not minus:
                     coefficients[key] = value
                 else:
@@ -185,7 +185,7 @@ def check_special_orders(orders: tuple) -> dict:
         Polynomials coefficients with radial order: value pairs.
 
     """
-    special_coefficients = None
+    special_coefficients = {}
     m, n = orders
     if abs(m) == n:
         special_coefficients = make_orders_coeffs({n: 1}, n)
@@ -209,7 +209,7 @@ def check_special_orders_dr(orders: tuple) -> dict:
         Derivatives of polynomials coefficients with radial order: value pairs.
 
     """
-    special_coefficients = None
+    special_coefficients = {}
     m, n = orders
     if abs(m) == n:
         special_coefficients = make_orders_coeffs({n-1: n}, n-1)
@@ -248,16 +248,16 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
         initial_coefficients = initial_coefficients_test
     else:
         initial_coefficients = precalculated_initial_coeffs
-    if orders in initial_coefficients.keys():
+    if orders in initial_coefficients:
         # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients[orders]  # return stored in the dictionary value
-    elif check_special_orders(orders) is not None:
+    elif check_special_orders(orders):
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
-            if orders not in precalculated_initial_coeffs.keys():
+            if orders not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[orders] = check_special_orders(orders)
         else:
-            if orders not in initial_coefficients_test.keys():
+            if orders not in initial_coefficients_test:
                 initial_coefficients_test[orders] = check_special_orders(orders)
         return check_special_orders(orders)  # some special shorthanded cases for polynomials values calculation
     else:
@@ -269,14 +269,14 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
                                                                max_order=n-2, minus=True))
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
-            if (abs(m-1), n-1) not in precalculated_initial_coeffs.keys():
+            if (abs(m-1), n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(abs(m-1), n-1)] = polm1n1
-            if (m+1, n-1) not in precalculated_initial_coeffs.keys():
+            if (m+1, n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(m+1, n-1)] = polmP1n1
         else:
-            if (abs(m-1), n-1) not in initial_coefficients_test.keys():
+            if (abs(m-1), n-1) not in initial_coefficients_test:
                 initial_coefficients_test[(abs(m-1), n-1)] = polm1n1
-            if (m+1, n-1) not in initial_coefficients_test.keys():
+            if (m+1, n-1) not in initial_coefficients_test:
                 initial_coefficients_test[(m+1, n-1)] = polmP1n1
         return sum_dict_coeffs
 
@@ -311,16 +311,16 @@ def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
         initial_coefficients_dr = initial_coefficients_test_dr
     else:
         initial_coefficients_dr = precalculated_initial_coeffs_dr
-    if orders in initial_coefficients_dr.keys():
+    if orders in initial_coefficients_dr:
         # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients_dr[orders]  # return stored in the dictionary value
-    elif check_special_orders_dr(orders) is not None:
+    elif check_special_orders_dr(orders):
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
-            if orders not in precalculated_initial_coeffs_dr.keys():
+            if orders not in precalculated_initial_coeffs_dr:
                 precalculated_initial_coeffs_dr[orders] = check_special_orders_dr(orders)
         else:
-            if orders not in initial_coefficients_test_dr.keys():
+            if orders not in initial_coefficients_test_dr:
                 initial_coefficients_test_dr[orders] = check_special_orders_dr(orders)
         return check_special_orders_dr(orders)  # some special shorthanded cases for derivatives values calculation
     else:
@@ -335,22 +335,22 @@ def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
                                                                max_order=n-2, minus=True))
         # Cashing already calculated coefficients in global dictionary specified above
         if not use_test_dict:
-            if (abs(m-1), n-1) not in precalculated_initial_coeffs.keys():
+            if (abs(m-1), n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(abs(m-1), n-1)] = polm1n1
-            if (m+1, n-1) not in precalculated_initial_coeffs.keys():
+            if (m+1, n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(m+1, n-1)] = polmP1n1
-            if (abs(m-1), n-1) not in precalculated_initial_coeffs_dr.keys():
+            if (abs(m-1), n-1) not in precalculated_initial_coeffs_dr:
                 precalculated_initial_coeffs_dr[(abs(m-1), n-1)] = polm1n1_dr
-            if (m+1, n-1) not in precalculated_initial_coeffs_dr.keys():
+            if (m+1, n-1) not in precalculated_initial_coeffs_dr:
                 precalculated_initial_coeffs_dr[(m+1, n-1)] = polmP1n1_dr
         else:
-            if (abs(m-1), n-1) not in initial_coefficients_test.keys():
+            if (abs(m-1), n-1) not in initial_coefficients_test:
                 initial_coefficients_test[(abs(m-1), n-1)] = polm1n1
-            if (m+1, n-1) not in initial_coefficients_test.keys():
+            if (m+1, n-1) not in initial_coefficients_test:
                 initial_coefficients_test[(m+1, n-1)] = polmP1n1
-            if (abs(m-1), n-1) not in initial_coefficients_test_dr.keys():
+            if (abs(m-1), n-1) not in initial_coefficients_test_dr:
                 initial_coefficients_test_dr[(abs(m-1), n-1)] = polm1n1_dr
-            if (m+1, n-1) not in initial_coefficients_test_dr.keys():
+            if (m+1, n-1) not in initial_coefficients_test_dr:
                 initial_coefficients_test_dr[(m+1, n-1)] = polmP1n1_dr
         return sum_dict_coeffs
 

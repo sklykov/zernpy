@@ -10,12 +10,11 @@ For running collected here tests, it's enough to run the command "pytest" from t
 
 """
 # %% Global imports
-import numpy as np
 import random
 
-# %% Imports from modules
-if __name__ != "__main__":
-    from ..zernikepol import generate_random_phases, fit_polynomials, ZernPol, fit_polynomials_vectors, generate_phases_image
+import numpy as np
+
+from ..zernikepol import ZernPol, fit_polynomials, fit_polynomials_vectors, generate_phases_image, generate_random_phases
 
 
 # %% Test functions
@@ -62,7 +61,7 @@ def test_random_fitting():
             assert rmse_percentage <= (mdp//2) + 1, ("RMSE between fitted and randomly generated polynomials:"
                                                      + f" {rmse_percentage} > assumed value {(mdp//2) + 1}")
     # Test the sign of fitted and randomly generated amplitudes
-    for i in range(2):  # run tests
+    for _ in range(2):  # run tests
         random_phases_image, random_amplitudes, polynomials_tuple = generate_random_phases(img_height=101, img_width=101)
         fitted_amplitudes, _ = fit_polynomials(random_phases_image, polynomials_tuple)
         max_fit_ampl = np.max(fitted_amplitudes); max_src_ampl = np.max(random_amplitudes)
@@ -73,9 +72,7 @@ def test_random_fitting():
             else:
                 src_ampl = max_src_ampl; fit_ampl = max_fit_ampl
             same_sign = False
-            if src_ampl < 0.0 and fit_ampl < 0.0:
-                same_sign = True
-            elif src_ampl > 0.0 and fit_ampl > 0.0:
+            if src_ampl < 0.0 and fit_ampl < 0.0 or src_ampl > 0.0 and fit_ampl > 0.0:
                 same_sign = True
             assert same_sign, ("\n Fitted and source amplitudes have abs. maximum values with different"
                                + f" signs: source ampl.: {src_ampl}, fitted ampl.: {fit_ampl}")

@@ -7,11 +7,9 @@ Fitting of Zernike polynomials to the provided deformations on an image.
 
 """
 # %% Global imports
-import numpy as np
 import warnings
 
-# %% Local imports
-
+import numpy as np
 
 # %% Module parameters
 __docformat__ = "numpydoc"
@@ -73,17 +71,17 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
             cropped_radii_vector = np.zeros(shape=(rows*cols,)); cropped_thetas_vector = np.zeros(shape=(rows*cols,))
             # Check input image shape
             if rows != cols:
-                __warn_message = "Phases image isn't square, results of fitting could be ambiguous"
+                __warn_message = "\nPhase profile (image) isn't square, results of fitting could be ambiguous"
                 img_min_size = min(rows, cols); img_max_size = max(rows, cols)
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             else:
                 img_min_size = rows; img_max_size = rows
             if rows % 2 == 0 or cols % 2 == 0:
-                __warn_message = ("Phases image provided with even rows or columns, "
+                __warn_message = ("\nPhase profile (image) provided with even rows or columns, "
                                   + "it's error prone to define exact image center")
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             if img_min_size < 3:
                 raise ValueError("Provided image is too small (min size < 3) for producing any meaningful result")
             # Calculate center of the input image - depending on its sizes
@@ -114,7 +112,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
                                   + " or with 1 pixel difference between them. \n"
                                   + "Note that additional border pixels are included to crop.")
                 if not suppress_warns:
-                    warnings.warn(__warn_message)
+                    warnings.warn(__warn_message, stacklevel=2)
             # Calculate polar coordinates of pixels
             recalibrate_radii = False; recalibration_coeff = 1.0; vector_index = 0
             # Cropping phases, collecting data on cropping process
@@ -185,7 +183,7 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
     # Calculate polynomials values in the unit circle defined by polar coordinates
     zernike_values = np.zeros(shape=(vector_length, len(polynomials)))
     # Checking that all polynomials are unique
-    if not len(polynomials) == 0:
+    if len(polynomials) != 0:
         provided_orders = []
         for polynomial in polynomials:
             provided_orders.append(polynomial.get_mn_orders())
@@ -212,28 +210,3 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
     else:
         raise ValueError("There isn't any polynomials provided")
     return zernike_coefficients
-
-
-# %% Basic tests
-if __name__ == "__main__":
-    phases_sample = 4*np.ones(shape=(3, 4), dtype="uint8")
-    crop_deforms1, polar_coordinates1 = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(4, 4), dtype="int16")
-    crop_deforms2, polar_coordinates2 = crop_phases_img(phases_sample)
-    crop_deforms2a, polar_coordinates2a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(6, 6))
-    crop_deforms3, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(3, 3))
-    crop_deforms4, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(5, 5))
-    crop_deforms5, polar_coordinates = crop_phases_img(phases_sample)
-    phases_sample = np.ones(shape=(4, 6))
-    crop_deforms6, polar_coordinates6 = crop_phases_img(phases_sample)
-    crop_deforms6a, polar_coordinates6a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(7, 6))
-    crop_deforms7, polar_coordinates7 = crop_phases_img(phases_sample)
-    crop_deforms7a, polar_coordinates7a = crop_phases_img(phases_sample, strict_border=True)
-    phases_sample = np.ones(shape=(5, 5))
-    crop_deforms81, polar_coordinates = crop_phases_img(phases_sample)
-    crop_deforms82, polar_coordinates = crop_phases_img(phases_sample, crop_radius=0.5)
-    thetas_grads = polar_coordinates[1]*(180.0/np.pi)

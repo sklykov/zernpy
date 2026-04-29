@@ -1,3 +1,2 @@
-exclude src/zernpy/*.png
-
-recursive-exclude src/zernpy/readme_images *
+recursive-exclude tests *
+recursive-exclude src/zernpy/tests *

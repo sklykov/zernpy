@@ -1,0 +1,40 @@
+name: Publish Python package
+
+on:
+  push:
+    tags:
+      - "v*.*.*"  # Manual tagging of the commit on the main branch should trigger publish action
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package
+        run: twine check dist/*
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1

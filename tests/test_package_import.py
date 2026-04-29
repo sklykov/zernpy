@@ -9,7 +9,7 @@ Test the import of "zernpy" package for basic functionality.
 
 def test_initialization():
     try:
-        from zernpy import ZernPol, generate_polynomials, ZernPSF, force_get_psf_compilation
+        from zernpy import ZernPol, ZernPSF, force_get_psf_compilation, generate_polynomials
         try:
             import numba
             if numba is not None:

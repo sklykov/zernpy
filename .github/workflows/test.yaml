@@ -2,12 +2,14 @@ name: Run Python tests
 
 on:
   push:
-    branches: [ main ]  # - add for limiting it only to pushes on a main branch
-    paths:  # triggers testing action if only any python / 2 other files have been changed
+    branches: [ main ]  # - add for limiting it to be triggered only by pushes to the main branch
+    paths:  # triggers testing action if only any Python / listed files have been changed
       - '**.py'
       - 'requirements.txt'
+      - 'pyproject.toml'
       - '.github/workflows/test.yaml'
   pull_request:
+     branches: [ main ]
 
 jobs:
   test:
@@ -15,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout code  # loads code from a repo
@@ -31,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install -e .
-          pip install numba
+          pip install "numba>=0.57.1"
 
       - name: Run tests
         run: pytest
