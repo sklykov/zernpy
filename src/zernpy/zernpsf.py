@@ -16,6 +16,8 @@ from typing import Optional, Sequence, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
+from numbers import Real
+
 # Check if numba library installed for importing compilable methods
 numba_installed = False  # default value for checking if 'numba' library is installed
 try:
@@ -146,7 +148,7 @@ class ZernPSF:
                     raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
 
     # %% Set properties
-    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
+    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[Real]], pixel_physical_size: float):
         """
         Set parameters in physical units.
 
@@ -183,13 +185,13 @@ class ZernPSF:
 
         """
         # Sanity check for NA
-        if NA < 0.0 or NA > 1.7:
+        if NA <= 0.0 or NA > 1.7:
             raise ValueError("NA should lay in the range of (0.0, 1.7] at most - for common microscopic objectives")
         # Sanity check for wavelength
         if wavelength <= 0.0:
             raise ValueError("Wavelength should be positive real number")
-        self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         self.NA = NA; self.wavelength = wavelength  # save as the class properties
+        self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         self.amplitudes: np.ndarray  # set explicitly expected data type
         # Sanity check of provided wavelength, pixel physical size (Nyquist criteria)
         self.pixel_size_nyquist = 0.5*0.5*wavelength/NA  # based on half of the Abbe resolution limit, see references in the docstring
@@ -201,7 +203,7 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        if not isinstance(expansion_coeff, float):
+        if not isinstance(expansion_coeff, Real):  # effectively, it should be some sequence with numbers
             coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
             if coeffs_len != len(self.polynomials):
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
