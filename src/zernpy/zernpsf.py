@@ -10,13 +10,12 @@ import time
 import warnings
 from importlib.metadata import version
 from math import pi
+from numbers import Real
 from pathlib import Path
 from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-from numbers import Real
 
 # Check if numba library installed for importing compilable methods
 numba_installed = False  # default value for checking if 'numba' library is installed
