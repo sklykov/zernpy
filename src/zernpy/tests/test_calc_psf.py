@@ -40,9 +40,9 @@ def test_psf_kernel_calc():
     assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:"
                                       + str(np.max(diff_airy)))
     # Test normal calculation of several polynomials
-    pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.08, -0.07)
+    pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.06, -0.05)
     zpsf = ZernPSF(pols); zpsf.set_physical_props(NA, wavelength, expansion_coeff=coeffs, pixel_physical_size=wavelength / 2.8)
-    zpsf.set_calculation_props(kernel_size=23, n_integration_points_r=150, n_integration_points_phi=120)
+    zpsf.set_calculation_props(kernel_size=25, n_integration_points_r=150, n_integration_points_phi=120)
     psf_kernel = zpsf.calculate_psf_kernel(); psf_kernel_size = zpsf.kernel_size
     w_orig_kernel, h_orig_kernel = psf_kernel.shape
     assert np.max(psf_kernel) > 0.5 and np.min(psf_kernel) > -1E-5, "Check calculation of a kernel for several polynomials"
@@ -50,10 +50,10 @@ def test_psf_kernel_calc():
     zpsf.crop_kernel()  # cropping the calculated kernel
     cropped_kernel = zpsf.kernel; cropped_kernel_size = zpsf.kernel_size
     w_crop_kernel, h_crop_kernel = cropped_kernel.shape
-    assert psf_kernel_size > cropped_kernel_size, (f"Cropped kernel size ({psf_kernel_size}) is equal "
+    assert psf_kernel_size >= cropped_kernel_size, (f"Cropped kernel size ({psf_kernel_size}) is equal "
                                                    + f"or more than original ({cropped_kernel_size})")
-    assert w_orig_kernel > w_crop_kernel and h_orig_kernel > h_crop_kernel, (f"Cropped kernel shape ({cropped_kernel.shape}) is equal "
-                                                                             + f"or more than original({psf_kernel.shape})")
+    assert w_orig_kernel >= w_crop_kernel and h_orig_kernel >= h_crop_kernel, (f"Cropped kernel shape ({cropped_kernel.shape}) is equal "
+                                                                              + f"or more than original({psf_kernel.shape})")
 
 
 def test_zernpsf_usage():

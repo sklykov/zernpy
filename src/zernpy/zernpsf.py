@@ -160,7 +160,8 @@ class ZernPSF:
         expansion_coeff : float | Sequence[float]
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-            alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
+            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
+            !!!: alpha definition changed (multiplied by 2*pi) after version 0.1.0 \n
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
@@ -208,10 +209,10 @@ class ZernPSF:
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
                     expansion_coeff = float(expansion_coeff[0])
                     # Sanity check for the expansion coefficient of the polynomial
-                    self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+                    self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
                     if len(self.__warn_message) > 0:
                         warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-                    self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
+                    self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
                 else:
                     raise ValueError(f"Length of provided coefficients ({coeffs_len}) is not equal to stored number "
                                      + f"of polynomials ({len(self.polynomials)})")
@@ -219,10 +220,10 @@ class ZernPSF:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
-                self.__warn_message = _sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*max_module_coeff) / wavelength, max_coeff_check=True)
                 if len(self.__warn_message) > 0:
                     warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-                self.amplitudes = self.coefficients / self.wavelength
+                self.amplitudes = (2.0*pi*self.coefficients) / self.wavelength
         else:
             # Check consistency of provided type of polynomials and coefficients
             if self.zernpol is None and len(self.polynomials) > 1:  # only if 2 and more polynomials provided
@@ -232,10 +233,10 @@ class ZernPSF:
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
-            self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+            self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-            self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
+            self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
         # Kernel size estimation (could be changed explicitly in the method 'set_calculation_props'). Redefine it for each call
         if self.zernpol is not None:  # for single polynomial
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
