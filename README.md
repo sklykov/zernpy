@@ -121,18 +121,16 @@ starting from the 'Piston' polynomial.
 The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase distribution 
 for the focal point (no Z-axis dependency). The used references are listed in the docstring of the **calculate_psf_kernel()** method.    
 
-The sample of calculated PSF for Vertical Trefoil:    
-
-![Vertical Trefoil Kernel](./src/zernpy/readme_images/(-3,_3)_Vert._3foil_0.85.png "Vertical Trefoil Kernel")   
-
 Initialization and usage of the class instance (basic usage with default calculation parameters, such as the kernel size):    
 ```python  # code block for Python code
 from zernpy import ZernPSF, ZernPol
 zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
-NA = 0.95; wavelength = 0.55; expansion_coeff = -0.26; pixel_physical_size = 0.2*wavelength   # example of physical properties
-zpsf.set_physical_properties(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+NA = 0.45; wavelength = 0.4; pixel_physical_size = 0.2*wavelength; expansion_coeff = -0.2  # example of physical properties
+zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
 kernel = zpsf.calculate_psf_kernel(normalized=True)  # get the kernel as the square normalized matrix
 ```
+The PSF kernel obtained for horizontal coma with the above parameters is shown below:    
+![Horizontal Coma Kernel](./src/zernpy/readme_images/(1,_3)_Hor._coma_-0.2.png "Horizontal Coma Kernel")   
 Check the API documentation for other available methods.     
 
 #### PSF kernel for several polynomials

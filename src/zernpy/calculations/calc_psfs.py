@@ -302,9 +302,9 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     size_ext = 0   # additional size depending on some parameters below
     if m == 0 and n == 0:  # Airy profile
         if 0.25 < NA < 1.0:
-            multiplier = 5.0*(1.0 - NA) + 1.5 + alpha
+            multiplier = 4.5*(1.0 - NA) + 1.5 + abs(alpha)
         else:
-            multiplier = 4.5 + 2.5*sqrt(1.0 / NA) + 1.25*alpha
+            multiplier = 4.0 + 2.5*sqrt(1.0 / NA) + 1.25*abs(alpha)
     else:
         multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided radial order n
         if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
@@ -314,12 +314,14 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
         if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
             size_ext += int(round(sqrt(n+abs(m)))) + 1
     if abs(alpha) >= 0.5:
-        multiplier *= sqrt(2.5*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
-        size_ext += 2  # enlarge kernel size additionally for high amplitude
+        size_ext += 3  # enlarge kernel size additionally for high amplitude
     elif abs(alpha) >= 0.25:
-        size_ext += 1  # add one more line for kernel (prevent automatic warnings)
-        multiplier *= sqrt(4.25*abs(alpha))  # Enlarge kernel size according to the provided amplitude, scaling with the coefficient
+        size_ext += 2  # add one more line for kernel (prevent automatic warnings)
+    if abs(alpha) >= 0.1:
+        size_ext += 1
     # Estimation below based on the provided physical properties
+    if multiplier < abs(alpha):
+        multiplier = abs(alpha)  # recalculated phase coefficient for Zernike polynomial better corresponds to a required kernel size
     size = int(round((multiplier*wavelength)/len2pixels, 0)) + 1 + size_ext
     # Correct the size of a kernel to the odd integer below
     if size % 2 == 0:
