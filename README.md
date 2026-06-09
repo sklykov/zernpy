@@ -125,12 +125,12 @@ Initialization and usage of the class instance (basic usage with default calcula
 ```python  # code block for Python code
 from zernpy import ZernPSF, ZernPol
 zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
-NA = 0.45; wavelength = 0.4; pixel_physical_size = 0.2*wavelength; expansion_coeff = -0.2  # example of physical properties
+NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.1  # example of physical properties
 zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
 kernel = zpsf.calculate_psf_kernel(normalized=True)  # get the kernel as the square normalized matrix
 ```
 The PSF kernel obtained for horizontal coma with the above parameters is shown below:    
-![Horizontal Coma Kernel](./src/zernpy/readme_images/(1,_3)_Hor._coma_-0.2.png "Horizontal Coma Kernel")   
+![Horizontal Coma Kernel](./src/zernpy/readme_images/(1,3)_Hor._coma_-0.1.png "Horizontal Coma Kernel")   
 Check the API documentation for other available methods.     
 
 #### PSF kernel for several polynomials

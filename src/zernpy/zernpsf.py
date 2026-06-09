@@ -76,7 +76,7 @@ class ZernPSF:
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
     pixel_size_nyquist_eStr = "{:.3e}".format(pixel_size_nyquist)
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
-    alpha: float = expansion_coeff / wavelength  # the role of amplitude for PSF calculation
+    alpha: float = (2.0*pi*expansion_coeff) / wavelength  # the role of amplitude for PSF calculation (converted to radians!)
     airy: bool = False  # flag if the Piston is provided as the Zernike polynomial
     __ParallelCalc: Optional[DispenserManager] = None; __integration_params: list = []  # for speeding up the calculations using Processes
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
@@ -161,13 +161,15 @@ class ZernPSF:
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
             alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
-            !!!: alpha definition changed (multiplied by 2*pi) after version 0.1.0 \n
+            !!!: alpha definition has been changed (multiplied by 2*pi) after version 0.1.0, now it is effectively enlarged. \n
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
             Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
             The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
-            should be less than this limit.
+            should be less than this limit.\n
+            Way of calculation = pixel physical size = pixel camera size (\u00B5m) / Total Magnification, where:\n
+            Total Magnification (M) = Objective Magn. * Tube Lens Magn. (Mismatch) * Camera Adapter Magn. \n
 
         Raises
         ------
@@ -233,7 +235,8 @@ class ZernPSF:
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
-            self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
+            if not self.airy:
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength

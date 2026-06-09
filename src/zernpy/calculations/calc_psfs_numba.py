@@ -334,7 +334,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     # Get the orders of polynomial and check if the equation for compilation was implemented
     single_polynomial_provided = False  # flag for using single polynomial functions
     if not hasattr(zernike_pol, "__len__") and isinstance(alpha, float):
-        alpha /= wavelength  # normalize to wavelength (physical units)
+        expansion_coeff = alpha; alpha *= (2.0*pi)/wavelength
         m, n = zernike_pol.get_mn_orders(); single_polynomial_provided = True
         if n > 10 and (abs(m) != n or abs(m) != n-2):
             raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
@@ -348,7 +348,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
                 raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
         polynomials_orders = tuple(polynomials_orders_l)  # convert list to tuple
     # Check that the calibration coefficient is sufficient for calculation
-    pixel_size_nyquist = 0.5*0.61*wavelength/NA
+    pixel_size_nyquist = (0.5*0.5*wavelength)/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
@@ -400,8 +400,8 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
             plt.figure(fig_title, figsize=(6, 6))
         else:
             if not hasattr(zernike_pol, "__len__"):
-                plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: {np.round(alpha, 2)}*wavelength {fig_id}",
-                           figsize=(6, 6))
+                plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: "
+                          + f"{np.round(expansion_coeff, 2)}*wavelength {fig_id}", figsize=(6, 6))
             else:
                 plt.figure(f"Sum of provided #{len(zernike_pol)} of polynomials {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.colormaps["viridis"], origin='upper'); plt.tight_layout()

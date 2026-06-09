@@ -300,29 +300,28 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     """
     m, n = define_orders(zernike_pol)  # get polynomial orders
     size_ext = 0   # additional size depending on some parameters below
+    abs_alpha = abs(alpha)
     if m == 0 and n == 0:  # Airy profile
-        if 0.25 < NA < 1.0:
-            multiplier = 4.5*(1.0 - NA) + 1.5 + abs(alpha)
-        else:
-            multiplier = 4.0 + 2.5*sqrt(1.0 / NA) + 1.25*abs(alpha)
+        size = 11 + round(16.0*NA)
     else:
-        multiplier = 1.25*sqrt(n)  # Enlarge kernel size according to the provided radial order n
-        if abs(m) > 0 and n % 2 != 0:  # Enlarge kernel size for the not symmetrical orders
-            multiplier += 0.5*sqrt(n - abs(m))
-        elif abs(m) > 0 and n % 2 == 0:
-            multiplier = 1.45*sqrt(n)
+        multiplier = n + 2  # Enlarge kernel size according to the provided radial order n
         if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
             size_ext += int(round(sqrt(n+abs(m)))) + 1
-    if abs(alpha) >= 0.5:
-        size_ext += 3  # enlarge kernel size additionally for high amplitude
-    elif abs(alpha) >= 0.25:
-        size_ext += 2  # add one more line for kernel (prevent automatic warnings)
-    if abs(alpha) >= 0.1:
-        size_ext += 1
-    # Estimation below based on the provided physical properties
-    if multiplier < abs(alpha):
-        multiplier = abs(alpha)  # recalculated phase coefficient for Zernike polynomial better corresponds to a required kernel size
-    size = int(round((multiplier*wavelength)/len2pixels, 0)) + 1 + size_ext
+        if abs_alpha >= 0.5:
+            size_ext += 13  # enlarge kernel size additionally for high amplitude
+        elif abs_alpha >= 0.25:
+            size_ext += 11  # add one more line for kernel (prevent automatic warnings)
+        elif abs_alpha >= 0.1:
+            size_ext += 7
+        elif abs_alpha >= 0.05:
+            size_ext += 5
+        # Tuning size for autoestimation of a kernel size
+        if abs_alpha >= 1.0:
+            size = int(round((multiplier*abs(1.25*alpha)*wavelength)/len2pixels, 0)) + 1 + size_ext
+        elif abs_alpha >= 0.001:
+            size = int(round(((multiplier+1)*wavelength)/len2pixels, 0)) + 1 + size_ext
+        else:
+            size = int(round(((multiplier-1)*wavelength)/len2pixels, 0)) + 1 + size_ext
     # Correct the size of a kernel to the odd integer below
     if size % 2 == 0:
         size += 1
@@ -344,7 +343,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         Relation between length in physical units (the same as the provided wavelength) and pixels.
     alpha : float
         Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., \u00B5m).
-        Note that the normalized Zernike polynomials are used, so its coefficient is normalized to the specified wavelength.
+        Note that during the calculation expansion coefficient will be normalized to radians (2pi/wavelength).
     wavelength : float
         Wavelength (\u03BB) in physical units (e.g., \u00B5m) of the light used for calculations (in imaging).
     NA : float
@@ -382,7 +381,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     """
     m, n = define_orders(zernike_pol)  # get polynomial orders
     # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
-    alpha /= wavelength; k = 2.0*pi/wavelength  # Calculate angular frequency (k)
+    expansion_coeff = alpha; alpha *= (2.0*pi)/wavelength; k = 2.0*pi/wavelength  # convert Zernike expansion coefficient to radians
     # Empirical estimation of the sufficient size for the kernel
     if kernel_size < 3:
         size = get_kernel_size(zernike_pol, len2pixels, alpha, wavelength, NA)
@@ -402,7 +401,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
             print(f"Note that the estimated kernel size: {size}x{size} for {(m, n)}."
                   + "Calculation may take from several dozens of seconds to minutes")
     # Check that the calibration coefficient is sufficient for calculation
-    pixel_size_nyquist = 0.5*0.61*wavelength/NA
+    pixel_size_nyquist = (0.5*0.5*wavelength)/NA
     if len2pixels > pixel_size_nyquist and not suppress_warns:
         __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
@@ -477,7 +476,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         if fig_title is not None and len(fig_title) > 0:
             plt.figure(fig_title, figsize=(6, 6))
         else:
-            plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(alpha, 2)}*wavelength {fig_id}", figsize=(6, 6))
+            plt.figure(f"{(m, n)} {zernike_pol.get_polynomial_name(True)}: {round(expansion_coeff, 2)}*wavelength {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.colormaps["viridis"], origin='upper'); plt.tight_layout()
     return kernel
 
