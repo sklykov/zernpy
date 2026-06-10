@@ -39,10 +39,23 @@ def test_psf_kernel_calc():
     diff_airy = np.abs(airy_int - airy_p)
     assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:"
                                       + str(np.max(diff_airy)))
+    # Compare Airy pattern and some polynomial with zero amplitude
+    zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
+    NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
+    zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+    zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
+    kernel_airy = zpsf.calculate_psf_kernel(normalized=True)
+    zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma - 0.0 - coincidence with the Airy pattern
+    NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.0  # example of physical properties
+    zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+    kernel_zp = zpsf.calculate_psf_kernel(normalized=True)
+    diff_airy = np.abs(kernel_zp - kernel_airy)
+    assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated for zero coefficient pol. is bigger than 1%:"
+                                      + str(np.max(diff_airy)))
     # Test normal calculation of several polynomials
-    pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.06, -0.05)
+    pols = (ZernPol(osa=10), ZernPol(osa=15)); coeffs = (0.045, -0.037)
     zpsf = ZernPSF(pols); zpsf.set_physical_props(NA, wavelength, expansion_coeff=coeffs, pixel_physical_size=wavelength / 2.8)
-    zpsf.set_calculation_props(kernel_size=25, n_integration_points_r=150, n_integration_points_phi=120)
+    zpsf.set_calculation_props(kernel_size=41, n_integration_points_r=150, n_integration_points_phi=120)
     psf_kernel = zpsf.calculate_psf_kernel(); psf_kernel_size = zpsf.kernel_size
     w_orig_kernel, h_orig_kernel = psf_kernel.shape
     assert np.max(psf_kernel) > 0.5 and np.min(psf_kernel) > -1E-5, "Check calculation of a kernel for several polynomials"
@@ -122,10 +135,10 @@ def test_save_load_zernpsf():
     """
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
     zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional classes for testing reading and reassigning values
-    NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.0; ampl = 0.11  # Common physical properties
+    NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.0; ampl = 0.05  # Common physical properties
     zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=200, n_integration_points_phi=180)
-    zpsf3.set_physical_props(NA=1.0, wavelength=0.6, expansion_coeff=-0.08, pixel_physical_size=0.06)
+    zpsf3.set_physical_props(NA=1.0, wavelength=0.6, expansion_coeff=-0.06, pixel_physical_size=0.06)
     zpsf2.calculate_psf_kernel(normalized=True)  # normal calculation of a kernel
     zpsf2.save_json(overwrite=True)  # save in the standard location (package folder)
     assert Path(zpsf2.json_file_path).is_file(), "File hasn't been saved in the standard location"

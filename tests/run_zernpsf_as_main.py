@@ -201,11 +201,12 @@ if __name__ == "__main__":
         zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
         NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
         zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+        zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
         kernel = zpsf.calculate_psf_kernel(normalized=True); zpsf.plot_kernel()
         zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma - 0.0 - coincidence with the Airy pattern
         NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.0  # example of physical properties
         zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
-        kernel = zpsf.calculate_psf_kernel(normalized=True); zpsf.plot_kernel()
+        kernel = zpsf.calculate_psf_kernel(normalized=True);  zpsf.plot_kernel()
         zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
         NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.1  # example of physical properties
         zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
