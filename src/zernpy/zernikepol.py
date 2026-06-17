@@ -233,6 +233,7 @@ class ZernPol:
         tuple
             with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) \n
             All indices are integers.
+
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
 
@@ -1156,6 +1157,7 @@ class ZernPol:
         Returns
         -------
         None
+
         """
         plot_sum_fig(phase_profile.ZernSurf, phase_profile.R, phase_profile.Theta)
 
@@ -1178,6 +1180,7 @@ class ZernPol:
             RMS over Z**2 * r profile, as defined for OSA normalization.
         float
             Peak-to-Valley value as max(Surface) - mim(Surface).
+
         """
         rho = phase_profile.R[:, None]  # shape conversion from vector to 2D array, like: (101, ) -> (101, 1)
         weights = np.ones_like(phase_profile.ZernSurf)*rho  # weights recalculated for the whole phase profile on polar coordinates
@@ -1566,6 +1569,7 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         input image with phases that is used for fitting procedure (useful for debugging purposes);
         if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
         meaning and type as explained before.
+
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), )); cropped_image = None
     logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings, strict_circle_border)
