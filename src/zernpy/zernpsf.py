@@ -266,7 +266,7 @@ class ZernPSF:
                 self.kernel_size += 1  # kernel size should odd
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
-    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int):
+    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int = 320, n_integration_points_phi: int = 300):
         """
         Set calculation properties: kernel size, number of integration points on polar coordinates.
 
@@ -277,12 +277,12 @@ class ZernPSF:
         ----------
         kernel_size : int
             Size of PSF kernel (2D matrix used for convolution). Should be odd integer not less than 3.
-        n_integration_points_r : int
+        n_integration_points_r : int, Optional
             Number of integration points used for calculation diffraction integral on the radius of the entrance pupil
-            (normalized to the range [0.0, 1.0]). Should be integer not less than 20.
-        n_integration_points_phi : int
+            (normalized to the range [0.0, 1.0]). Should be integer not less than 20. The default is 320.
+        n_integration_points_phi : int, Optional
             Number of integration points used for calculation diffraction integral on the polar angle phi of the entrance pupil
-            (from the range [0.0, 2pi]). Should be integer not less than 36.
+            (from the range [0.0, 2pi]). Should be integer not less than 36. The default is 300.
 
         Raises
         ------

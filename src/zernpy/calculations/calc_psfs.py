@@ -304,7 +304,10 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     if m == 0 and n == 0:  # Airy profile
         size = 11 + round(16.0*NA)
     else:
-        multiplier = n + 2  # Enlarge kernel size according to the provided radial order n
+        if n <= 3:
+            multiplier = n + 2
+        else:
+            multiplier = n
         if n - abs(m) <= (n + 1) // 2:  # Enlarge kernel size for the not symmetrical orders
             size_ext += int(round(sqrt(n+abs(m)))) + 1
         if abs_alpha >= 0.5:
@@ -316,8 +319,10 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
         elif abs_alpha >= 0.05:
             size_ext += 5
         # Tuning size for autoestimation of a kernel size
-        if abs_alpha >= 1.0:
+        if 1.0 <= abs_alpha  <= 1.5:
             size = int(round((multiplier*abs(1.25*alpha)*wavelength)/len2pixels, 0)) + 1 + size_ext
+        elif abs_alpha > 1.5:
+            size = int(round((multiplier*abs(alpha)*wavelength)/len2pixels, 0)) + 1 + size_ext
         elif abs_alpha >= 0.001:
             size = int(round(((multiplier+1)*wavelength)/len2pixels, 0)) + 1 + size_ext
         else:

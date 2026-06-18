@@ -217,6 +217,12 @@ if __name__ == "__main__":
         zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=coeffs,
                                                               pixel_physical_size=pixel_physical_size)
         zpsf_pic.calculate_psf_kernel(); zpsf_pic.plot_kernel("Sum of Polynomials Profile")
+        # Cropping section
+        zpsf = ZernPSF(zernpol=(ZernPol(m=0, n=4)))  # Spherical aberration
+        zpsf.set_physical_props(NA=1.25, wavelength=0.5, expansion_coeff=0.25, pixel_physical_size=0.5/5.0)
+        zpsf.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf.plot_kernel("Not Cropped")
+        zpsf.crop_kernel(min_part_of_max=0.025)  # rows and columns containing less than 2.5% of kernel max are cropped out
+        zpsf.plot_kernel("Cropped")
 
     # Cleaning up used flags for preventing of Variable Explorer flooding
     del check_other_pols, check_small_na_wl, check_airy, check_common_psf, check_io_kernel, check_parallel_calculation
