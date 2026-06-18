@@ -88,9 +88,9 @@ polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials,
 plt.figure("Fitted Phase Profile"); plt.imshow(cropped_img, cmap="jet")
 plt.axis("off"); plt.tight_layout()
 ```
-Initially generated profile:
+Initially generated profile:   
 ![Initial Profile](./src/zernpy/readme_images/Initial_Phase_Profile.png "Random phases profile, 'jet' matplotlib colormap")
-Fitted profile:
+Fitted profile:   
 ![Fitted Profile](./src/zernpy/readme_images/Fitted_Phase_Profile.png "Fitted polynomials profile, 'jet' matplotlib colormap")
 
 #### 2D PSF kernel calculation
