@@ -68,10 +68,11 @@ exclude = [
     '^tests/',
     '^build/',
     '^dist/',
-    '^src/zernpy/tests/'
+    '^src/zernpy/tests/',
+	'^src/zernpy/ignored/'
 ]
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
-module = ["numba", "joblib"]
+module = ["numba", "scipy.*"]
 ignore_missing_imports = true
 # [[tool.mypy.overrides]]  # ignore any errors in specific test files - retained for ref.
 # module = ["zernpy.run_zernpsf_as_main"]

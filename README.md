@@ -37,7 +37,8 @@ pip install -U zernpy
 ```
 
 #### Requirements
-The package requires `numpy` and `matplotlib` with no specific version constraints.  
+The package requires `numpy`, `scipy` and `matplotlib` with no specific version constraints.
+The optional dependency is `numba>=0.57.1`.   
 Tests are run with `pytest`. Linting and formatting use `ruff`; non-strict type checking uses `mypy`.
 
 ### Examples

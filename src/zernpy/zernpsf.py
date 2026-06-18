@@ -12,7 +12,7 @@ from importlib.metadata import version
 from math import pi
 from numbers import Real
 from pathlib import Path
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, SupportsFloat, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -147,7 +147,8 @@ class ZernPSF:
                     raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
 
     # %% Set properties
-    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[Real]], pixel_physical_size: float):
+    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[SupportsFloat, Sequence[SupportsFloat]],
+                           pixel_physical_size: float):
         """
         Set parameters in physical units.
 
@@ -157,7 +158,7 @@ class ZernPSF:
             Numerical aperture of an objective, assumed usage of microscopic ones.
         wavelength : float
             Wavelength of monochromatic light (\u03BB) used for imaging in physical units (e.g., as \u00B5m).
-        expansion_coeff : float | Sequence[float]
+        expansion_coeff : SupportsFloat | Sequence[SupportsFloat]
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
             alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
@@ -205,7 +206,7 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        if not isinstance(expansion_coeff, Real):  # effectively, it should be some sequence with numbers
+        if isinstance(expansion_coeff, Sequence):  # effectively, it should be some sequence with numbers
             coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
             if coeffs_len != len(self.polynomials):
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
@@ -608,7 +609,7 @@ class ZernPSF:
             abs_path = str(abs_path)
         json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
-            wavelen: float; na: float; a: Union[float, Sequence[float]]; pols: list; ps: float; read_props = 0
+            wavelen: float; na: float; a: Union[Real, Sequence[Real]]; pols: list; ps: float; read_props = 0
             for key, item in json_data.items():
                 # Calculation properties + calculated kernel
                 if key == "PSF Kernel":

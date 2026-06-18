@@ -10,7 +10,6 @@ Calculation and plotting of associated with polynomials PSFs.
 import json
 import time
 import warnings
-from functools import partial
 from math import e, pi, sqrt
 from pathlib import Path
 from typing import Optional, Union
@@ -19,13 +18,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import convolve
 from scipy.special import jv
-
-# Testing the parallelization with joblib. Native Pool.map() tested and results transferred to the collection_numCalc repo
-try:
-    from joblib import Parallel, delayed
-    joblib_installed = True
-except ModuleNotFoundError:
-    joblib_installed = False
 
 # %% Local (package-scoped) imports
 from .calc_zernike_pol import define_orders
@@ -250,22 +242,12 @@ def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, 
 
     """
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    # below - wrapping the callable function with the fixed arguments for using in the paralleled framework call
-    radial_integral_fixed_args = partial(radial_integral_args, zernike_pol=zernike_pol, r=r, theta=theta,
-                                         alpha=alpha, n_int_r_points=n_int_r_points)
-
-    # Vectorized or parallelized form of for loop for even and odd phi-s
-    if not joblib_installed or paralleljobs is None:
-        even_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
-                                for i in range(2, n_int_phi_points-2, 2)])
-        odd_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
-                               for i in range(1, n_int_phi_points-1, 2)])
-        even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
-    else:
-        if paralleljobs is not None and isinstance(paralleljobs, Parallel):
-            even_sums = np.asarray(paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(2, n_int_phi_points-2, 2)))
-            odd_sums = np.asarray(paralleljobs(delayed(radial_integral_fixed_args)(i*h_phi) for i in range(1, n_int_phi_points-1, 2)))
-            even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
+    # Vectorized form of for loop for even and odd phi-s
+    even_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
+                            for i in range(2, n_int_phi_points-2, 2)])
+    odd_sums = np.asarray([radial_integral(zernike_pol, r, theta, i*h_phi, alpha, n_int_r_points)
+                           for i in range(1, n_int_phi_points-1, 2)])
+    even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral(zernike_pol, r, theta, 0.0, alpha, n_int_r_points)
     yB = radial_integral(zernike_pol, r, theta, 2.0*pi, alpha, n_int_r_points)
@@ -334,8 +316,8 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
 
 
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
-                   n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: Optional[str] = None, normalize_values: bool = False,
-                   airy_pattern: bool = False, kernel_size: int = 0, test_parallel: bool = False, fig_id: str = "",
+                   n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: Optional[str] = None,
+                   normalize_values: bool = False, airy_pattern: bool = False, kernel_size: int = 0, fig_id: str = "",
                    test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix (kernel) with the PSF mask values.
@@ -367,8 +349,6 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         Plot the Airy pattern for the provided parameters. The default is False.
     kernel_size : int, optional
         Custom kernel size, if not provided, then the size will be estimated based on the parameters. The default is 0.
-    test_parallel : bool, optional
-        Testing joblib library for speeding up calculations. The default is False.
     fig_id : str, optional
         Some string id for the figure title. The default is "".
     test_vectorized : bool, optional
@@ -411,57 +391,38 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
         __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
         __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
         warnings.warn(__warn_message, stacklevel=2)
-    # Calculate the PSF kernel for usage in convolution operation
-    # mean_time_integration = 0.0; n = 0
-    if not joblib_installed or not test_parallel:
-        if verbose:
-            calculated_points = 0  # for explicit showing of performance
-            show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
-            if 100 < size*size < 301:
-                show_each_tenth_point = True; checking_point = 10
-        for i in range(size):
-            for j in range(size):
-                if verbose:
-                    t1 = time.perf_counter()  # for explicit showing of performance
-                pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
-                # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
-                distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
-                # The PSF also has the angular dependency, not only the radial one
-                theta = np.arctan2((i - i_center), (j - j_center))
-                theta += np.pi  # shift angles to the range [0, 2pi]
-                # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
-                if not airy_pattern:
-                    if not test_vectorized:
-                        kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
-                    else:
-                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
-                        if verbose:
-                            calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
-                            if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
-                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
-                                if calculated_points == checking_point:
-                                    checking_point += 10
-                            elif (not show_each_tenth_point and not size*size >= 301):
-                                print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+    # Calculate the PSF kernel for using in the convolution
+    if verbose:
+        calculated_points = 0  # for explicit showing of performance
+        show_each_tenth_point = False; checking_point = 1  # flag and value for shortening print output
+        if 100 < size*size < 301:
+            show_each_tenth_point = True; checking_point = 10
+    for i in range(size):
+        for j in range(size):
+            if verbose:
+                t1 = time.perf_counter()  # for explicit showing of performance
+            pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
+            # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
+            distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
+            # The PSF also has the angular dependency, not only the radial one
+            theta = np.arctan2((i - i_center), (j - j_center))
+            theta += np.pi  # shift angles to the range [0, 2pi]
+            # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
+            if not airy_pattern:
+                if not test_vectorized:
+                    kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                 else:
-                    kernel[i, j] = airy_ref_pattern(distance)
-    elif joblib_installed and test_parallel:
-        # NOTE: after several tests, it is clear that the parallelization using joblib not optimizing performance
-        with Parallel(n_jobs=4, pre_dispatch=size*size*n_int_phi_points*n_int_phi_points+2, backend='multiprocessing') as paralleljobs:
-            for i in range(size):
-                for j in range(size):
-                    pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
-                    # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
-                    distance = k*NA*len2pixels*pixel_dist  # conversion from pixel distance into phase multiplier in the diffraction integral
-                    # The PSF also has the angular dependency, not only the radial one
-                    theta = np.arctan2((i - i_center), (j - j_center))
-                    theta += np.pi  # shift angles to the range [0, 2pi]
-                    # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
-                    if not airy_pattern:
-                        kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points,
-                                                                n_int_phi_points, paralleljobs)
-                    else:
-                        kernel[i, j] = airy_ref_pattern(distance)
+                    kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                    if verbose:
+                        calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
+                        if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
+                            print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+                            if calculated_points == checking_point:
+                                checking_point += 10
+                        elif (not show_each_tenth_point and not size*size >= 301):
+                            print(f"Calculated point #{calculated_points} from {size*size}, takes: {passed_time_ms} ms")
+            else:
+                kernel[i, j] = airy_ref_pattern(distance)
     # Normalize all values in kernel to bring the max value to 1.0
     if normalize_values:
         kernel /= np.max(kernel)
@@ -618,23 +579,19 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     len2pixels : float
         Relation between length in physical units (the same as the provided wavelength) and pixels.
     wavelength : float
-        Wavelength (\u03BB) in physical units (e.g., \u00B5m) of the light used for calculations (in imaging).
+        Wavelength used for the PSF calculation (in physical units).
     NA : float
-        Objective property.
+        NA used for the PSF calculation.
+    kernel_size : int
+        Size of a kernel - square matrix.
     n_int_r_points : int, optional
         Number of points used for integration on the unit pupil radius from the range [0.0, 1.0]. The default is 320.
     n_int_phi_points : int, optional
         Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
-    show_kernel : bool, optional
-        Plot the calculated kernel interactively. The default is True.
-    fig_title : str, optional
-        Custom figure title. The default is None.
     normalize_values : bool, optional
         Normalize all values in the sense that the max kernel value = 1.0. The default is False.
-    kernel_size : int
-        Kernel size (2D matrix).
-    fig_id : str, optional
-        Some string id for the figure title. The default is "".
+    suppress_warns : bool, optional
+        Flag for suppressing any UserWarnings. The default is False.
     verbose: bool, optional
         Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
 
@@ -715,6 +672,8 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
         Sample image, not colour.
     psf_kernel : numpy.ndarray
         Calculated PSF kernel.
+    scale2original : bool, optional
+        Rescale convolved image to the maximum level of the input image. The default is False.
 
     Returns
     -------
