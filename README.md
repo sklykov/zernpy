@@ -89,9 +89,10 @@ plt.figure("Fitted Phase Profile"); plt.imshow(cropped_img, cmap="jet")
 plt.axis("off"); plt.tight_layout()
 ```
 Initially generated profile:   
-![Initial Profile](./src/zernpy/readme_images/Initial_Phase_Profile.png "Random phases profile, 'jet' matplotlib colormap")
+![Initial Profile](./src/zernpy/readme_images/Initial_Phase_Profile.png "Random phases profile, 'jet' matplotlib colormap")  
+
 Fitted profile:   
-![Fitted Profile](./src/zernpy/readme_images/Fitted_Phase_Profile.png "Fitted polynomials profile, 'jet' matplotlib colormap")
+![Fitted Profile](./src/zernpy/readme_images/Fitted_Phase_Profile.png "Fitted polynomials profile, 'jet' matplotlib colormap")  
 
 #### 2D PSF kernel calculation
 The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase 
