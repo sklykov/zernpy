@@ -143,7 +143,7 @@ class ZernPSF:
                     raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
 
     # %% Set properties
-    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[SupportsFloat, Sequence[SupportsFloat]],
+    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[SupportsFloat, Sequence[SupportsFloat], np.ndarray],
                            pixel_physical_size: float):
         """
         Set parameters in physical units.
@@ -202,7 +202,7 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        if isinstance(expansion_coeff, Sequence):  # effectively, it should be some sequence with numbers
+        if isinstance(expansion_coeff, (Sequence, np.ndarray)):  # effectively, it should be some sequence / numpy array with numbers
             coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
             if coeffs_len != len(self.polynomials):
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
