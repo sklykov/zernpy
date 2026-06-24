@@ -528,13 +528,13 @@ class ZernPol:
         after - using the recurrence equations, using shortcut of storing
         coefficients for each power of radius (coefficient*R^n) \n
         The input flag use_exact_eq allows using the exact equation with factorials.
-        But note that after 38th radial order the usage of the exact equation is forbidden, because
-        after ~ the 44th radial order due to the high integer values associated with factorials and power
-        values produced by derivatives leading to ambiguous results, only iterative equations
-        (which along with increasing order become time-consuming and slow) could be used. The 38th radial order
-        as the limit for usage of the exact equation is selected due to found increasing after this order
-        discrepancy between results of recursive and factorial formulas.
-
+        Setting ``use_exact_eq=True`` forces the exact formulation. However, exact
+        equations are restricted to radial orders ≤ 38, as factorial growth causes
+        increasing numerical discrepancies relative to the recursive formulation.
+        Beyond approximately the 44th order, derivative and factorial terms become
+        too large for reliable evaluation. Higher orders are therefore computed only
+        via recurrence relations, which are numerically stable but progressively
+        slower with increasing order.
 
         References
         ----------

@@ -1,2 +1,2 @@
-pdoc ./src/zernpy/zernikepol.py ./src/zernpy/zernpsf.py -o ./docs/api --logo ../for_favicon.png --logo ../for_favicon.png --no-show-source --footer-text "zernpy ver. 0.1.1, 2026 Sergei Klykov"
+pdoc ./src/zernpy/zernikepol.py ./src/zernpy/zernpsf.py -o ./docs/api --logo ../for_favicon.png --logo ../for_favicon.png --no-show-source --footer-text "zernpy ver. 0.1.2, 2026 Sergei Klykov"
 timeout /t 25
