@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).  
 
 
+### [0.1.2] - 2026-06-26
+
+#### Added
+- Calculation of Peak-to-Valley (PV) and RMS values for OSA-normalized Zernike polynomials.
+
+#### Changed
+- Corrected the conversion of Zernike expansion coefficients to phase units (radians) for PSF kernel calculations. 
+Expansion coefficients are now multiplied by `2π / wavelength` instead of being divided by the wavelength only; 
+- Revised the PSF kernel size estimation logic. The estimated kernel size is now generally larger for the same input 
+parameters, reducing the risk of PSF truncation during calculations.
+
+
 ### [0.1.1] - 2026-04-29
 
 #### Added
