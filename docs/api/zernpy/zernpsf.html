@@ -148,7 +148,7 @@ zernpy<wbr>.zernpsf    </h1>
 
                         <div class="docstring"><p>PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.</p>
 
-<p>@author: Sergei Klykov, @year: 2025, @license: MIT</p>
+<p>@author: Sergei Klykov, @year: 2026, @license: MIT</p>
 </div>
 
                 
@@ -561,12 +561,13 @@ Number of integration points used for calculation diffraction integral on the po
 The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
 an imaging system (micro-objective). </p>
 
-<p>The order of integration and used equations in short:
-1st - integration going on radius p, using trapezoidal rule: p•(alpha•zernike_pol.polynomial_value(p, phi) -
+<p>The order of integration and used equations in short: </p>
+
+<p>1st - integration going on radius p, using trapezoidal rule: p•(alpha•zernike_pol.polynomial_value(p, phi) -
                                                                      r•p•cos(phi - theta))•1j </p>
 
 <p>2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
-output, it provides as the np.power(np.abs(integral_sum), 2)•integral_normalization, there integral_normalization =
+output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
 1.0/(pi•pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. </p>
 
 <p>For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. </p>
