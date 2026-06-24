@@ -15,8 +15,7 @@ __docformat__ = "numpydoc"
 
 
 # %% Function definitions
-def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, title: str = "",
-                 color_map: str = "coolwarm"):
+def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, title: str = "", color_map: str = "coolwarm"):
     """
     Plot Zernike polynomials sum (or single polynomial) on a mesh of polar coordinates (r, theta) as a 2D polar plot.
 
@@ -77,9 +76,7 @@ def plot_sum_fig_3d(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarra
     figure = plt.figure(figsize=(5.4, 5.4))  # since the figure has the circular shape, better draw it on equal box
     axes = figure.add_subplot(projection='3d'); Thetas, Rs = np.meshgrid(theta, r)  # Note the order the meshgrid coordinates!
     X, Y = Rs*np.cos(Thetas), Rs*np.sin(Thetas)  # convert polar coordinates to the cartesian system
-    axes.plot_surface(X, Y, polynomials_sum, cmap=color_map)
-    # plt.axis('off');
-    plt.tight_layout(); plt.show()
+    axes.plot_surface(X, Y, polynomials_sum, cmap=color_map); plt.tight_layout(); plt.show()
 
 
 def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray,
@@ -119,8 +116,7 @@ def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.nd
     # below: shows the colour bar with shown on image amplitudes
     if show_range_colorbar:
         figure.colorbar(im, ax=axes)
-    figure.subplots_adjust(left=0, bottom=0, right=1, top=1)
-    figure.tight_layout()
+    figure.subplots_adjust(left=0, bottom=0, right=1, top=1); figure.tight_layout()
     return figure
 
 
@@ -159,8 +155,7 @@ def subplot_sum_on_fig_3d(figure: plt.Figure, polynomials_sum: np.ndarray, r: np
     # below: shows the colour bar with shown on image amplitudes
     if show_range_colorbar:
         figure.colorbar(im, ax=axes)
-    figure.subplots_adjust(left=0, bottom=0, right=1, top=1)
-    figure.tight_layout()
+    figure.subplots_adjust(left=0, bottom=0, right=1, top=1); figure.tight_layout()
     return figure
 
 

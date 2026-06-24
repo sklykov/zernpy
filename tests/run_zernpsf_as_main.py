@@ -34,8 +34,8 @@ if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
     wavelength_um = 0.55  # used below in a several calls
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
-    check_airy = False; check_common_psf = True; check_io_kernel = False; check_parallel_calculation = False; check_test = False
-    check_faster_airy = True; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
+    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False; check_test = False
+    check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
@@ -44,6 +44,7 @@ if __name__ == "__main__":
     check_airy_patterns = False  # check the difference between calculated by equation for Airy pattern and diffraction integral
     check_precompilation = False  # checks precompilation
     check_cropping = False  # checks how kernel is cropped
+    check_ver012 = True  # check used in README physical values for tuning empirical kernel size estimation + recalculate the results
 
     # Common PSF for testing
     if check_common_psf:
@@ -71,13 +72,13 @@ if __name__ == "__main__":
 
     # Another Zernike polynomial, average to small NA and wavelength
     if check_small_na_wl:
-        NA = 0.45; wavelength = 0.4; pixel_size = wavelength / 5.25; ampl = 0.18
+        NA = 0.45; wavelength = 0.4; pixel_size = wavelength*0.2; ampl = -0.2
         zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
         zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
         zpsf2.calculate_psf_kernel(normalized=True); zpsf2.plot_kernel()
 
     if check_airy:
-        NA = 0.12; wavelength = 0.8; pixel_size = wavelength / 4.0; ampl = 1.25
+        NA = 0.12; wavelength = 0.8; pixel_size = wavelength / 4.0; ampl = 0.1
         zp4 = ZernPol(m=0, n=0); zpsf4 = ZernPSF(zp4)  # piston for the Airy pattern
         zpsf4.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
         zpsf4.calculate_psf_kernel(normalized=True); zpsf4.plot_kernel("Plus")
@@ -195,3 +196,36 @@ if __name__ == "__main__":
         original_kernel = np.copy(zpsf60.kernel)
         zpsf60.crop_kernel(min_part_of_max=0.025); zpsf60.plot_kernel("Cropped"); cropped_kernel = np.copy(zpsf60.kernel)
         print("Original kernel shape:", original_kernel.shape, "\nCropped kernel shape:", cropped_kernel.shape)
+
+    if check_ver012:
+        zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
+        NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
+        zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+        zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
+        kernel = zpsf.calculate_psf_kernel(normalized=True); zpsf.plot_kernel()
+        zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma - 0.0 - coincidence with the Airy pattern
+        NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.0  # example of physical properties
+        zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+        kernel = zpsf.calculate_psf_kernel(normalized=True);  zpsf.plot_kernel()
+        zpsf = ZernPSF(ZernPol(m=1, n=3))  # horizontal coma
+        NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -0.1  # example of physical properties
+        zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
+        kernel = zpsf.calculate_psf_kernel(normalized=True); zpsf.plot_kernel()
+        # Set of Zernike polynomials
+        zp1 = ZernPol(m=1, n=3); zp2 = ZernPol(m=2, n=4); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.1, 0.0, 0.0)
+        NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength
+        zpsf_pic = ZernPSF(pols); zpsf_pic.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=coeffs,
+                                                              pixel_physical_size=pixel_physical_size)
+        zpsf_pic.calculate_psf_kernel(); zpsf_pic.plot_kernel("Sum of Polynomials Profile")
+        # Cropping section
+        zpsf = ZernPSF(zernpol=(ZernPol(m=0, n=4)))  # Spherical aberration
+        zpsf.set_physical_props(NA=1.25, wavelength=0.5, expansion_coeff=0.25, pixel_physical_size=0.5/5.0)
+        zpsf.calculate_psf_kernel(accelerated=True, verbose_info=True); zpsf.plot_kernel("Not Cropped")
+        zpsf.crop_kernel(min_part_of_max=0.025)  # rows and columns containing less than 2.5% of kernel max are cropped out
+        zpsf.plot_kernel("Cropped")
+
+    # Cleaning up used flags for preventing of Variable Explorer flooding
+    del check_other_pols, check_small_na_wl, check_airy, check_common_psf, check_io_kernel, check_parallel_calculation
+    del check_test, check_faster_airy, check_test_conditions, check_test_conditions2, check_several_pols, check_edge_conditions
+    del test_acceleration_single_pol, test_acceleration_few_pol, prepare_pic_readme, test_io_few_pols, check_acceleration_flag
+    del check_init_several_pols, check_airy_patterns, check_precompilation, check_cropping, check_ver012

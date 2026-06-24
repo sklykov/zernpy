@@ -233,6 +233,7 @@ class ZernPol:
         tuple
             with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) \n
             All indices are integers.
+
         """
         return (self.__m, self.__n), self.__osa_index, self.__noll_index, self.__fringe_index
 
@@ -527,13 +528,13 @@ class ZernPol:
         after - using the recurrence equations, using shortcut of storing
         coefficients for each power of radius (coefficient*R^n) \n
         The input flag use_exact_eq allows using the exact equation with factorials.
-        But note that after 38th radial order the usage of the exact equation is forbidden, because
-        after ~ the 44th radial order due to the high integer values associated with factorials and power
-        values produced by derivatives leading to ambiguous results, only iterative equations
-        (which along with increasing order become time-consuming and slow) could be used. The 38th radial order
-        as the limit for usage of the exact equation is selected due to found increasing after this order
-        discrepancy between results of recursive and factorial formulas.
-
+        Setting ``use_exact_eq=True`` forces the exact formulation. However, exact
+        equations are restricted to radial orders ≤ 38, as factorial growth causes
+        increasing numerical discrepancies relative to the recursive formulation.
+        Beyond approximately the 44th order, derivative and factorial terms become
+        too large for reliable evaluation. Higher orders are therefore computed only
+        via recurrence relations, which are numerically stable but progressively
+        slower with increasing order.
 
         References
         ----------
@@ -946,9 +947,9 @@ class ZernPol:
         """
         S: Union[float, np.ndarray]
         if len(coefficients) != len(polynomials):
-            raise ValueError("Lengths of lists with polynomials and their amplitudes aren't equal")
+            raise ValueError("Lengths of sequence with polynomials and their amplitudes aren't equal")
         elif len(coefficients) == 0:
-            raise ValueError("Length of list with polynomials is zero")
+            raise ValueError("Length of sequence with polynomials is zero")
         else:
             if not get_surface or not isinstance(r, np.ndarray) or not isinstance(theta, np.ndarray):
                 for i, coefficient in enumerate(coefficients):
@@ -1008,12 +1009,12 @@ class ZernPol:
             raise ValueError("Provided step on radiuses less than 0.0 or more than 0.5")
         if 0.0 >= theta_rad_step > np.pi:
             raise ValueError("Provided step on theta angles less than 0.0 or more than pi")
-        Rs = np.arange(0.0, 1.0+r_step, r_step); Thetas = np.arange(0.0, 2.0*np.pi+theta_rad_step, theta_rad_step)
+        Rs = np.arange(0.0, 1.0+r_step, r_step); Thetas = np.arange(0.0, 2.0*np.pi, theta_rad_step)  # exclude 2*pi endpoint
         # Check that the last values on the generated ranges appeared not outside of ranges
         if Rs[Rs.shape[0]-1] > 1.0:
             Rs[Rs.shape[0]-1] = 1.0
-        if Thetas[Thetas.shape[0]-1] > 2.0*np.pi:
-            Thetas[Thetas.shape[0]-1] = 2.0*np.pi
+        if Thetas[Thetas.shape[0]-1] >= 2.0*np.pi:
+            Thetas[Thetas.shape[0]-1] = 2.0*np.pi-theta_rad_step
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
@@ -1038,7 +1039,7 @@ class ZernPol:
         """
         if n_points < 4:
             n_points = 4
-        Rs = np.linspace(0.0, 1.0, n_points); Thetas = np.linspace(0.0, 2*np.pi, n_points)
+        Rs = np.linspace(0.0, 1.0, n_points); Thetas = np.linspace(0.0, 2*np.pi, n_points, endpoint=False)  # exclude 2*pi endpoint
         return polar_vectors(Rs, Thetas)
 
     @staticmethod
@@ -1099,8 +1100,7 @@ class ZernPol:
                 plot_sum_fig_3d(zern_surface, r, theta, color_map)
             else:
                 if show_title:
-                    plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name(),
-                                 color_map=color_map)
+                    plot_sum_fig(zern_surface, r, theta, title=polynomial.get_polynomial_name(), color_map=color_map)
                 else:
                     plot_sum_fig(zern_surface, r, theta, "", color_map)
 
@@ -1144,9 +1144,55 @@ class ZernPol:
         return zernikes_surface(zernikes_sum, polar_vectors.R, polar_vectors.Theta)
 
     @staticmethod
+    def plot_zernikes_surface(phase_profile: zernikes_surface):
+        """
+        Wrap call on plot_sum_fig(...) function for plotting a profile on provided surface and polar coordinate vectors.
+
+        Parameters
+        ----------
+        phase_profile : zernikes_surface
+            Named tuple with attributes: ZernSurf, R, Theta. \n
+            There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.
+
+        Returns
+        -------
+        None
+
+        """
+        plot_sum_fig(phase_profile.ZernSurf, phase_profile.R, phase_profile.Theta)
+
+    @staticmethod
+    def get_rms_pv_surface(phase_profile: zernikes_surface) -> Tuple[float, float]:
+        """
+        Calculate RMS and P-V value for provided phase profile using definition of OSA normalization.
+
+        Link: https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials.
+
+        Parameters
+        ----------
+        phase_profile : zernikes_surface
+            Named tuple with attributes: ZernSurf, R, Theta. \n
+            There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.
+
+        Returns
+        -------
+        float
+            RMS over Z**2 * r profile, as defined for OSA normalization.
+        float
+            Peak-to-Valley value as max(Surface) - mim(Surface).
+
+        """
+        rho = phase_profile.R[:, None]  # shape conversion from vector to 2D array, like: (101, ) -> (101, 1)
+        weights = np.ones_like(phase_profile.ZernSurf)*rho  # weights recalculated for the whole phase profile on polar coordinates
+        # idea below - calculate double integral on polar coordinates on (Z**2*r dr_dphi) / (r dr_dphi)
+        rms = np.sqrt(np.sum((phase_profile.ZernSurf**2)*weights)/np.sum(weights))  # now the coefficient is equal to the calculated RMS
+        pv = np.max(phase_profile.ZernSurf) - np.min(phase_profile.ZernSurf)  # simple definition of peak-to-valley as max(Surface) - min(-//-)
+        return rms, pv
+
+    @staticmethod
     def plot_sum_zernikes_on_fig(figure: plt.Figure, coefficients: Sequence[float] = (), polynomials: Sequence = (), use_defaults: bool = True,
-                                 zernikes_sum_surface: Optional[zernikes_surface] = None,
-                                 show_range: bool = True, color_map: str = "coolwarm", projection: str = "2d") -> plt.Figure:
+                                 zernikes_sum_surface: Optional[zernikes_surface] = None, show_range: bool = True,
+                                 color_map: str = "coolwarm", projection: str = "2d") -> plt.Figure:
         """
         Plot a sum of the specified Zernike polynomials by input lists (see function parameters) on the provided figure.
 
@@ -1523,6 +1569,7 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
         input image with phases that is used for fitting procedure (useful for debugging purposes);
         if it is False, the following tuple will be returned: zernike_coefficients, None - 1st with the same
         meaning and type as explained before.
+
     """
     zernike_coefficients = np.zeros(shape=(len(polynomials), )); cropped_image = None
     logic_mask, cropped_phases_coordinates = crop_phases_img(phases_image, crop_radius, suppress_warnings, strict_circle_border)

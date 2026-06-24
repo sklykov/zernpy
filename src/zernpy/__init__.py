@@ -8,7 +8,7 @@ The "zernpy" package is intended for initialization and calculation attributes /
 
 """
 
-__version__ = "0.1.1"  # Straightforward way of specifying package version and including it to the package attributes
+__version__ = "0.1.2"  # Straightforward way of specifying package version and including it to the package attributes
 
 # Univesal logic for making all main classes and functions available after calling 'from project import *'
 from .zernikepol import ZernPol, fit_polynomials, fit_polynomials_vectors, generate_phases_image, generate_polynomials, generate_random_phases

@@ -2,7 +2,7 @@
 """
 PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.
 
-@author: Sergei Klykov, @year: 2025, @license: MIT \n
+@author: Sergei Klykov, @year: 2026, @license: MIT \n
 
 """
 # %% Global imports
@@ -10,8 +10,9 @@ import time
 import warnings
 from importlib.metadata import version
 from math import pi
+from numbers import Real
 from pathlib import Path
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, SupportsFloat, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,12 +34,9 @@ from .calculations.calc_psfs import (
     get_psf_kernel,
     get_psf_kernel_zerns,
     lambda_char,
-    radial_integral,
-    radial_integral_s,
     read_psf,
     save_psf,
 )
-from .utils.intmproc import DispenserManager
 from .zernikepol import ZernPol
 
 if numba_installed:
@@ -75,9 +73,8 @@ class ZernPSF:
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
     pixel_size_nyquist_eStr = "{:.3e}".format(pixel_size_nyquist)
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
-    alpha: float = expansion_coeff / wavelength  # the role of amplitude for PSF calculation
+    alpha: float = (2.0*pi*expansion_coeff) / wavelength  # the role of amplitude for PSF calculation (converted to radians!)
     airy: bool = False  # flag if the Piston is provided as the Zernike polynomial
-    __ParallelCalc: Optional[DispenserManager] = None; __integration_params: list = []  # for speeding up the calculations using Processes
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
     k: float = 2.0*pi/wavelength  # angular frequency
     json_file_path: str = ""  # shifted to the __init__ method to prevent putting path to API doc (by pydoc)
@@ -146,7 +143,8 @@ class ZernPSF:
                     raise ValueError("Not all objects in Sequence are instances of the 'ZernPol' class")
 
     # %% Set properties
-    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[float, Sequence[float]], pixel_physical_size: float):
+    def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[SupportsFloat, Sequence[SupportsFloat], np.ndarray],
+                           pixel_physical_size: float):
         """
         Set parameters in physical units.
 
@@ -156,16 +154,19 @@ class ZernPSF:
             Numerical aperture of an objective, assumed usage of microscopic ones.
         wavelength : float
             Wavelength of monochromatic light (\u03BB) used for imaging in physical units (e.g., as \u00B5m).
-        expansion_coeff : float | Sequence[float]
+        expansion_coeff : SupportsFloat | Sequence[SupportsFloat]
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-            alpha = expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
+            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
+            !!!: alpha definition has been changed (multiplied by 2*pi) after version 0.1.0, now it is effectively enlarged. \n
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
             Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
             The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
-            should be less than this limit.
+            should be less than this limit.\n
+            Way of calculation = pixel physical size = pixel camera size (\u00B5m) / Total Magnification, where:\n
+            Total Magnification (M) = Objective Magn. * Tube Lens Magn. (Mismatch) * Camera Adapter Magn. \n
 
         Raises
         ------
@@ -183,13 +184,13 @@ class ZernPSF:
 
         """
         # Sanity check for NA
-        if NA < 0.0 or NA > 1.7:
+        if NA <= 0.0 or NA > 1.7:
             raise ValueError("NA should lay in the range of (0.0, 1.7] at most - for common microscopic objectives")
         # Sanity check for wavelength
         if wavelength <= 0.0:
             raise ValueError("Wavelength should be positive real number")
-        self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         self.NA = NA; self.wavelength = wavelength  # save as the class properties
+        self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
         self.amplitudes: np.ndarray  # set explicitly expected data type
         # Sanity check of provided wavelength, pixel physical size (Nyquist criteria)
         self.pixel_size_nyquist = 0.5*0.5*wavelength/NA  # based on half of the Abbe resolution limit, see references in the docstring
@@ -201,16 +202,16 @@ class ZernPSF:
                              + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
-        if not isinstance(expansion_coeff, float):
+        if isinstance(expansion_coeff, (Sequence, np.ndarray)):  # effectively, it should be some sequence / numpy array with numbers
             coeffs_len = len(expansion_coeff)  # for checking how many amplitudes provided
             if coeffs_len != len(self.polynomials):
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
                     expansion_coeff = float(expansion_coeff[0])
                     # Sanity check for the expansion coefficient of the polynomial
-                    self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+                    self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
                     if len(self.__warn_message) > 0:
                         warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-                    self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
+                    self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
                 else:
                     raise ValueError(f"Length of provided coefficients ({coeffs_len}) is not equal to stored number "
                                      + f"of polynomials ({len(self.polynomials)})")
@@ -218,10 +219,10 @@ class ZernPSF:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
-                self.__warn_message = _sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*max_module_coeff) / wavelength, max_coeff_check=True)
                 if len(self.__warn_message) > 0:
                     warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-                self.amplitudes = self.coefficients / self.wavelength
+                self.amplitudes = (2.0*pi*self.coefficients) / self.wavelength
         else:
             # Check consistency of provided type of polynomials and coefficients
             if self.zernpol is None and len(self.polynomials) > 1:  # only if 2 and more polynomials provided
@@ -231,10 +232,11 @@ class ZernPSF:
             if not isinstance(expansion_coeff, float):
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
-            self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
+            if not self.airy:
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-            self.expansion_coeff = expansion_coeff; self.alpha = self.expansion_coeff / self.wavelength
+            self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
         # Kernel size estimation (could be changed explicitly in the method 'set_calculation_props'). Redefine it for each call
         if self.zernpol is not None:  # for single polynomial
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
@@ -261,7 +263,7 @@ class ZernPSF:
                 self.kernel_size += 1  # kernel size should odd
         self.__physical_props_set = True  # set internal flag True if no ValueError raised
 
-    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int, n_integration_points_phi: int):
+    def set_calculation_props(self, kernel_size: int, n_integration_points_r: int = 320, n_integration_points_phi: int = 300):
         """
         Set calculation properties: kernel size, number of integration points on polar coordinates.
 
@@ -272,12 +274,12 @@ class ZernPSF:
         ----------
         kernel_size : int
             Size of PSF kernel (2D matrix used for convolution). Should be odd integer not less than 3.
-        n_integration_points_r : int
+        n_integration_points_r : int, Optional
             Number of integration points used for calculation diffraction integral on the radius of the entrance pupil
-            (normalized to the range [0.0, 1.0]). Should be integer not less than 20.
-        n_integration_points_phi : int
+            (normalized to the range [0.0, 1.0]). Should be integer not less than 20. The default is 320.
+        n_integration_points_phi : int, Optional
             Number of integration points used for calculation diffraction integral on the polar angle phi of the entrance pupil
-            (from the range [0.0, 2pi]). Should be integer not less than 36.
+            (from the range [0.0, 2pi]). Should be integer not less than 36. The default is 300.
 
         Raises
         ------
@@ -327,11 +329,11 @@ class ZernPSF:
         Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
         an imaging system (micro-objective). \n
-        The order of integration and used equations in short:
+        The order of integration and used equations in short: \n
         1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022zernike_pol.polynomial_value(p, phi) -
                                                                              r\u2022p\u2022cos(phi - theta))\u20221j \n
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
-        output, it provides as the np.power(np.abs(integral_sum), 2)\u2022integral_normalization, there integral_normalization =
+        output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
         1.0/(pi\u2022pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n
@@ -603,7 +605,7 @@ class ZernPSF:
             abs_path = str(abs_path)
         json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
-            wavelen: float; na: float; a: Union[float, Sequence[float]]; pols: list; ps: float; read_props = 0
+            wavelen: float; na: float; a: Union[Real, Sequence[Real]]; pols: list; ps: float; read_props = 0
             for key, item in json_data.items():
                 # Calculation properties + calculated kernel
                 if key == "PSF Kernel":
@@ -647,112 +649,6 @@ class ZernPSF:
         else:
             self.__warn_message = "\nProvided path doesn't contain valid JSON data"
             warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-
-    # %% Parallelized computing methods
-    def __initialize_parallel_workers(self):
-        """
-        Initialize 4 Processes() for performing integration.
-
-        See intmproc.py script (utils module) for implementation details.\n
-        Tests showed that this way doesn't provide performance gain.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.__ParallelCalc is None and not self.airy:
-            self.__integration_params = [(i, i, i, i, i, i) for i in range(10)]  # placeholder only, will be replaced with the actual list later
-            self.__ParallelCalc = DispenserManager(compute_func=radial_integral_s, params_list=self.__integration_params,
-                                                   n_workers=4, verbose_info=False)
-
-    def __get_psf_point_r_parallel(self, r: float, theta: float) -> float:
-        """
-        Parallel implementation of numerical integration.
-
-        Parameters
-        ----------
-        r : float
-            Input radial polar coordinate.
-        theta : float
-            Input angular polar coordinate.
-
-        Returns
-        -------
-        float
-            Each point for PSF kernel.
-
-        """
-        h_phi = 2.0*pi/self.n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-        if self.__ParallelCalc is not None:
-            # t1 = time.perf_counter()
-            constants = (self.zernpol, r, theta, self.alpha, self.n_int_r_points)
-            self.__integration_params = [(i*h_phi, constants) for i in range(2, self.n_int_phi_points-2, 2)]
-            self.__ParallelCalc.update_params(self.__integration_params)
-            # print("Forming params takes ms:", int(round(1000*(time.perf_counter() - t1), 0)))
-            # t1 = time.perf_counter()
-            even_sum = np.sum(np.asarray(self.__ParallelCalc.compute()))
-            # print("Calculation takes ms:", int(round(1000*(time.perf_counter() - t1), 0)))
-            self.__integration_params = [(i*h_phi, constants) for i in range(1, self.n_int_phi_points-1, 2)]
-            self.__ParallelCalc.update_params(self.__integration_params)
-            odd_sum = np.sum(np.asarray(self.__ParallelCalc.compute()))
-        # Simpson integration rule implementation
-        yA = radial_integral(self.zernpol, r, theta, 0.0, self.alpha, self.n_int_r_points)
-        yB = radial_integral(self.zernpol, r, theta, 2.0*pi, self.alpha, self.n_int_r_points)
-        integral_sum = (h_phi/3.0)*(yA + yB + 2.0*even_sum + 4.0*odd_sum); integral_normalization = 1.0/(pi*pi)
-        return np.power(np.abs(integral_sum), 2)*integral_normalization
-
-    def __get_kernel_parallel(self, normalize_values: bool = True) -> np.ndarray:
-        """
-        Parallelized implementation of PSF kernel calculation.
-
-        Note it's much less effective than common calculate_psf_kernel() method.
-
-        Parameters
-        ----------
-        normalize_values : bool, optional
-            Flag to normalize values. The default is True.
-
-        Returns
-        -------
-        numpy.ndarray
-            PSF kernel.
-
-        """
-        if self.kernel_size < 3 and self.zernpol is not None:
-            self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
-                                               wavelength=self.wavelength, NA=self.NA)
-        if self.zernpol is None:
-            self.kernel_size = 3
-        self.kernel = np.zeros(shape=(self.kernel_size, self.kernel_size)); i_center = self.kernel_size//2; j_center = self.kernel_size//2
-        calculated_points = 0
-        for i in range(self.kernel_size):
-            for j in range(self.kernel_size):
-                t1 = time.perf_counter(); pixel_dist = np.sqrt(np.power((i - i_center), 2) + np.power((j - j_center), 2))  # in pixels
-                # Convert pixel distance in the required k*NA*pixel_dist*calibration coefficient
-                distance = self.k*self.NA*self.pixel_size*pixel_dist  # conversion from pixel distance into phase multiplier
-                theta = np.arctan2((i - i_center), (j - j_center))  # The PSF also has the angular dependency, not only the radial one
-                theta += np.pi  # shift angles to the range [0, 2pi]
-                if self.zernpol is not None:
-                    self.kernel[i, j] = self.__get_psf_point_r_parallel(r=distance, theta=theta); calculated_points += 1
-                # print(f"Calculated point {[i, j]} from {[self.kernel_size-1, self.kernel_size-1]}")
-                print(f"Calculated point #{calculated_points} from {self.kernel_size*self.kernel_size}, takes ms: ",
-                      int(round(1000*(time.perf_counter() - t1), 0)))
-        if normalize_values:
-            self.kernel /= np.max(self.kernel)
-        return self.kernel
-
-    def __deinitialize_workers(self):
-        """
-        Release initialized before Processes for performing parallel computation.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.__ParallelCalc is not None:
-            self.__ParallelCalc.close()
 
 
 # %% Utility functions

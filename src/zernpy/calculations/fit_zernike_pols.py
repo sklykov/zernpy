@@ -189,7 +189,7 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
             provided_orders.append(polynomial.get_mn_orders())
         set_provided_orders = set(provided_orders)  # filter out if there is any repeated polynomials provided
         if len(set_provided_orders) != len(provided_orders):
-            print(set_provided_orders, provided_orders)
+            print(set_provided_orders, provided_orders, flush=True)
             raise ValueError("Provided repeated polynomials")
     else:
         raise ValueError("Provided zero length tuple with polynomials")
@@ -208,5 +208,5 @@ def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.nd
         zernike_coefficients = np.linalg.lstsq(zernike_values, cropped_phases_vector, rcond=None)
         zernike_coefficients = zernike_coefficients[0]  # unpacking fitting results
     else:
-        raise ValueError("There isn't any polynomials provided")
+        raise ValueError("There aren't any polynomials provided")
     return zernike_coefficients

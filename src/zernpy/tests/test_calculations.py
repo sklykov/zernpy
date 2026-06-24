@@ -160,3 +160,24 @@ def test_pol_values_edge_cases():
     r = 0.25; theta = 1.0; value = zp.polynomial_value(r, theta); value_ex = zp.polynomial_value(r, theta, use_exact_eq=True)
     assert abs(1.0 - value) < 1E-6, f"Wrong calculated piston value (constant phase): {value}"
     assert abs(value_ex - value) < 1E-6, f"Wrong difference between tabular and exact equations for piston value: {value}, {value_ex}"
+
+
+def test_rms_pv():
+    """
+    Test RMS and PV calculations on known theoritically values.
+
+    Returns
+    -------
+    None
+    """
+    zp = ZernPol(m=1, n=1)
+    phase_profile = zp.gen_zernikes_surface(coefficients=(-1.0, ), polynomials=(zp, ), theta_rad_step=round(np.pi/360, 7))
+    rms, pv = zp.get_rms_pv_surface(phase_profile)
+    assert math.isclose(rms, 1.0, abs_tol=0.014), f"Calculated RMS: {rms} not close to the theoretical RMS=1.0 for (1, 1) polynomial"
+    assert math.isclose(pv, 4.0, abs_tol=0.014), f"Calculated P-V: {pv} not close to the theoretical P-V=4.0 for (1, 1) polynomial"
+    zp = ZernPol(m=0, n=4)
+    phase_profile = zp.gen_zernikes_surface(coefficients=(0.5, ), polynomials=(zp, ), theta_rad_step=round(np.pi/360, 7))
+    rms, pv = zp.get_rms_pv_surface(phase_profile)
+    assert math.isclose(rms, 0.5, abs_tol=0.015), f"Calculated RMS: {rms} not close to the theoretical RMS=0.5 for (0, 4) polynomial"
+    assert math.isclose(pv, 1.677, abs_tol=0.014), f"Calculated P-V: {pv} not close to the theoretical P-V=1.677 for (0, 4) polynomial"
+

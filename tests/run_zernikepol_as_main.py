@@ -109,12 +109,13 @@ def _estimate_high_order_calc_times():
 
 # %% Tests
 if __name__ == "__main__":
-    _test_plots = True  # regulates testing of plotting various plots
+    _test_plots = False  # regulates testing of plotting various plots
     _test_calculations = False  # regulates tests below concerning calculations
+    _test_ver012 = True  # new tests for repeatability of README code snippets for versions after 0.1.2
+    plt.close("all")  # close all previously opened plots
 
     # Testing plotting, the plots will be opened in the additional pop-up windows
     if _test_plots:
-        plt.close("all")  # close all previously opened plots
         t1 = time.perf_counter(); zp = ZernPol(m=0, n=2); ZernPol.plot_profile(zp, color_map="jet", show_title=True)  # basic plot
         t2 = time.perf_counter(); print("Plotting of 1 non-zero polynomial takes ms: ", int(round(1000*(t2-t1), 0)))
         coordinates = ZernPol.gen_polar_coordinates(r_step=0.005)
@@ -192,3 +193,15 @@ if __name__ == "__main__":
         print("Recursive / exact calc. times for high orders:", compare_performances(12, 40))
         # Statement below producing expected warnings, it's used for performance estimation
         _estimate_high_order_calc_times()
+
+    if _test_ver012:
+        # Fitting section of README
+        polynomials = (ZernPol(m=-1, n=5), ZernPol(m=3, n=3), ZernPol(m=0, n=2))
+        pols_coeffs = (-0.114, 0.245, 0.403)
+        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=pols_coeffs,
+                                              img_height=401, img_width=401)
+        plt.figure("Initial Phase Profile"); plt.imshow(phases_image, cmap="jet")
+        plt.axis("off"); plt.tight_layout()
+        polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True)
+        plt.figure("Fitted Phase Profile"); plt.imshow(cropped_img, cmap="jet")
+        plt.axis("off"); plt.tight_layout()

@@ -579,7 +579,7 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
 
     """
     # check maximum order
-    if not isinstance(max_order, int) and max_order < 2:
+    if not isinstance(max_order, int) or max_order < 2:
         print("NOTE that max_order by default set to 2")
         max_order = 2
     # Generating Zernike orders in OSA/ANSI indexing scheme
@@ -619,7 +619,7 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
 
     """
     # check maximum order
-    if not isinstance(max_order, int) and max_order < 2:
+    if not isinstance(max_order, int) or max_order < 2:
         print("NOTE that max_order by default set to 2")
         max_order = 2
     # Generating Zernike orders in OSA/ANSI indexing scheme

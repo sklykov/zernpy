@@ -104,7 +104,7 @@ def test_preselected_polynomials_fitting():
     """
     height = 381; width = 350; crop_r = 1.0; strict_border = False; stop_warns = True
     polynomials_list = [ZernPol(osa=0), ZernPol(m=-1, n=5), ZernPol(m=3, n=3), ZernPol(m=0, n=2)]
-    polynomials_coefficients = [-0.633, -0.214, 0.346, 1.022]
+    polynomials_coefficients = [-0.433, -0.114, 0.246, 0.522]
     phases_image = generate_phases_image(polynomials=tuple(polynomials_list), polynomials_amplitudes=tuple(polynomials_coefficients),
                                          img_width=width, img_height=height)
     fitted_amplitudes, _ = fit_polynomials(phases_image, polynomials=tuple(polynomials_list), suppress_warnings=stop_warns,
@@ -117,14 +117,16 @@ def test_preselected_polynomials_fitting():
     polynomials = (); polynomials_coeffs = ()  # no polynomials initialized
     try:
         assert_flag = False
-        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs, img_width=width, img_height=height)
+        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs,
+                                             img_width=width, img_height=height)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Empty tuple with polynomials not allowed but not raised ValueError"
-    polynomials = (ZernPol(osa=0),); polynomials_coeffs = (-0.633, -0.214)  # different lengths of tuples
+    polynomials = (ZernPol(osa=0),); polynomials_coeffs = (-0.433, -0.114)  # different lengths of tuples
     try:
         assert_flag = False
-        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs, img_width=width, img_height=height)
+        phases_image = generate_phases_image(polynomials=polynomials, polynomials_amplitudes=polynomials_coeffs,
+                                             img_width=width, img_height=height)
     except ValueError:
         assert_flag = True
     assert assert_flag, "Empty tuple with polynomials not allowed but not raised ValueError"
