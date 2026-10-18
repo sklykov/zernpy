@@ -13,7 +13,7 @@ import math
 
 import numpy as np
 
-from ..zernikepol import ZernPol
+from zernpy.zernikepol import ZernPol
 
 
 def test_polynomials_initialization():

@@ -14,7 +14,7 @@ import random
 
 import numpy as np
 
-from ..zernikepol import ZernPol, fit_polynomials, fit_polynomials_vectors, generate_phases_image, generate_random_phases
+from zernpy.zernikepol import ZernPol, fit_polynomials, fit_polynomials_vectors, generate_phases_image, generate_random_phases
 
 
 # %% Test functions

@@ -13,14 +13,14 @@ import math
 
 import numpy as np
 
-from ..calculations.calc_zernike_pol import (
+from zernpy.calculations.calc_zernike_pol import (
     check_high_orders_recursion,
     compare_radial_calculations,
     compare_radial_derivatives,
     compare_recursive_coeffs_radials,
     compare_recursive_coeffs_radials_dr,
 )
-from ..zernikepol import ZernPol
+from zernpy.zernikepol import ZernPol
 
 
 # %% Func-s to be run by pytest

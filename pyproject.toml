@@ -2,11 +2,13 @@
 name = "zernpy"
 dynamic = ["version"]  # Discovering of the version by the setuptools (see below: in the 'file' or 'attr')
 authors = [
-    { name = "Sergei Klykov" },
-    { email = "sergej.klykow@gmail.com" }
+    { name = "Sergei Klykov", email = "sergej.klykow@gmail.com" }
 ]
 description = "Calculation of real Zernike polynomials values, associated PSFs, plotting of their profiles in polar coordinates"
 readme = "README.md"
+# Keep the legacy license format for Python 3.8-compatible setuptools
+license = { file = "LICENSE" }
+keywords = ["zernike-polynomials", "zernike-psf"]
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -23,8 +25,6 @@ performance = ["numba>=0.57.1"]
 dev = ["ruff", "mypy", "pytest"]
 all = ["numba>=0.57.1"]
 
-keywords = ["zernike-polynomials", "zernike-psf"]
-
 [project.urls]  # METADATA in wheel file will represent the data below by using pip show zernpy -v
 # But the links themselves are mapped / parsed by the PyPi website
 "Homepage" = "https://pypi.org/project/zernpy/"
@@ -36,19 +36,20 @@ keywords = ["zernike-polynomials", "zernike-psf"]
 [tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
 where = ["src"]
 include = ["zernpy*"]
-exclude = ["zernpy.tests*"]  # only packages should be specified, folders - exclude in MANIFEST.in
 namespaces = false  # forbid treating a folder as a module without explicit __init__.py presence
 
 [tool.setuptools]
-include-package-data = false  # forbid to make a confusion on the src/zernpy/tests folder presence
-# confusion is produced because it is an importable module
+include-package-data = false  # Include only explicitly configured package data
 
 [tool.setuptools.dynamic]
 version = { attr = "zernpy.__version__" }  # Variable set in the __init__.py
 
 [build-system]
-requires = ["setuptools>=75.0"]
+requires = ["setuptools>=75.0"]  # Python 3.8 can resolve setuptools 75.3.2
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -68,7 +69,6 @@ exclude = [
     '^tests/',
     '^build/',
     '^dist/',
-    '^src/zernpy/tests/',
 	'^src/zernpy/ignored/'
 ]
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
@@ -83,11 +83,14 @@ line-length = 145  # my own preference
 indent-width = 4
 target-version = "py311"
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "B", "SIM"]
+select = ["E4", "E7", "E9", "F", "I", "B", "SIM", "D"]
 ignore = ["E702", "E402", # used in the IDE
     "SIM108", # many ternany operator replacements in a code
     "SIM113", # potentially can break logic in a loop
 ]
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

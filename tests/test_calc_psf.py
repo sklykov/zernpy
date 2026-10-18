@@ -14,10 +14,10 @@ from pathlib import Path
 
 import numpy as np
 
-# Relative import from the modules - designed to be used only by pytest runs
-from ..calculations.calc_psfs import get_psf_kernel
-from ..zernikepol import ZernPol
-from ..zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
+# Import the installed package for pytest runs
+from zernpy.calculations.calc_psfs import get_psf_kernel
+from zernpy.zernikepol import ZernPol
+from zernpy.zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
 
 
 # Testing functions
