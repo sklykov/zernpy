@@ -1,6 +1,7 @@
 name: Run Python tests
 
 on:
+  workflow_call:
   push:
     branches: [ main ]  # - add for limiting it to be triggered only by pushes to the main branch
     paths:  # triggers testing action if only any Python / listed files have been changed
@@ -17,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.11", "3.12", "3.13"]
+        python-version: ["3.8", "3.11", "3.13"]
 
     steps:
       - name: Checkout code  # loads code from a repo

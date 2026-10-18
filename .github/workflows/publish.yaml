@@ -3,15 +3,22 @@ name: Publish Python package
 on:
   push:
     tags:
-      - "v*.*.*"  # Manual tagging of the commit on the main branch should trigger publish action
+      - "v*.*.*"  # Test the tagged commit before building and publishing
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
+  tests:
+    uses: ./.github/workflows/test.yaml
+
   publish:
+    needs: tests
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
 
     environment:
       name: pypi
