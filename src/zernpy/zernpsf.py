@@ -551,8 +551,10 @@ class ZernPSF:
         Parameters
         ----------
         abs_path : str | Path, optional
-            Absolute path for the file. If None, the file will be saved in the folder "saved_psfs" in the root of the package.
-            The default is None.
+            Path to an existing destination folder. If the folder does not exist, warn and use the default location.
+            If None or an empty string, reuse the last saved file's folder; before the first save, use "saved_psfs" in the
+            package folder. If saving to the default location fails, warn and fall back to "saved_psfs" in the current
+            working directory. Only default folders are created, without their parents. The default is None.
         overwrite : bool, optional
             Flag for overwriting the existing file. The default is False.
 
@@ -561,29 +563,47 @@ class ZernPSF:
         None.
 
         """
-        if abs_path is None:
-            abs_path = Path(self.json_file_path).joinpath("saved_psfs")  # default folder for storing saved JSON files (root for the package)
-        if isinstance(abs_path, Path):
-            if not Path.exists(abs_path):
-                abs_path = ""  # the folder "saved_psfs" will be created in the root of the package
-            else:
-                abs_path = str(abs_path)  # convert to the expected string format
+        if abs_path is not None and abs_path != "" and not Path(abs_path).is_dir():
+            warnings.warn(f"Destination folder '{abs_path}' does not exist or is not a directory; using the default location.",
+                          stacklevel=2)
+            abs_path = None
+        folders: Tuple[Path, ...]
+        if abs_path is None or abs_path == "":
+            # json_file_path initially holds the package directory, then the last saved filename
+            saved_path = Path(self.json_file_path)
+            default_folder = saved_path.joinpath("saved_psfs") if saved_path.is_dir() else saved_path.parent
+            fallback_folder = Path.cwd().joinpath("saved_psfs"); use_default = True
+            folders = (default_folder, fallback_folder) if default_folder != fallback_folder else (default_folder,)
+        else:
+            folders = (Path(abs_path),); use_default = False  # handle string and Path destinations identically
         if self.kernel_size == 1:
             self.__warn_message = "\nKernel most likely hasn't been calculated, the kernel size == 1 - default value"
             warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
-        if self.zernpol is not None:  # single polynomial saving
-            self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
-                                           expansion_coefficient=self.expansion_coeff, pixel_size=self.pixel_size,
-                                           kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
-                                           n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol,
-                                           overwrite=overwrite, folder_path=abs_path)
-        elif len(self.polynomials) > 0:  # saving several polynomials
-            self.coefficients: np.ndarray   # set explicitly data type for mypy
-            self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
-                                           expansion_coefficient=self.coefficients, pixel_size=self.pixel_size,
-                                           kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
-                                           n_int_points_phi=self.n_int_phi_points, zernike_pol=self.polynomials,
-                                           overwrite=overwrite, folder_path=abs_path)
+        for folder_index, folder in enumerate(folders):
+            try:
+                if use_default:
+                    folder.mkdir(exist_ok=True)  # create only the default destination, without creating parent folders
+                if self.zernpol is not None:  # single polynomial saving
+                    self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
+                                                   expansion_coefficient=self.expansion_coeff, pixel_size=self.pixel_size,
+                                                   kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
+                                                   n_int_points_phi=self.n_int_phi_points, zernike_pol=self.zernpol,
+                                                   overwrite=overwrite, folder_path=str(folder))
+                elif len(self.polynomials) > 0:  # saving several polynomials
+                    self.coefficients: np.ndarray   # set explicitly data type for mypy
+                    self.json_file_path = save_psf(psf_kernel=self.kernel, NA=self.NA, wavelength=self.wavelength,
+                                                   expansion_coefficient=self.coefficients, pixel_size=self.pixel_size,
+                                                   kernel_size=self.kernel_size, n_int_points_r=self.n_int_r_points,
+                                                   n_int_points_phi=self.n_int_phi_points, zernike_pol=self.polynomials,
+                                                   overwrite=overwrite, folder_path=str(folder))
+                if use_default:
+                    print("Auto assigned folder for saving calculated PSF kernel:", folder, flush=True)
+                break
+            except OSError as error:
+                if not use_default or folder_index == len(folders) - 1:
+                    raise  # re-raise OSError for notify the caller if: the folder provided or if not, saving in CWD failed
+                # Retry file-writing failures as well as failures to create the package's default folder
+                warnings.warn(f"Cannot save PSF in '{folder}': {error}. Falling back to '{folders[folder_index + 1]}'.", stacklevel=2)
 
     def read_json(self, abs_path: Union[str, Path, None] = None):
         """
@@ -606,12 +626,13 @@ class ZernPSF:
         json_data = read_psf(abs_path)  # raw parsed data from a file
         if json_data is not None:
             wavelen: float; na: float; a: Union[Real, Sequence[Real]]; pols: list; ps: float; read_props = 0
+            saved_kernel_size: int
             for key, item in json_data.items():
                 # Calculation properties + calculated kernel
                 if key == "PSF Kernel":
                     self.kernel = np.asarray(item); read_props += 1
                 elif key == "Kernel Size":
-                    self.kernel_size = item; read_props += 1
+                    saved_kernel_size = item; read_props += 1
                 elif key == "# of integration points R":
                     self.n_int_r_points = item; read_props += 1
                 elif key == "# of integration points angle":
@@ -632,17 +653,19 @@ class ZernPSF:
                     osa_indices = item; pols = []; pols_len = len(osa_indices)
                     if pols_len == 1:
                         self.zernpol = ZernPol(osa=osa_indices[0])
-                        if osa_indices[0] == 0:
-                            self.airy = True
-                        else:
-                            self.airy = False
                     else:
                         for index in osa_indices:
                             pols.append(ZernPol(osa=index))
                         self.polynomials = tuple(pols); self.zernpol = None; self.airy = False
             # Assign read physical properties
             if read_props == 8:
+                if self.zernpol is not None:
+                    # A loaded single polynomial replaces the previous sequence and its coefficient arrays
+                    self.polynomials = (); self.coefficients = None; self.amplitudes = None
+                    self.airy = self.zernpol.get_mn_orders() == (0, 0)  # only piston uses the single-polynomial Airy calculation
                 self.set_physical_props(NA=na, wavelength=wavelen, expansion_coeff=a, pixel_physical_size=ps)
+                # Restore the recorded size after physical properties re-estimate it, including for cropped kernels
+                self.kernel_size = saved_kernel_size
             else:
                 self.__warn_message = "\nProvided json file doesn't contain all necessary keys for physical / calculation properties"
                 warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""

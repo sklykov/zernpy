@@ -695,7 +695,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
 
 # %% Save and read the calculated PSF matrices
 def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: float, expansion_coefficient: Union[float, np.ndarray],
-             kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: Optional[str] = None,
+             kernel_size: int, n_int_points_r: int, n_int_points_phi: int, zernike_pol, folder_path: str,
              overwrite: bool = True, additional_file_name: Optional[str] = None) -> str:
     """
     Save the calculated PSF kernel along with the used for the calculation parameters.
@@ -720,8 +720,8 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Number of the used integration points on phi.
     zernike_pol : ZernPol instance or Sequence[ZernPol]
         Zernike polynomial(-s).
-    folder_path : str, optional
-        Absolute path to the folder where the file will be saved. The default is None.
+    folder_path : str
+        Path to an existing destination folder, prepared by the caller.
     overwrite : bool, optional
         Flag for letting overwriting of the existing file. The default is True.
     additional_file_name : str
@@ -741,15 +741,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
     else:
         for zernpol in zernike_pol:
             osa_indices.append(zernpol.get_indices()[1])
-    # Checking the provided folder or creating the folder for storing files
-    if folder_path is None or len(folder_path) == 0 or not Path(folder_path).is_dir():
-        working_folder = Path(__file__).cwd(); saved_psfs_folder = Path(working_folder).joinpath("saved_psfs")
-        if not saved_psfs_folder.is_dir():
-            saved_psfs_folder.mkdir()
-        print("Auto assigned folder for saving calculated PSF kernel:", saved_psfs_folder)
-    else:
-        if Path(folder_path).is_dir():
-            saved_psfs_folder = Path(folder_path)
+    saved_psfs_folder = Path(folder_path)  # folder selection and creation belong to the caller
     # Save provided PSF kernel with the provided parameters
     if additional_file_name is not None and len(additional_file_name) > 0:
         if single_pol_used:
