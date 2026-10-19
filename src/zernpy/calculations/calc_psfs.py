@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Calculation and plotting of associated with polynomials PSFs.
+Calculate and plot point spread functions associated with Zernike wavefronts.
+
+Physical wavefront coefficients may use any length unit, such as micrometres, provided wavelength uses the same unit.
+get_psf_kernel() accepts a physical coefficient a and converts it to the phase coefficient 2*pi*a/wavelength.
+Integration helpers and get_psf_kernel_zerns() receive phase coefficients after conversion by their caller;
+ZernPSF.set_physical_props() performs that conversion for multiple polynomials.
 
 @author: Sergei Klykov  \n
 @licence: MIT, @year: 2024
@@ -32,23 +37,21 @@ pi_char = "\u03C0"  # Unicode char code for pi
 # %% Reference - Airy profile for Z(0, 0)
 def airy_ref_pattern(r: float) -> float:
     """
-    Return Airy pattern radial function J1(r)/r.
+    Return the normalized Airy intensity, 4*(J1(r)/r)**2.
 
     Parameters
     ----------
     r : float
-        Radial distance (for an objective should be k*NA*r).
+        Dimensionless radial argument, k*NA times the physical radial distance, where k = 2*pi/wavelength.
 
     Returns
     -------
     float
-        J1(r)/r function.
+        Airy intensity with a limiting value of 1 at r = 0.
 
     """
     r = round(r, 12)
     ratio = jv(1, 1E-11)/1E-11 if r == 0.0 else jv(1, r)/r
-    # NOTE that the values produced by exact equation below is off with the direct computation of diffraction integral
-    # apporoximate coefficient is 0.986711 for a central point. Most likely, the difference because of numerical integration
     return 4.0*pow(ratio, 2)
 
 
@@ -63,15 +66,15 @@ def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float
     zernike_pol : ZernPol
         Zernike polynomial definition as the ZernPol() class.
     alpha : float
-        Amplitude of the polynomial (RMS).
+        Converted phase coefficient 2*pi*a/wavelength, where a is the supplied physical wavefront coefficient.
     phi : float
         Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
     p : numpy.array or float
         Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
-    theta : floats
+    theta : float
         Angle on the image coordinates.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
 
     References
     ----------
@@ -80,8 +83,8 @@ def diffraction_integral_r(zernike_pol, alpha: float, phi: float, p: Union[float
 
     Returns
     -------
-    numpy.ndarray
-        Values of the diffraction integral.
+    complex or numpy.ndarray
+        Complex integrand values, including the pupil-radius factor p.
 
     """
     phase_arg = (alpha*zernike_pol.polynomial_value(p, phi) - r*p*np.cos(phi - theta))*1j
@@ -97,13 +100,13 @@ def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: floa
     zernike_pol : ZernPol
         Zernike polynomial definition as the ZernPol() class.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
     theta : float
         Angle on the image coordinates.
     phi : float
         Angle on the pupil coordinates.
     alpha : float
-        Amplitude of the polynomial.
+        Converted phase coefficient 2*pi*a/wavelength, where a is the supplied physical wavefront coefficient.
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
 
@@ -113,66 +116,12 @@ def radial_integral(zernike_pol, r: float, theta: float, phi: float, alpha: floa
         Complex amplitude of the field as result of integration on the pupil radius coordinate.
 
     """
-    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    # Integrate over the pupil radius using the vectorized trapezoidal rule
     h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
     fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r)
     fb = diffraction_integral_r(zernike_pol, alpha, phi, 1.0, theta, r)
     ang_int = np.sum(diffraction_integral_r(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
     return h_p*ang_int
-
-
-def radial_integral_args(phi: float, zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int) -> complex:
-    """
-    Make integration of the diffraction integral on the radius of the entrance pupil.
-
-    The order of parameters are rearranged for the wrapping this function by using partial from functools.
-
-    Parameters
-    ----------
-    phi : float
-        Angle on the pupil coordinates.
-    zernike_pol : ZernPol
-        Zernike polynomial definition as the ZernPol() class.
-    r : float
-        Radius on the image coordinates.
-    theta : float
-        Angle on the image coordinates.
-    alpha : float
-        Amplitude of the polynomial.
-    n_int_r_points : int
-        Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
-
-    Returns
-    -------
-    complex
-        Complex amplitude of the field as result of integration on the pupil radius coordinate.
-
-    """
-    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
-    h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
-    fa = diffraction_integral_r(zernike_pol, alpha, phi, 0.0, theta, r)
-    fb = diffraction_integral_r(zernike_pol, alpha, phi, 1.0, theta, r)
-    ang_int = np.sum(diffraction_integral_r(zernike_pol, alpha, phi, p, theta, r)) + 0.5*(fa + fb)
-    return h_p*ang_int
-
-
-def radial_integral_s(params: tuple) -> complex:
-    """
-    Wrap function to accept input variables as tuple for parallelizing the computation.
-
-    Parameters
-    ----------
-    params : tuple
-        phi, constants. zernike_pol, r, theta, alpha, n_int_r_points = constants.
-
-    Returns
-    -------
-    complex
-        Phase integral value.
-
-    """
-    phi, constants = params; zernike_pol, r, theta, alpha, n_int_r_points = constants
-    return radial_integral_args(phi, zernike_pol, r, theta, alpha, n_int_r_points)
 
 
 def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
@@ -184,11 +133,11 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
     zernike_pol : ZernPol
         Zernike polynomial definition as the ZernPol() class.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
     theta : float
         Angle on the image coordinates.
-    alpha : float, optional
-        Amplitude of the polynomial.
+    alpha : float
+        Converted phase coefficient 2*pi*a/wavelength, where a is the supplied physical wavefront coefficient.
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
     n_int_phi_points : int
@@ -200,7 +149,7 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
         |U|**2 - the module and square of the amplitude, intensity as the PSF value.
 
     """
-    # Integration on the pupil radius using Simpson equation
+    # Integrate over the pupil angle using Simpson's rule
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
     for i in range(2, n_int_phi_points-2, 2):
         phi = i*h_phi; even_sum += radial_integral(zernike_pol, r, theta, phi, alpha, n_int_r_points)
@@ -212,28 +161,25 @@ def get_psf_point_r(zernike_pol, r: float, theta: float, alpha: float, n_int_r_p
     return np.power(np.abs(integral_sum), 2)*integral_normalization
 
 
-# %% Testing various speeding up calculation approaches
-def get_psf_point_r_parallel(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int,
-                             paralleljobs=None) -> float:
+# %% Vectorized PSF point calculation
+def get_psf_point_r_vectorized(zernike_pol, r: float, theta: float, alpha: float, n_int_r_points: int, n_int_phi_points: int) -> float:
     """
-    Calculate PSF point for the kernel using Parallel class from the joblib library.
+    Calculate PSF intensity using array-based summation of radial integrals.
 
     Parameters
     ----------
     zernike_pol : ZernPol
         Zernike polynomial definition as the ZernPol() class.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
     theta : float
         Angle on the image coordinates.
-    alpha : float, optional
-        Amplitude of the polynomial.
+    alpha : float
+        Converted phase coefficient 2*pi*a/wavelength, where a is the supplied physical wavefront coefficient.
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
     n_int_phi_points : int
         Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
-    paralleljobs : Parallel (from joblib import Parallel), optional
-        Parallel class for parallelizing the computation jobs using joblib backend. The default is None.
 
     Returns
     -------
@@ -265,10 +211,9 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
     zernike_pol : ZernPol
         The instance of ZernPol() class required for calculation of Zernike polynomial values.
     len2pixels : float
-        Relation between length in physical units (the same as the provided wavelength) and pixels.
+        Pixel size in the same length unit as wavelength.
     alpha : float
-        Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., \u00B5m).
-        Note that the normalized Zernike polynomials are used, so its coefficient is normalized to the specified wavelength.
+        Converted phase coefficient 2*pi*a/wavelength, where a and wavelength share the same length unit.
     wavelength : float
         Monochromatic wavelength.
     NA : float
@@ -318,7 +263,7 @@ def get_kernel_size(zernike_pol, len2pixels: float, alpha: float, wavelength: fl
 def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: float, NA: float, n_int_r_points: int = 320,
                    n_int_phi_points: int = 300, show_kernel: bool = False, fig_title: Optional[str] = None,
                    normalize_values: bool = False, airy_pattern: bool = False, kernel_size: int = 0, fig_id: str = "",
-                   test_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
+                   use_vectorized: bool = False, suppress_warns: bool = False, verbose: bool = False) -> np.ndarray:
     """
     Calculate centralized matrix (kernel) with the PSF mask values.
 
@@ -327,10 +272,10 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     zernike_pol : ZernPol
         The instance of ZernPol() class required for calculation of Zernike polynomial values.
     len2pixels : float
-        Relation between length in physical units (the same as the provided wavelength) and pixels.
+        Pixel size in the same length unit as wavelength.
     alpha : float
-        Zernike amplitude (the expansion coefficient) in physical units used for the wavelength specification (e.g., \u00B5m).
-        Note that during the calculation expansion coefficient will be normalized to radians (2pi/wavelength).
+        Physical wavefront coefficient a in the same length unit as wavelength, for example micrometres.
+        This function converts a to a phase coefficient in radians using 2*pi*a/wavelength.
     wavelength : float
         Wavelength (\u03BB) in physical units (e.g., \u00B5m) of the light used for calculations (in imaging).
     NA : float
@@ -346,16 +291,16 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
     normalize_values : bool, optional
         Normalize all values in the sense that the max kernel value = 1.0. The default is False.
     airy_pattern : bool, optional
-        Plot the Airy pattern for the provided parameters. The default is False.
+        Calculate the analytic Airy intensity instead of the aberrated diffraction integral. The default is False.
     kernel_size : int, optional
         Custom kernel size, if not provided, then the size will be estimated based on the parameters. The default is 0.
     fig_id : str, optional
         Some string id for the figure title. The default is "".
-    test_vectorized : bool, optional
-        For using vectorized calculations instead of simple for loops. The default is False.
+    use_vectorized : bool, optional
+        Sum angular integration terms using NumPy arrays instead of accumulating them in loops. The default is False.
     suppress_warns : bool, optional
         Flag for suppressing any thrown warnings. The default is False.
-    verbose: bool, optional
+    verbose : bool, optional
         Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it. The default is False.
 
     Returns
@@ -365,7 +310,7 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
 
     """
     m, n = define_orders(zernike_pol)  # get polynomial orders
-    # Convert provided absolute value of Zernike expansion coefficient (in um) into fraction of wavelength
+    # Convert the Zernike coefficient from the wavelength's length unit to radians
     expansion_coeff = alpha; alpha *= (2.0*pi)/wavelength; k = 2.0*pi/wavelength  # convert Zernike expansion coefficient to radians
     # Empirical estimation of the sufficient size for the kernel
     if kernel_size < 3:
@@ -409,10 +354,10 @@ def get_psf_kernel(zernike_pol, len2pixels: float, alpha: float, wavelength: flo
             theta += np.pi  # shift angles to the range [0, 2pi]
             # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
             if not airy_pattern:
-                if not test_vectorized:
+                if not use_vectorized:
                     kernel[i, j] = get_psf_point_r(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                 else:
-                    kernel[i, j] = get_psf_point_r_parallel(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                    kernel[i, j] = get_psf_point_r_vectorized(zernike_pol, distance, theta, alpha, n_int_r_points, n_int_phi_points)
                     if verbose:
                         calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
                         if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
@@ -458,15 +403,16 @@ def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float,
     polynomials : Sequence[ZernPol]
         Instances of ZernPol() class required for calculation of Zernike polynomials values.
     amplitudes : np.ndarray
-        Zernike amplitudes (the expansion coefficients) in physical units.
+        Converted phase coefficients 2*pi*a/wavelength. The caller converts the physical wavefront coefficients a
+        from the same length unit as wavelength; ZernPSF.set_physical_props() performs this conversion.
     phi : float
         Angle on the pupil (entrance pupil of micro-objective) coordinates (for integration).
     p : float or np.ndarray
         Integration interval on the pupil (entrance pupil of micro-objective) radius or radius as float number.
-    theta : floats
+    theta : float
         Angle on the image coordinates.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
 
     References
     ----------
@@ -475,8 +421,8 @@ def diffraction_integral_r_pols(polynomials, amplitudes: np.ndarray, phi: float,
 
     Returns
     -------
-    numpy.ndarray
-        Values of the diffraction integral.
+    complex or numpy.ndarray
+        Complex integrand values, including the pupil-radius factor p.
 
     """
     # NOTE: the manual for loop should be implemented, because sum can be calculated for float 'p' and for np.ndarray 'p'
@@ -498,15 +444,14 @@ def radial_integral_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
     polynomials : Sequence[ZernPol]
         Instances of ZernPol() class required for calculation of Zernike polynomials values.
     amplitudes : np.ndarray
-        Zernike amplitudes (the expansion coefficients) in physical units.
+        Converted phase coefficients 2*pi*a/wavelength. The caller converts the physical wavefront coefficients a
+        from the same length unit as wavelength; ZernPSF.set_physical_props() performs this conversion.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
     theta : float
         Angle on the image coordinates.
     phi : float
         Angle on the pupil coordinates.
-    alpha : float
-        Amplitude of the polynomial.
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
 
@@ -516,7 +461,7 @@ def radial_integral_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
         Complex amplitude of the field as result of integration on the pupil radius coordinate.
 
     """
-    # Integration on the pupil angle. Vectorized form of the trapezoidal rule
+    # Integrate over the pupil radius using the vectorized trapezoidal rule
     h_p = 1.0/n_int_r_points; p = np.arange(start=h_p, stop=1.0, step=h_p)
     fa = diffraction_integral_r_pols(polynomials, amplitudes, phi, 0.0, theta, r)
     fb = diffraction_integral_r_pols(polynomials, amplitudes, phi, 1.0, theta, r)
@@ -533,9 +478,10 @@ def get_psf_point_r_pols(polynomials, amplitudes: np.ndarray, r: float, theta: f
     polynomials : Sequence[ZernPol]
         Instances of ZernPol() class required for calculation of Zernike polynomials values.
     amplitudes : np.ndarray
-        Zernike amplitudes (the expansion coefficients) in physical units.
+        Converted phase coefficients 2*pi*a/wavelength. The caller converts the physical wavefront coefficients a
+        from the same length unit as wavelength; ZernPSF.set_physical_props() performs this conversion.
     r : float
-        Radius on the image coordinates.
+        Scaled image-plane radius, k*NA*pixel_size*pixel_distance, where k = 2*pi/wavelength.
     theta : float
         Angle on the image coordinates.
     n_int_r_points : int
@@ -574,10 +520,10 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
     polynomials : Sequence[ZernPol]
         Instances of ZernPol() class required for calculation of Zernike polynomials values.
     amplitudes : np.ndarray
-        Zernike amplitudes (the expansion coefficients) in physical units used for the wavelength specification (e.g., \u00B5m).
-        Note that the normalized Zernike polynomials are used, so their coefficients are normalized to the specified wavelength.
+        Converted phase coefficients 2*pi*a/wavelength. The caller converts the physical wavefront coefficients a
+        from the same length unit as wavelength; ZernPSF.set_physical_props() performs this conversion.
     len2pixels : float
-        Relation between length in physical units (the same as the provided wavelength) and pixels.
+        Pixel size in the same length unit as wavelength.
     wavelength : float
         Wavelength used for the PSF calculation (in physical units).
     NA : float
@@ -592,8 +538,8 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
         Normalize all values in the sense that the max kernel value = 1.0. The default is False.
     suppress_warns : bool, optional
         Flag for suppressing any UserWarnings. The default is False.
-    verbose: bool, optional
-        Flag for printing explicitly # of points calculated on each run and measure how long it takes to calculate it.
+    verbose : bool, optional
+        Print calculation progress and elapsed time. The default is False.
 
     Returns
     -------
@@ -601,7 +547,7 @@ def get_psf_kernel_zerns(polynomials, amplitudes: np.ndarray, len2pixels: float,
         Matrix with PSF values.
 
     """
-    k = 2.0*pi/wavelength; size = kernel_size  # Calculate angular frequency (k) and reassign size for further using
+    k = 2.0*pi/wavelength; size = kernel_size  # calculate the wave number and copy the kernel size
     # Make kernel with odd sizes for precisely centering the kernel (in the center of an image)
     if size % 2 == 0:
         size += 1
@@ -678,7 +624,7 @@ def convolute_img_psf(img: np.ndarray, psf_kernel: np.ndarray, scale2original: b
     Returns
     -------
     convolved_img : numpy.ndarray
-        Result of convolution (used scipy.ndimage.convolve).
+        Convolution with reflected boundaries, divided by the kernel sum when positive, and cast back to the input dtype.
 
     """
     img_type = img.dtype; img = np.copy(img).astype(np.float64)  # get the image type and copy its content to a new container
@@ -711,7 +657,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
     pixel_size : float
         Pixel size (in physical units same to wavelength) used for the PSF calculation.
     expansion_coefficient : float or np.ndarray
-        Amplitude(-s) (in other words) of the polynomial(-s).
+        Polynomial coefficients in the same physical length unit as wavelength, before conversion to radians.
     kernel_size : int
         Size of the PSF kernel.
     n_int_points_r : int
@@ -724,7 +670,7 @@ def save_psf(psf_kernel: np.ndarray, NA: float, wavelength: float, pixel_size: f
         Path to an existing destination folder, prepared by the caller.
     overwrite : bool, optional
         Flag for letting overwriting of the existing file. The default is True.
-    additional_file_name : str
+    additional_file_name : str, optional
         Additional to the composed file name string, e.g. unique addition. The default is None.
 
     Returns
@@ -779,12 +725,14 @@ def read_psf(file_path: str) -> Optional[dict]:
     Parameters
     ----------
     file_path : str
-        Absolute path to the *json file.
+        Absolute or relative path to the JSON file.
 
     Returns
     -------
-    dict
-        Data stored in the *json file, the used keys: 'PSF kernel', 'NA', 'Wavelength', 'Calibration (um/pixels)'.
+    dict or None
+        Saved PSF data, or None if the path does not identify an existing file. Keys written by save_psf()
+        include 'PSF Kernel', 'NA', 'Wavelength', 'Pixel Size', 'Kernel Size', integration settings,
+        and either 'Polynomial' with 'Expansion Coefficient' or 'Polynomials' with 'Amplitudes'.
 
     """
     psf_file_path = Path(file_path); psf_data = None
@@ -802,7 +750,7 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
     Parameters
     ----------
     radius : float
-        In pixels.
+        Nominal disk radius in pixels, increased to 1.0 if smaller.
     max_intensity : int, optional
         Within the circle. The default is 255.
 
@@ -843,5 +791,5 @@ def get_bumped_circle(radius: float, max_intensity: int = 255) -> np.ndarray:
 
 
 # %% Define standard exports from this module
-__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'radial_integral_s', 'get_kernel_size', 'radial_integral',
-           'get_kernel_size', 'um_char', 'lambda_char', 'get_bumped_circle', 'get_psf_kernel_zerns']
+__all__ = ['get_psf_kernel', 'save_psf', 'read_psf', 'convolute_img_psf', 'get_kernel_size', 'radial_integral',
+           'um_char', 'lambda_char', 'get_bumped_circle', 'get_psf_kernel_zerns']

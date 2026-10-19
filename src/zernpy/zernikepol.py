@@ -52,7 +52,7 @@ class ZernPol:
     # %% Initialization and getters for the common class properties
     def __init__(self, **kwargs):
         """
-        Initialize of the class for Zernike polynomial definition as the object.
+        Initialize a Zernike polynomial from its orders or index.
 
         Parameters
         ----------
@@ -68,8 +68,8 @@ class ZernPol:
         ValueError
             Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like: \n
             for specified orders:
-            1) m < 0 or n < 0; 2) m or n is not int; 3) (self.__n - abs(self.__m)) % 2 == 0; \n
-            4) if n > 54 - because the polynomials with higher orders are meaningless due to very slow calculations; \n
+            1) n < 0; 2) m or n is not int; 3) n - abs(m) is odd; \n
+            4) n == 0 and m != 0; 5) n > 54, the supported radial-order limit. Negative m is allowed. \n
             for indices - see the raised error message.
 
         References
@@ -77,10 +77,6 @@ class ZernPol:
         [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials \n
         [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
         [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
-
-        Returns
-        -------
-        ZernPol class instance.
 
         """
         key = ""
@@ -267,7 +263,7 @@ class ZernPol:
         Returns
         -------
         str
-            Name of the initialized polynomial.
+            Name of the initialized polynomial, or an empty string if no name is defined.
 
         """
         name = ""
@@ -286,7 +282,7 @@ class ZernPol:
         Returns
         -------
         str
-            String composed of a polynomial name (if specified in the stored file), polynomial's orders and indices.
+            Polynomial name, orders, and indices when a name is defined; otherwise, "Zernike polynomial".
 
         """
         name = self.get_polynomial_name()
@@ -353,16 +349,12 @@ class ZernPol:
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
-        Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-        after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
-        coefficients for each power of radius (coefficient*R^n) \n
-        Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-        any need to use the recurrence equations. It can be used by providing the flag as the input parameter. \n
-        However, after ~ the 46th radial order due to the high integer values involved in the exact equation
-        (factorials) producing ambiguous results (failed simple check that radial polynomial <= 1.0),
-        only iterative equations (which along with increasing order become time-consuming and slow)
-        could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
-        found increasing after this order discrepancy between results of recursive and factorial formulas.
+        By default, radial orders up to 12 use a direct routine with explicit formulas through order 10
+        and recurrence relations for the remaining cases. Orders 13 through 40 use recursively calculated
+        coefficients for each power of the radius; higher orders use recurrence relations for the values.
+        Setting ``use_exact_eq=True`` selects the factorial formula through radial order 40.
+        Above that limit, this option emits a warning and returns zeros because factorial evaluation
+        becomes numerically unreliable.
 
         References
         ----------
@@ -430,16 +422,12 @@ class ZernPol:
         """
         Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.
 
-        Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-        after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
-        coefficients for each power of radius (coefficient*R^n) \n
-        Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-        any need to use the recurrence equations. It can be used by providing the flag as the input parameter. \n
-        However, after ~ the 46th radial order due to the high integer values involved in the exact equation
-        (factorials) producing ambiguous results (failed simple check that radial polynomial <= 1.0),
-        only iterative equations (which along with increasing order become time-consuming and slow)
-        could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
-        found increasing after this order discrepancy between results of recursive and factorial formulas.
+        By default, radial orders up to 12 use a direct routine with explicit formulas through order 10
+        and recurrence relations for the remaining cases. Orders 13 through 40 use recursively calculated
+        coefficients for each power of the radius; higher orders use recurrence relations for the values.
+        Setting ``use_exact_eq=True`` selects the factorial formula through radial order 40.
+        Above that limit, this option emits a warning and returns zeros because factorial evaluation
+        becomes numerically unreliable.
 
         References
         ----------
@@ -495,7 +483,7 @@ class ZernPol:
 
     def triangular(self, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """
-        Calculate triangular Zernike function value(-s) within the unit circle.
+        Calculate the trigonometric angular factor of a Zernike polynomial.
 
         Parameters
         ----------
@@ -514,7 +502,7 @@ class ZernPol:
         Returns
         -------
         float or numpy.ndarray
-            Calculated value(-s) of Zernike triangular function on provided angle.
+            Values of the trigonometric angular factor at the provided angles.
 
         """
         theta = ZernPol._check_angles(theta)  # Check theta type and that angles are lying in the single period range [0, 2pi]
@@ -524,17 +512,12 @@ class ZernPol:
         """
         Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.
 
-        Calculation up to 10th order of Zernike polynomials performed by exact equations,
-        after - using the recurrence equations, using shortcut of storing
-        coefficients for each power of radius (coefficient*R^n) \n
-        The input flag use_exact_eq allows using the exact equation with factorials.
-        Setting ``use_exact_eq=True`` forces the exact formulation. However, exact
-        equations are restricted to radial orders ≤ 38, as factorial growth causes
-        increasing numerical discrepancies relative to the recursive formulation.
-        Beyond approximately the 44th order, derivative and factorial terms become
-        too large for reliable evaluation. Higher orders are therefore computed only
-        via recurrence relations, which are numerically stable but progressively
-        slower with increasing order.
+        By default, radial orders up to 12 use a direct routine with explicit derivative formulas
+        through order 10 and recurrence relations for the remaining cases. Orders 13 through 38
+        use recursively calculated derivative coefficients; higher orders use recurrence relations
+        for the values. Setting ``use_exact_eq=True`` selects the factorial derivative formula through
+        radial order 38. Above that limit, this option emits a warning and returns zeros because
+        factorial evaluation becomes numerically unreliable.
 
         References
         ----------
@@ -565,7 +548,7 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return radial_derivative(self, r)
             else:
-                # Raise warning about slow calculations for orders more than 50, only once
+                # Warn once about slow derivative calculations for radial orders greater than 48
                 if self.__n > 48 and not self.__show_slow_calc_warn:
                     warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
                     warnings.warn(warn_mess, stacklevel=2)
@@ -586,7 +569,7 @@ class ZernPol:
 
     def triangular_dtheta(self, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """
-        Calculate derivative from triangular function on angle theta.
+        Differentiate the trigonometric angular factor with respect to theta.
 
         Parameters
         ----------
@@ -605,7 +588,7 @@ class ZernPol:
         Returns
         -------
         float or numpy.ndarray
-            Calculated derivative value(-s) of Zernike triangular function on provided angle.
+            Derivative of the trigonometric angular factor at the provided angles.
 
         """
         theta = ZernPol._check_angles(theta)  # Check input parameter type and attempt to convert to acceptable types
@@ -613,7 +596,7 @@ class ZernPol:
 
     def normf(self) -> float:
         """
-        Calculate normalization factor (such that Var(Z) = 1) for the associated Zernike polynomial (according to the References below).
+        Calculate the OSA normalization factor for unit mean square over the unit disk.
 
         References
         ----------
@@ -840,7 +823,7 @@ class ZernPol:
         Parameters
         ----------
         fringe_index : int
-            The noll index with int type, it must be not less than 1.
+            Fringe index as an integer greater than or equal to 1.
 
         Raises
         ------
@@ -883,7 +866,7 @@ class ZernPol:
         Raises
         ------
         ValueError
-            If the "polynomials" Sequence doesn't contain the ZernPol() class instances.
+            If coefficient and polynomial counts differ, or a polynomial is not a ZernPol instance.
 
         Returns
         -------
@@ -926,7 +909,7 @@ class ZernPol:
         theta : float or numpy.ndarray
             Polar angle(-s) from a unit circle.
         get_surface : bool, optional
-            If True, it forces to calculate 2D sum of polynomials based on r and theta (as a mesh of polar coordinates).
+            If True and both coordinate inputs are arrays, evaluate all radius-angle combinations as a 2D surface.
             The default is False. \n
             Note that if r and theta provided as the numpy ndarrays with different shapes and this flag is False, then
             the result of this method will raise ValueError (because r and theta shapes will be checked for equality).
@@ -937,11 +920,11 @@ class ZernPol:
             If the input parameters aren't iterable (doesn't support len() function), this error will be raised.
         ValueError
             If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials. \n
-            Or if the list (tuple, numpy.ndarray vector, ...) with Zernike polynomials instances (ZernPol()).
+            Also raised for an empty polynomial sequence, invalid polynomial objects, or incompatible coordinate shapes.
 
         Returns
         -------
-        Sum of Zernike polynomials: float or numpy.ndarray
+        float or numpy.ndarray
             Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.
 
         """
@@ -981,7 +964,7 @@ class ZernPol:
     @staticmethod
     def gen_polar_coordinates(r_step: float = 0.01, theta_rad_step: float = round(np.pi/240, 7)) -> polar_vectors:
         """
-        Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate radial and angular coordinate vectors for the unit disk.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         defined by the specification of r_step and theta_rad_step parameters.
@@ -1002,7 +985,7 @@ class ZernPol:
         -------
         polar_vectors
             namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
-            Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
+            Theta - angles in [0, 2*pi), excluding the endpoint 2*pi.
 
         """
         if 0.0 >= r_step > 0.5:
@@ -1020,7 +1003,7 @@ class ZernPol:
     @staticmethod
     def gen_equal_polar_mesh(n_points: int = 250) -> polar_vectors:
         """
-        Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.
+        Generate radial and angular coordinate vectors with the same number of samples.
 
         Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
         equal and defined by the parameter n_points.
@@ -1028,13 +1011,12 @@ class ZernPol:
         Parameters
         ----------
         n_points : int, optional
-            Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 250.
+            Number of samples in each vector, increased to 4 if smaller. The default is 250.
 
         Returns
         -------
         polar_vectors
-            namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
-            Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].
+            Named tuple with R spanning [0, 1] and Theta spanning [0, 2*pi), excluding the angular endpoint.
 
         """
         if n_points < 4:
@@ -1056,10 +1038,10 @@ class ZernPol:
             Instance of ZernPol class.
         color_map : str, optional
             Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-            As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-            Note that rainbow, jet, turbo - not perceptually equal color maps.
+            Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+            Rainbow, jet, and turbo are not perceptually uniform.
         show_title : bool, optional
-            Toggle for showing the name of polynomial on the plot or not (only works for 2D case).
+            Show the polynomial name on a 2D plot. The default is True.
         use_defaults : bool, optional
             Use default parameters for polar coordinates generation. The default is True.
         projection : str, optional
@@ -1109,7 +1091,7 @@ class ZernPol:
                              theta_rad_step: float = round(np.pi/180, 7), equal_n_coordinates: bool = False,
                              n_points: int = 250) -> zernikes_surface:
         """
-        Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.
+        Generate a Zernike sum on a polar grid defined by step sizes or sample counts.
 
         Parameters
         ----------
@@ -1123,11 +1105,11 @@ class ZernPol:
         theta_rad_step : float, optional
             Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). \n
             See also the documentation for the method gen_polar_coordinates().
-        equal_n_coordinates: bool, optional
-            Switch between generation polar coordinates based on individual steps or on equal number of points.
+        equal_n_coordinates : bool, optional
+            Use the same number of points for the radial and angular coordinate vectors instead of individual steps.
             The default is False.
-        n_points: int, optional
-            Number of points used for generation of equal sized polar coordinates r, theta.
+        n_points : int, optional
+            Number of points in each coordinate vector when equal_n_coordinates is True. The default is 250.
 
         Returns
         -------
@@ -1164,7 +1146,7 @@ class ZernPol:
     @staticmethod
     def get_rms_pv_surface(phase_profile: zernikes_surface) -> Tuple[float, float]:
         """
-        Calculate RMS and P-V value for provided phase profile using definition of OSA normalization.
+        Calculate the root mean square (RMS) and peak-to-valley (P-V) values of a polar surface.
 
         Link: https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials.
 
@@ -1177,16 +1159,16 @@ class ZernPol:
         Returns
         -------
         float
-            RMS over Z**2 * r profile, as defined for OSA normalization.
+            Radially weighted RMS, sqrt(sum(ZernSurf**2 * r) / sum(r)). The surface mean is not subtracted.
         float
-            Peak-to-Valley value as max(Surface) - mim(Surface).
+            Peak-to-valley value, max(ZernSurf) - min(ZernSurf).
 
         """
         rho = phase_profile.R[:, None]  # shape conversion from vector to 2D array, like: (101, ) -> (101, 1)
         weights = np.ones_like(phase_profile.ZernSurf)*rho  # weights recalculated for the whole phase profile on polar coordinates
         # idea below - calculate double integral on polar coordinates on (Z**2*r dr_dphi) / (r dr_dphi)
-        rms = np.sqrt(np.sum((phase_profile.ZernSurf**2)*weights)/np.sum(weights))  # now the coefficient is equal to the calculated RMS
-        pv = np.max(phase_profile.ZernSurf) - np.min(phase_profile.ZernSurf)  # simple definition of peak-to-valley as max(Surface) - min(-//-)
+        rms = np.sqrt(np.sum((phase_profile.ZernSurf**2)*weights)/np.sum(weights))  # approximate the disk-averaged mean square with radial area weights
+        pv = np.max(phase_profile.ZernSurf) - np.min(phase_profile.ZernSurf)  # peak-to-valley is the full range of the sampled surface
         return rms, pv
 
     @staticmethod
@@ -1218,8 +1200,8 @@ class ZernPol:
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
         color_map : str, optional
             Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-            As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-            Note that rainbow, jet, turbo - not perceptually equal color maps.
+            Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+            Rainbow, jet, and turbo are not perceptually uniform.
         projection : str, optional
             Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
 
@@ -1278,7 +1260,7 @@ class ZernPol:
         ignored_column = n_cols - 2
         for i in range(len(axes)):
             for j in range(len(axes[0])):
-                axes[i, j].grid(False)  # demanded by pcolormesh function, if not called - deprecation warning
+                axes[i, j].grid(False)  # disable the polar grid before drawing the color mesh
                 if j > ignored_column-1:
                     zps = [ZernPol(osa=k)]; zernike_surface, r, theta = ZernPol.gen_zernikes_surface(coefficients=ampls, polynomials=zps)
                     axes[i, j].pcolormesh(theta, r, zernike_surface, cmap=plt.colormaps['coolwarm'], shading='nearest'); k += 1
@@ -1379,7 +1361,7 @@ def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol, ...]:
     Raises
     ------
     ValueError
-        Raised if max_order < 1, because it should be not less than 0.
+        If max_order is negative or generates a polynomial above the supported radial-order limit of 54.
 
     Returns
     -------
@@ -1410,7 +1392,7 @@ def generate_polynomials(max_order: int = 10) -> Tuple[ZernPol, ...]:
 def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height: int = 513,
                            round_digits: int = 4) -> Tuple[np.ndarray, np.ndarray, Tuple[ZernPol, ...]]:
     """
-    Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.
+    Generate a phase image using a complete polynomial set with randomly selected amplitudes.
 
     Parameters
     ----------
@@ -1429,12 +1411,12 @@ def generate_random_phases(max_order: int = 4, img_width: int = 513, img_height:
         Consisting of:
         2D phase profile image with provided width and height;
         1D numpy.ndarray containing randomly selected polynomials amplitudes;
-        tuple with generated Zernike polynomials.
+        Tuple containing all polynomials through max_order, including those with zero amplitudes.
 
     """
     # Generate list with radial and angular orders for identifying polynomials
     polynomials_list = list(generate_polynomials(max_order))
-    # Generate list with non-zero polynomials
+    # Choose how frequently a polynomial receives a nonzero coefficient
     if max_order < 3:
         selector_list = [False, False, True]
     elif 3 <= max_order <= 4:
@@ -1505,13 +1487,13 @@ def generate_phases_image(polynomials: tuple = (), polynomials_amplitudes: tuple
         2D image with phases calculated as the sum of provided polynomials.
 
     """
-    # Generate random phases image - sum of polynomials on the 2D array of pixels converted to polar coordinates
+    # Sum the supplied polynomials on image pixels converted to polar coordinates
     phases_image = np.zeros(shape=(img_height, img_width))  # blank image
     row_center = img_height // 2; cols_center = img_width // 2
     # Below - define radius of the Zernike circular profile, it is +1 for including more pixels in profile
     min_img_size = min(img_width, img_height); img_radius = 1 + min_img_size // 2
     center = np.asarray([row_center, cols_center])  # center point of an image
-    # Calculation of 2D image with phases, which actually are composed by the sum of randomly selected Zernike polynomials
+    # Calculate the phase image using the supplied polynomials and coefficients
     for i in range(img_height):
         r = np.zeros(shape=(img_width, )); theta = np.zeros(shape=(img_width, ))
         for j in range(img_width):
@@ -1535,9 +1517,9 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     """
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.
 
-    2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
-    out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
-    True and plotting the second item from the returned tuple.
+    The input image contains phase values on a Cartesian grid. A circular subset is used for fitting.
+    Set return_cropped_image=True to inspect the input image with pixels outside that subset set to zero.
+    This returned image contains the measured phases, not a reconstruction from the fitted coefficients.
 
     Parameters
     ----------
@@ -1548,7 +1530,8 @@ def fit_polynomials(phases_image: np.ndarray, polynomials: tuple, crop_radius: f
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.
     crop_radius : float, optional
-        Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of the cropped circle = min image size.
+        Fraction of the reference pupil radius to retain, within [0.5, 1.0]. The reference radius is approximately
+        half the smaller image dimension, adjusted for pixel centering.
         The default is 1.0.
     suppress_warnings : bool, optional
         Flag for suppress warnings about the provided 2D image sizes. The default is False.
@@ -1585,15 +1568,16 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
     """
     Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.
 
-    1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
-    of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.
+    Provide either one radius and angle per phase sample, or separate radial and angular grid vectors.
+    For a grid, flatten the phase values with all angles for the first radius, then all angles for each
+    subsequent radius. See tests/test_fitting.py for an example.
 
     Parameters
     ----------
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.
     phases_vector : numpy.ndarray
-        Recorded phases.
+        Phase samples, one per coordinate pair or len(radii_vector)*len(thetas_vector) samples for a grid.
     radii_vector : numpy.ndarray
         Related radii - 1st polar coordinates for the recorded phases.
     thetas_vector : numpy.ndarray
@@ -1603,8 +1587,8 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
 
     Raises
     ------
-    AttributeError
-        Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape > 1)).
+    TypeError
+        If any input array has more than one dimension.
 
     Returns
     -------

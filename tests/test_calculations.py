@@ -26,7 +26,7 @@ from zernpy.zernikepol import ZernPol
 # %% Func-s to be run by pytest
 def test_tabular_orders():
     """
-    # Test implemented equations for tabular R(m, n) from the References by comparing with the exact ones (with factorials usage).
+    Test tabular and recursive radial formulas against factorial evaluation.
 
     Returns
     -------
@@ -76,7 +76,7 @@ def test_recursive_derivatives():
 
 def test_sum_zernikes():
     """
-    Test summing of several Zernike polynomials, generation of phase profile and plotting method.
+    Test polynomial summation, phase-surface generation, and agreement with meshgrid evaluation.
 
     Returns
     -------
@@ -169,7 +169,7 @@ def test_pol_values_edge_cases():
 
 def test_rms_pv():
     """
-    Test RMS and PV calculations on known theoritically values.
+    Test RMS and peak-to-valley calculations against known theoretical values.
 
     Returns
     -------

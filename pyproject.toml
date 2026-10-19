@@ -1,6 +1,6 @@
 [project]
 name = "zernpy"
-dynamic = ["version"]  # Discovering of the version by the setuptools (see below: in the 'file' or 'attr')
+dynamic = ["version"]  # read the version from zernpy.__version__ using the setuptools configuration below
 authors = [
     { name = "Sergei Klykov", email = "sergej.klykow@gmail.com" }
 ]
@@ -33,7 +33,7 @@ all = ["numba>=0.57.1"]
 "Documentation" = "https://sklykov.github.io/zernpy/"
 "Changelog" = "https://github.com/sklykov/zernpy/blob/main/CHANGELOG.md"
 
-[tool.setuptools.packages.find]  # Manifest.in file is only required for adding some package-data
+[tool.setuptools.packages.find]  # discover Python packages under src
 where = ["src"]
 include = ["zernpy*"]
 namespaces = false  # forbid treating a folder as a module without explicit __init__.py presence
@@ -69,14 +69,10 @@ exclude = [
     '^tests/',
     '^build/',
     '^dist/',
-	'^src/zernpy/ignored/'
 ]
 [[tool.mypy.overrides]]  # for ignoring warning about not checked imported libraries
 module = ["numba", "scipy.*"]
 ignore_missing_imports = true
-# [[tool.mypy.overrides]]  # ignore any errors in specific test files - retained for ref.
-# module = ["zernpy.run_zernpsf_as_main"]
-# ignore_errors = true
 
 [tool.ruff]
 line-length = 145  # my own preference
@@ -85,7 +81,7 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B", "SIM", "D"]
 ignore = ["E702", "E402", # used in the IDE
-    "SIM108", # many ternany operator replacements in a code
+    "SIM108", # preserve explicit if/else assignments instead of requiring conditional expressions
     "SIM113", # potentially can break logic in a loop
 ]
 [tool.ruff.lint.pydocstyle]

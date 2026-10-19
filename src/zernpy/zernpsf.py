@@ -49,9 +49,10 @@ __docformat__ = "numpydoc"
 # %% PSF class
 class ZernPSF:
     """
-    The PSF (2D) class for focal plane of a microscopic system assuming that the phase profile is described by the Zernike polynomial.
+    Compute two-dimensional focal-plane point spread functions (PSFs) from Zernike wavefronts.
 
-    In other words, the PSF describing the image of point source formed by the microscopic system. \n
+    A PSF describes the image of a point source. The pupil phase can contain one Zernike polynomial
+    or a sum of polynomials. \n
     Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
     the references to the diffraction integral used for calculations. \n
 
@@ -67,23 +68,23 @@ class ZernPSF:
 
     # Class predefined values along with their types for providing reference how the default values computed
     kernel: np.ndarray = np.ones(shape=(1, 1)); kernel_size: int = 1  # by default, single point as the 2D matrix [[1.0]]
-    NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5  # in um (or other physical unit)
+    NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5  # wavelength and expansion_coeff share a length unit; NA is dimensionless
     zernpol: Optional[ZernPol] = None; polynomials: tuple = ()  # several provided polynomials will be stored in the last var.
     __physical_props_set: bool = False  # flag for saving that physical properties have been provided
-    __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # based on the Abbe limit
+    __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # half the Abbe resolution limit for the default NA = 1
     pixel_size_nyquist_eStr = "{:.3e}".format(pixel_size_nyquist)
     pixel_size = 0.98*pixel_size_nyquist  # default value based on the limit above
     alpha: float = (2.0*pi*expansion_coeff) / wavelength  # the role of amplitude for PSF calculation (converted to radians!)
     airy: bool = False  # flag if the Piston is provided as the Zernike polynomial
     n_int_r_points: int = 320; n_int_phi_points: int = 300  # integration parameters on the unit radius and angle - polar coordinates
-    k: float = 2.0*pi/wavelength  # angular frequency
+    k: float = 2.0*pi/wavelength  # wave number in radians per unit length
     json_file_path: str = ""  # shifted to the __init__ method to prevent putting path to API doc (by pydoc)
     coefficients: Optional[np.ndarray] = None; amplitudes: Optional[np.ndarray] = None  # for storing amplitudes of polynomials
     # Dev. Note: always carefully check the definition of variables above, since the error in their definition may cause hard traceable bug
 
     def __init__(self, zernpol: Union[ZernPol, Sequence[ZernPol]]):
         """
-        Initiate the PSF wrapping class.
+        Initialize a PSF calculation for one or more Zernike polynomials.
 
         Parameters
         ----------
@@ -93,17 +94,14 @@ class ZernPSF:
         Raises
         ------
         ValueError
-            1) If not instance(-s) of ZernPol class provided as the input parameter; \n
-            2) If the provided sequence has zero length; \n
-            3) If not all members of the provided sequence are instance of the "ZernPol" class; \n
-            4) If the provided sequence contain repeated polynomials.
-
-        Returns
-        -------
-        ZernPSF() class instance.
+            If the sequence is empty, contains invalid objects in the multiple-polynomial case, or contains repeated polynomials.
+        TypeError
+            If the input is neither a ZernPol instance nor a sequence.
+        AttributeError
+            If the only item in a sequence does not provide the ZernPol order interface.
 
         """
-        self.json_file_path = str(Path(__file__).parent.absolute())  # initialize default path as the root folder containing the script
+        self.json_file_path = str(Path(__file__).parent.absolute())  # start with the package directory before storing a saved filename
         if isinstance(zernpol, ZernPol):
             self.zernpol = zernpol; m, n = self.zernpol.get_mn_orders()
             if m == 0 and n == 0:
@@ -146,25 +144,24 @@ class ZernPSF:
     def set_physical_props(self, NA: float, wavelength: float, expansion_coeff: Union[SupportsFloat, Sequence[SupportsFloat], np.ndarray],
                            pixel_physical_size: float):
         """
-        Set parameters in physical units.
+        Set parameters required for a PSF computation in physical units.
 
         Parameters
         ----------
         NA : float
-            Numerical aperture of an objective, assumed usage of microscopic ones.
+            Dimensionless numerical aperture of the objective, within (0, 1.7].
         wavelength : float
             Wavelength of monochromatic light (\u03BB) used for imaging in physical units (e.g., as \u00B5m).
-        expansion_coeff : SupportsFloat | Sequence[SupportsFloat]
+        expansion_coeff : SupportsFloat or Sequence[SupportsFloat] or numpy.ndarray
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
-            Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". \n
-            !!!: alpha definition has been changed (multiplied by 2*pi) after version 0.1.0, now it is effectively enlarged. \n
+            Use the same length unit as wavelength. Coefficients are converted to phase amplitudes in radians:
+            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in calculate_psf_kernel(). \n
+            The 2*pi factor was introduced in version 0.1.2. \n
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
-            Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
-            The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
-            should be less than this limit.\n
+            Sampling interval in the object plane, in the same length unit as wavelength.
+            It must be positive and no greater than wavelength/(4*NA), half the Abbe resolution limit.\n
             Way of calculation = pixel physical size = pixel camera size (\u00B5m) / Total Magnification, where:\n
             Total Magnification (M) = Objective Magn. * Tube Lens Magn. (Mismatch) * Camera Adapter Magn. \n
 
@@ -190,7 +187,7 @@ class ZernPSF:
         if wavelength <= 0.0:
             raise ValueError("Wavelength should be positive real number")
         self.NA = NA; self.wavelength = wavelength  # save as the class properties
-        self.k = 2.0*pi/self.wavelength  # Calculate angular frequency (k)
+        self.k = 2.0*pi/self.wavelength  # wave number in radians per unit length
         self.amplitudes: np.ndarray  # set explicitly expected data type
         # Sanity check of provided wavelength, pixel physical size (Nyquist criteria)
         self.pixel_size_nyquist = 0.5*0.5*wavelength/NA  # based on half of the Abbe resolution limit, see references in the docstring
@@ -265,7 +262,7 @@ class ZernPSF:
 
     def set_calculation_props(self, kernel_size: int, n_integration_points_r: int = 320, n_integration_points_phi: int = 300):
         """
-        Set calculation properties: kernel size, number of integration points on polar coordinates.
+        Set calculation-only properties: PSF kernel size, number of integration points on polar coordinates.
 
         Note that it's recommended to set the physical properties by set_physical_props() method for getting estimated
         required kernel size.
@@ -273,11 +270,11 @@ class ZernPSF:
         Parameters
         ----------
         kernel_size : int
-            Size of PSF kernel (2D matrix used for convolution). Should be odd integer not less than 3.
-        n_integration_points_r : int, Optional
+            Kernel width and height in pixels, at least 3. Even sizes are increased by one to center the PSF.
+        n_integration_points_r : int, optional
             Number of integration points used for calculation diffraction integral on the radius of the entrance pupil
             (normalized to the range [0.0, 1.0]). Should be integer not less than 20. The default is 320.
-        n_integration_points_phi : int, Optional
+        n_integration_points_phi : int, optional
             Number of integration points used for calculation diffraction integral on the polar angle phi of the entrance pupil
             (from the range [0.0, 2pi]). Should be integer not less than 36. The default is 300.
 
@@ -326,12 +323,14 @@ class ZernPSF:
         Calculate PSF kernel using the specified or default calculation parameters and physical values.
 
         Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References. \n
-        Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
+        The kernel samples the intensity response of the optical system with the supplied pupil aberrations.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
         an imaging system (micro-objective). \n
         The order of integration and used equations in short: \n
-        1st - integration going on radius p, using trapezoidal rule: p\u2022(alpha\u2022zernike_pol.polynomial_value(p, phi) -
-                                                                             r\u2022p\u2022cos(phi - theta))\u20221j \n
+        1st - integrate over the pupil radius p using the trapezoidal rule, with integrand
+        p * exp(1j * (alpha * Z(p, phi) - r * p * cos(phi - theta))). Here Z is the normalized Zernike
+        polynomial, alpha is its phase coefficient in radians, and r is the scaled image-plane radius
+        k * NA * pixel_size * pixel_distance, where k = 2*pi/wavelength. \n
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
         output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
         1.0/(pi\u2022pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
@@ -340,19 +339,21 @@ class ZernPSF:
         Note that the Nijboer's approximation for calculation of diffraction integral also has been tested, but the results is not in agreement
         with the reference [3] due to the large expansion coefficients for Zernike polynomials.  \n
 
-        Note that for Piston (m=0, n=0) the exact equation is used, that provides Airy pattern as the result.
+        For Piston (m=0, n=0), the non-accelerated calculation uses the analytic Airy pattern;
+        the accelerated calculation evaluates the diffraction integral numerically.
 
         Parameters
         ----------
         suppress_warnings : bool, optional
-            Flag to suppress all possible warnings. The default is False.
+            Suppress warnings issued by this calculation and the selected kernel routine. The default is False.
         normalized : bool, optional
             Flag to return normalized PSF values to max=1.0. The default is True.
         verbose_info : bool, optional
             Flag to print out each step completion report and measured elapsed time in ms. The default is False.
-        accelerated : bool, optional
+        accelerated : bool or None, optional
             Flag to accelerate the calculations by using numba library for scripts compilation. Acceleration will be used automatically,
-            if None is provided and 'numba' library is installed. The default is None.
+            if None is provided and 'numba' is installed. The default is None.
+            Set False for radial orders above 10, which are unsupported by the accelerated kernel routine.
 
         References
         ----------
@@ -392,7 +393,7 @@ class ZernPSF:
             if not accelerated or (accelerated and not numba_installed):
                 self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
-                                             test_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
+                                             use_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points,
                                              suppress_warns=suppress_warnings)
             elif numba_installed:
@@ -462,7 +463,7 @@ class ZernPSF:
         ----------
         image : numpy.ndarray
             Sample gray-scaled (2D array) image.
-        scale2original : bool
+        scale2original : bool, optional
             Convolution resulting image will be rescaled to the max intensity of the provided image if True. The default is True.
 
         Returns
@@ -501,8 +502,9 @@ class ZernPSF:
         """
         Crop redundant points from kernel.
 
-        By default, all rows and columns containing any single value that more than 1% of max kernel value, are not cropped. \n
-        Cropped kernel saved in class variable 'kernel'.
+        Remove matching outer rows and columns while all four sides lie below the threshold
+        min_part_of_max * max(kernel). Stop as soon as any side reaches that threshold.
+        Update kernel and kernel_size in place. Kernels of size 3 or smaller are left unchanged.
 
         Parameters
         ----------
@@ -512,7 +514,7 @@ class ZernPSF:
         Raises
         ------
         ValueError
-            If parameter 'min_part_of_max' is not > 0.0 and not < 0.5.
+            If the kernel size exceeds 3 and min_part_of_max is outside the open interval (0, 0.5).
 
         Returns
         -------
@@ -526,15 +528,12 @@ class ZernPSF:
             if min_part_of_max >= 0.5:
                 raise ValueError("\nParameter 'min_part_of_max' should be < 0.5, but it is:", min_part_of_max)
             min_kernel_value = min_part_of_max*max_kernel_value  # by default, 1% of max kernel value
-            # print("min value:", min_kernel_value)
             rows, cols = self.kernel.shape; stop_cropping_loop = False; step_row = 0; step_column = 0
             while not stop_cropping_loop:
                 check_upper_row = np.max(self.kernel[0 + step_row, :]) < min_kernel_value
                 check_bottom_row = np.max(self.kernel[rows - 1 - step_row, :]) < min_kernel_value
                 check_left_column = np.max(self.kernel[:, 0 + step_column]) < min_kernel_value
                 check_right_column = np.max(self.kernel[:, cols - 1 - step_column]) < min_kernel_value
-                # print("Max values in rows and cols:", np.max(self.kernel[0 + step_row, :]), np.max(self.kernel[rows - 1 - step_row, :]),
-                #       np.max(self.kernel[:, 0 + step_column]), np.max(self.kernel[:, cols - 1 - step_column]))
                 if check_upper_row and check_bottom_row and check_left_column and check_right_column:
                     step_row += 1; step_column += 1
                 else:
@@ -607,12 +606,13 @@ class ZernPSF:
 
     def read_json(self, abs_path: Union[str, Path, None] = None):
         """
-        Read the JSON file with the saved attributes and setting it for the class.
+        Restore the saved PSF kernel and physical and calculation properties from a JSON file.
 
         Parameters
         ----------
         abs_path : str | Path, optional
-            Absolute path to the file. If None is provided, then the stored in the attribute path will be checked. The default is None.
+            Absolute or relative path to the file. If None, use json_file_path, which initially holds the package directory
+            and is replaced by the saved filename after save_json(). The default is None.
 
         Returns
         -------
@@ -677,14 +677,14 @@ class ZernPSF:
 # %% Utility functions
 def _sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_check: bool = False) -> str:
     """
-    Sanity check of the divided by wavelength expansion coefficient.
+    Check the magnitude of a Zernike phase coefficient in radians.
 
     Parameters
     ----------
     normalized_coefficient : float
-        abs(expansion_coeff) / wavelength.
+        Phase magnitude, computed as 2*pi*abs(expansion_coeff)/wavelength.
     max_coeff_check : bool, optional
-        If this check happening for maximum abs. coefficient. The default is False.
+        Whether the value represents the largest absolute coefficient in a sequence. The default is False.
 
     Returns
     -------
@@ -705,14 +705,17 @@ def _sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff
 
 def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[ZernPSF, ZernPSF]]:
     """
-    Force compilation of computing functions for round and ellipse 'precise' shaped objects.
+    Compile the Numba calculation functions for single-polynomial and multiple-polynomial PSFs.
 
+    Parameters
+    ----------
     verbose_report : bool, optional
-        Flag for printing out the elapsed for compilation time. The default is False.
+        Print the elapsed compilation time. The default is False.
 
     Returns
     -------
-    None or tuple with 2 used ZernPSF instances depending on 'numba_installed' flag.
+    tuple of ZernPSF or None
+        The two PSF instances used for compilation, or None if Numba is unavailable.
 
     """
     if numba_installed:
@@ -727,16 +730,14 @@ def force_get_psf_compilation(verbose_report: bool = False) -> Optional[Tuple[Ze
             warnings.warn(__warn_message, stacklevel=2)
         # Compilation of methods for single polynomial PSF calculation
         NA = 0.2; wavelength = 0.55; pixel_size = wavelength / 0.82; ampl = 0.042
-        zp_prc = ZernPol(m=-1, n=1); zpsf_prc = ZernPSF(zp_prc)  # Airy pattern - for compilation methods for single polynomial
+        zp_prc = ZernPol(m=-1, n=1); zpsf_prc = ZernPSF(zp_prc)  # tilt polynomial for compiling the single-polynomial functions
         zpsf_prc.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
-        zpsf_prc.kernel_size = 1  # force to calculate only smallest kernel size for saving sometime
-        # print("Precompilation kernel size for single pol.:", zpsf_prc.kernel_size)
+        zpsf_prc.kernel_size = 1  # request the smallest kernel to reduce compilation warm-up time
         zpsf_prc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         # Compilation of methods for multiple polynomials PSF calculation
         zp1 = ZernPol(m=-2, n=4); zp2 = ZernPol(m=3, n=3); zp3 = ZernPol(m=0, n=4); pols = (zp1, zp2, zp3); coeffs = (-0.01, 0.043, 0.027)
         zpsf_mpc = ZernPSF(pols); zpsf_mpc.set_physical_props(NA=0.2, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/0.85)
-        zpsf_mpc.kernel_size = 3  # force to calculate only small kernel size for saving sometime
-        # print("Precompilation kernel size for several pol.:", zpsf_mpc.kernel_size)
+        zpsf_mpc.kernel_size = 3  # request a small kernel to reduce compilation warm-up time
         zpsf_mpc.calculate_psf_kernel(normalized=True, accelerated=True, suppress_warnings=True, verbose_info=False)
         if verbose_report:
             passed_time_ms = int(round(1000.0*(time.perf_counter() - t1), 0))
@@ -758,8 +759,9 @@ def clean_zernpy_cache() -> bool:
 
     Returns
     -------
-    bool \n
-        Flag if local cache is assumed (at least 6 cached files successfully removed) to be cleaned.
+    bool
+        True if Numba is available and at least six local .nbc or .nbi files are removed without an error.
+        This does not clear the in-memory coefficient caches managed by lru_cache.
 
     """
     _local_cache_cleaned = False  # flag to show that local numba cache found and has been cleaned
@@ -773,7 +775,7 @@ def clean_zernpy_cache() -> bool:
                         obj.unlink(missing_ok=True); _n_cleaned += 1
                     except (PermissionError, OSError):
                         _n_cleaned = 0; break  # automatically breaks loop assuming that invalid permission is universal
-            if _n_cleaned >= 6:  # 8 - minimal count of caches created by numba, assume that cache is cleaned if no error encountered
+            if _n_cleaned >= 6:  # report success after at least six cache files are removed without an error
                 _local_cache_cleaned = True
     return _local_cache_cleaned
 

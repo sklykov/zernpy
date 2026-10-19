@@ -19,7 +19,7 @@ __docformat__ = "numpydoc"
 def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress_warns: bool = False,
                     strict_border: bool = False) -> tuple:
     """
-    Cropping the circle from input 2D image containing phases with cartesian coordinates.
+    Select a circular region from a phase image and return its samples and polar coordinates.
 
     This function also calculates polar coordinates, normalizing them to the range [0, 1.0] for radii
     and to the range [0.0, 2.0*pi] for theta angles. The polar coordinates are returned by this function.
@@ -30,7 +30,8 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     phases_image : np.ndarray
         2D image with recorded phases which should be approximated by the sum of Zernike polynomials.
     crop_radius : float, optional
-        Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of circle = min image size.
+        Fraction of the reference pupil radius to retain, within [0.5, 1.0]. The reference radius is approximately
+        half the smaller image dimension, adjusted for pixel centering.
         The default is 1.0.
     suppress_warns : bool, optional
         Flag for suppress warnings about the provided 2D image sizes. The default is False.
@@ -47,13 +48,13 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     -------
     tuple
         Consisting of:
-        0th el.: cropped 2D logic mask with values: 0 - laying outside cropped circle pixels, 1 - laying inside,
-        1st el.: tuple with cropped phases composed in 1D vector, corresponding polar coordinates,
-        calculated radii and angles (thetas).
+        The first item is a uint8 mask with the input image shape: 1 for retained pixels and 0 elsewhere.
+        The second item contains phase, radius, and angle vectors for the retained pixels in row-major order.
+        Radii retain the reference-pupil normalization; crop_radius does not rescale the selected pupil to unit radius.
 
     """
     __warn_message = ""  # holder for warning message below
-    cropped_logic_mask = None  # initial value for returning it in the case of some inconsistency
+    cropped_logic_mask = None  # initialized before validating the input image
     # Sanity checks of provided crop radius
     if not isinstance(crop_radius, float):
         crop_radius = float(crop_radius)
@@ -125,7 +126,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
                         cropped_phases_vector[vector_index] = phases_image[i, j]
                         cropped_radii_vector[vector_index] = radius
                         if theta < 0.0:
-                            theta += 2.0*np.pi  # transforms it from -np.pi min to 2*np.pi max, makes angles continuous
+                            theta += 2.0*np.pi  # map negative arctan2 angles into [0, 2*pi)
                         cropped_thetas_vector[vector_index] = theta
                         vector_index += 1
                         # Checking that recalibration needed - for cropping only pixels formally from unit radius circle
@@ -151,13 +152,13 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
 
 def fit_zernikes(phases_coordinates_vectors: tuple, polynomials: tuple) -> np.ndarray:
     """
-    Fit provided tuple with polynomials (instances of ZernPol class) to the 2D image with phases (e.g., recorded on the interferometer).
+    Fit Zernike coefficients to phase samples and their polar coordinates using linear least squares.
 
     Parameters
     ----------
     phases_coordinates_vectors : tuple
-        Results provided by crop_phases_img(...) function composing the cropped phases along with polar coordinates.
-        In general, this tuple contains 3 numpy arrays (vectors = 1D arrays) with phases and corresponding polar coordinates.
+        Tuple of one-dimensional arrays: phases, radii, and angles in radians. Equal coordinate-vector lengths
+        select paired samples. Different lengths select a grid, with phases flattened by radius, then angle.
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.
 

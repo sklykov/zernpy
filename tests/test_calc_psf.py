@@ -40,7 +40,7 @@ def test_psf_kernel_calc():
     assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:"
                                       + str(np.max(diff_airy)))
     # Compare Airy pattern and some polynomial with zero amplitude
-    zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
+    zpsf = ZernPSF(ZernPol(m=0, n=0))  # piston reference; the calculation backend is selected automatically
     NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
     zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
     zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
@@ -167,13 +167,13 @@ def test_numba_compilation():
     None
 
     """
-    force_get_psf_compilation()  # force compilational of computation methods
+    force_get_psf_compilation()  # compile the Numba calculation functions
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12
     zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6); zpsf7 = ZernPSF(zp6)  # defocus
     zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
-    kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
+    kernel_norm = zpsf7.calculate_psf_kernel(normalized=True, accelerated=False)  # explicitly use the standard calculation
     np.testing.assert_allclose(kernel_acc, kernel_norm, rtol=0, atol=5e-4, err_msg="Accelerated and standard kernels are too different")
     assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

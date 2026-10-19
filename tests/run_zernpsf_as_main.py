@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import zernpy.zernikepol
 import zernpy.zernpsf
 
-importlib.reload(zernpy.zernikepol)  # trick to guarantee local changes to be always used for run
+importlib.reload(zernpy.zernikepol)  # reload this module; local edits require installing this checkout in editable mode
 importlib.reload(zernpy.zernpsf)
 
 from zernpy.zernikepol import ZernPol
@@ -34,12 +34,12 @@ if __name__ == "__main__":
     plt.close("all")  # close all opened before figures
     wavelength_um = 0.55  # used below in a several calls
     check_other_pols = False; check_small_na_wl = False  # flag for checking some other polynomials PSFs
-    check_airy = False; check_common_psf = False; check_io_kernel = False; check_parallel_calculation = False; check_test = False
+    check_airy = False; check_common_psf = False; check_io_kernel = False; check_test = False
     check_faster_airy = False; check_test_conditions = False; check_test_conditions2 = False; check_several_pols = False
     check_edge_conditions = False; test_acceleration_single_pol = False; test_acceleration_few_pol = False
     prepare_pic_readme = False  # for plotting the sum of polynomials produced profile
     test_io_few_pols = False; standard_path = Path.home().joinpath("Desktop")  # for saving json on the Desktop
-    check_acceleration_flag = False  # for testing fallback calculation with the wrong flag for calculate PSF kernel
+    check_acceleration_flag = False  # compare explicitly accelerated and non-accelerated kernels
     check_init_several_pols = False  # check calculation several pol-s: Airy (Piston) + some of polynomial
     check_airy_patterns = False  # check the difference between calculated by equation for Airy pattern and diffraction integral
     check_precompilation = False  # checks precompilation
@@ -57,12 +57,9 @@ if __name__ == "__main__":
         kernel3 = zpsf2.calculate_psf_kernel(suppress_warnings=False, verbose_info=True); zpsf2.plot_kernel("for loop")
         zpsf2.visualize_convolution()  # Visualize convolution on the disk image
         if check_io_kernel:
-            # default_path = Path(__file__).parent.joinpath("saved_psfs").absolute()  # default path for storing JSON files
+            # Omitting abs_path initially uses the package's saved_psfs folder, with a working-directory fallback
             zpsf2.save_json(overwrite=True, abs_path=standard_path)
             zpsf1.read_json(zpsf2.json_file_path)  # for testing reading and assigning values to ZernPSF class (substitution)
-        if check_parallel_calculation:
-            zpsf2.initialize_parallel_workers(); kernel2 = zpsf2.get_kernel_parallel()
-            zpsf2.plot_kernel("parallel"); zpsf2.deinitialize_workers()
 
     # Another Zernike polynomial, big NA
     if check_other_pols:
@@ -125,12 +122,12 @@ if __name__ == "__main__":
         zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6)  # defocus
         zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
         kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True, verbose_info=True); zpsf6.plot_kernel("Accelerated")
-        kernel_norm = zpsf6.calculate_psf_kernel(normalized=True); zpsf6.plot_kernel("Normal")
+        kernel_norm = zpsf6.calculate_psf_kernel(normalized=True, accelerated=False); zpsf6.plot_kernel("Normal")
     if test_acceleration_few_pol:
         force_get_psf_compilation()
         zp1 = ZernPol(m=-2, n=2); zp2 = ZernPol(m=0, n=2); zp3 = ZernPol(m=2, n=2); pols = (zp1, zp2, zp3); coeffs = (-0.12, 0.15, 0.1)
         zpsf8 = ZernPSF(pols); zpsf8.set_physical_props(NA=0.35, wavelength=0.5, expansion_coeff=coeffs, pixel_physical_size=0.5/1.5)
-        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True); zpsf8.plot_kernel("Normal")
+        composed_kernel = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=False); zpsf8.plot_kernel("Normal")
         composed_kernel_acc = zpsf8.calculate_psf_kernel(normalized=True, verbose_info=True, accelerated=True)
         zpsf8.plot_kernel("Accelerated")
     if prepare_pic_readme:
@@ -145,7 +142,7 @@ if __name__ == "__main__":
                                                                  pixel_physical_size=0.6/3.0)
         zpsf_norm.set_physical_props(NA=0.43, wavelength=0.6, expansion_coeff=coeffs10, pixel_physical_size=0.6/3.0)
         kern_acc = zpsf_acc.calculate_psf_kernel(normalized=True, accelerated=True)
-        kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True)
+        kern_norm = zpsf_norm.calculate_psf_kernel(normalized=True, accelerated=False)
         kern_diff = np.round(kern_acc - kern_norm, 9)  # for checking the difference in calculations
 
     if check_test:
@@ -198,7 +195,7 @@ if __name__ == "__main__":
         print("Original kernel shape:", original_kernel.shape, "\nCropped kernel shape:", cropped_kernel.shape)
 
     if check_ver012:
-        zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
+        zpsf = ZernPSF(ZernPol(m=0, n=0))  # piston reference; the calculation backend is selected automatically
         NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
         zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
         zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
@@ -225,7 +222,7 @@ if __name__ == "__main__":
         zpsf.plot_kernel("Cropped")
 
     # Cleaning up used flags for preventing of Variable Explorer flooding
-    del check_other_pols, check_small_na_wl, check_airy, check_common_psf, check_io_kernel, check_parallel_calculation
+    del check_other_pols, check_small_na_wl, check_airy, check_common_psf, check_io_kernel
     del check_test, check_faster_airy, check_test_conditions, check_test_conditions2, check_several_pols, check_edge_conditions
     del test_acceleration_single_pol, test_acceleration_few_pol, prepare_pic_readme, test_io_few_pols, check_acceleration_flag
     del check_init_several_pols, check_airy_patterns, check_precompilation, check_cropping, check_ver012

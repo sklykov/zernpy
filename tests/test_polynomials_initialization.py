@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test the implemented calculation functions for module calc_zernike_pol and ZernPol static methods by using pytest library.
+Test ZernPol initialization, index conversions, and basic polynomial evaluation using pytest.
 
 The pytest library available on: https://docs.pytest.org/en/latest/contents.html
 For running collected here tests, it's enough to run the command "pytest" from the repository location in the command line.
@@ -18,7 +18,7 @@ from zernpy.zernikepol import ZernPol
 
 def test_polynomials_initialization():
     """
-    Test various initialization ways of Zernike polynomials, for details, see the imported function.
+    Test initialization by orders and indices, input validation, and basic polynomial calculations.
 
     Returns
     -------

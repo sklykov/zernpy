@@ -22,7 +22,7 @@ def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, 
     Parameters
     ----------
     polynomials_sum : numpy.ndarray
-        Values of Zernike polynomials sum or single one on a mesh of polar coordinates.
+        Surface values with shape (len(r), len(theta)).
     r : numpy.ndarray
         Vector with radiuses as polar coordinates.
     theta : numpy.ndarray
@@ -31,15 +31,15 @@ def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, 
         Title for representing on the Figure, useful for the single Zernike polynomial plotting. The default is "".
     color_map : str, optional
         Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-        Note that rainbow, jet, turbo - not perceptually equal color maps.
+        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+        Rainbow, jet, and turbo are not perceptually uniform.
 
     Returns
     -------
     None.
 
     """
-    plt.ioff()  # blocks the call of plt.show() for running this script in some IDEs (e.g., PyCharm)
+    plt.ioff()  # disable interactive mode so plt.show() waits for the plot window to close
     plt.figure(figsize=(4, 4))  # since the figure has the circular shape, better draw it on equal box
     axes = plt.axes(projection='polar'); axes.grid(False)
     plt.pcolormesh(theta, r, polynomials_sum, cmap=color_map, shading='nearest')  # fast draw of 2D polar surface
@@ -57,22 +57,22 @@ def plot_sum_fig_3d(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarra
     Parameters
     ----------
     polynomials_sum : numpy.ndarray
-        Values of Zernike polynomials sum or single one on a mesh of polar coordinates.
+        Surface values with shape (len(r), len(theta)).
     r : numpy.ndarray
         Vector with radiuses as polar coordinates.
     theta : numpy.ndarray
         Vector with theta angles as polar coordinates.
     color_map : str, optional
         Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-        Note that rainbow, jet, turbo - not perceptually equal color maps.
+        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+        Rainbow, jet, and turbo are not perceptually uniform.
 
     Returns
     -------
     None.
 
     """
-    plt.ioff()  # blocks the call of plt.show() for running this script in some IDEs (e.g., PyCharm)
+    plt.ioff()  # disable interactive mode so plt.show() waits for the plot window to close
     figure = plt.figure(figsize=(5.4, 5.4))  # since the figure has the circular shape, better draw it on equal box
     axes = figure.add_subplot(projection='3d'); Thetas, Rs = np.meshgrid(theta, r)  # Note the order the meshgrid coordinates!
     X, Y = Rs*np.cos(Thetas), Rs*np.sin(Thetas)  # convert polar coordinates to the cartesian system
@@ -89,7 +89,7 @@ def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.nd
     figure : plt.Figure
         Figure() class there the plotting will be done, previous plot will be cleared.
     polynomials_sum : numpy.ndarray
-        Sum of Zernike polynomials (could be single Zernike polynomial).
+        Surface values with shape (len(r), len(theta)).
     r : numpy.ndarray
         Vector with radiuses as polar coordinates.
     theta : numpy.ndarray
@@ -98,8 +98,8 @@ def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.nd
         Flag for showing range of provided values as the colorbar on the figure. The default is False.
     color_map : str, optional
         Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-        Note that rainbow, jet, turbo - not perceptually equal color maps.
+        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+        Rainbow, jet, and turbo are not perceptually uniform.
 
     Returns
     -------
@@ -109,7 +109,7 @@ def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.nd
     """
     figure.clear()  # clearing the previous plotted figure
     axes = figure.add_subplot(projection='polar')  # axes - the handle for drawing functions
-    axes.grid(False)  # demanded by pcolormesh function, if not called - deprecation warning
+    axes.grid(False)  # disable the polar grid before drawing the color mesh
     # plot the colour map by using the Zernikes values according to Theta, R coordinates
     im = axes.pcolormesh(theta, r, polynomials_sum, cmap=color_map, shading='nearest')
     axes.axis('off')  # off polar coordinate axes
@@ -130,7 +130,7 @@ def subplot_sum_on_fig_3d(figure: plt.Figure, polynomials_sum: np.ndarray, r: np
     figure : plt.Figure
         Figure() class there the plotting will be done, previous plot will be cleared.
     polynomials_sum : numpy.ndarray
-        Sum of Zernike polynomials (could be single Zernike polynomial).
+        Surface values with shape (len(r), len(theta)).
     r : numpy.ndarray
         Vector with radiuses as polar coordinates.
     theta : numpy.ndarray
@@ -139,8 +139,8 @@ def subplot_sum_on_fig_3d(figure: plt.Figure, polynomials_sum: np.ndarray, r: np
         Flag for showing range of provided values as the colorbar on the figure. The default is False.
     color_map : str, optional
         Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-        Note that rainbow, jet, turbo - not perceptually equal color maps.
+        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
+        Rainbow, jet, and turbo are not perceptually uniform.
 
     Returns
     -------

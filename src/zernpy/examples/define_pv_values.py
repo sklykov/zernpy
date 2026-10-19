@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Example of 'zernpy' script functionality usage.
+Estimate polynomial coefficients for target peak-to-valley values and print unit-coefficient ranges.
 
 @author: Sergei Klykov
 
@@ -31,7 +31,6 @@ if __name__ == '__main__' and zernpy_installed:
     found_coeffs = []
     for j, polynomial in enumerate(polynomials_list):
         if j == 0:
-            # print(polynomial.get_polynomial_name())
             continue
         else:
             if j-1 < len(pv_values):
@@ -41,7 +40,6 @@ if __name__ == '__main__' and zernpy_installed:
                     pv_value2 = round(np.max(surface2) - np.min(surface2), 1)
                     if pv_value2 > pv_values[j-1]:
                         found_coeffs.append(round(ampl, 1))
-                        # print(polynomial.get_polynomial_name(), "P-V value:", pv_value2)
                         print(polynomial.get_mn_orders(), " \t Coefficient:", round(ampl, 1))
                         break
     # Example of peak-to-valley value calculation for including it into README

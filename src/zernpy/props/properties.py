@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Some properties of Zernike polynomials, which better to store in the folder and not directly load to each instance.
+Store shared Zernike polynomial names and calculation warning messages.
 
 @author: Sergei Klykov
 @licence: MIT
