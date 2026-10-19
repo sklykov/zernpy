@@ -44,6 +44,7 @@ def test_recursive_orders():
     Returns
     -------
     None
+    
     """
     compare_recursive_coeffs_radials()
     check_high_orders_recursion()
@@ -56,6 +57,7 @@ def test_tabular_derivatives():
     Returns
     -------
     None
+    
     """
     compare_radial_derivatives(max_order=17)
 
@@ -67,6 +69,7 @@ def test_recursive_derivatives():
     Returns
     -------
     None
+    
     """
     compare_recursive_coeffs_radials_dr()
 
@@ -78,6 +81,7 @@ def test_sum_zernikes():
     Returns
     -------
     None
+    
     """
     zp1 = ZernPol(osa_index=1); zp2 = ZernPol(noll_index=2); ampls = [-0.5, 0.5]; theta = math.pi/3; r = 1.0
     sum_pols = ZernPol.sum_zernikes(coefficients=ampls, polynomials=[zp1, zp2], r=r, theta=theta)
@@ -108,6 +112,7 @@ def test_pol_values_edge_cases():
     Returns
     -------
     None
+    
     """
     zp = ZernPol(osa=8)  # test polynomial, could be any
     # Combination list + float
@@ -169,6 +174,7 @@ def test_rms_pv():
     Returns
     -------
     None
+    
     """
     zp = ZernPol(m=1, n=1)
     phase_profile = zp.gen_zernikes_surface(coefficients=(-1.0, ), polynomials=(zp, ), theta_rad_step=round(np.pi/360, 7))
@@ -180,4 +186,3 @@ def test_rms_pv():
     rms, pv = zp.get_rms_pv_surface(phase_profile)
     assert math.isclose(rms, 0.5, abs_tol=0.015), f"Calculated RMS: {rms} not close to the theoretical RMS=0.5 for (0, 4) polynomial"
     assert math.isclose(pv, 1.677, abs_tol=0.014), f"Calculated P-V: {pv} not close to the theoretical P-V=1.677 for (0, 4) polynomial"
-

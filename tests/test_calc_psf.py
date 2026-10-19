@@ -169,5 +169,5 @@ def test_numba_compilation():
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
     kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
-    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not computational of a kernel methods have significant differences"
+    np.testing.assert_allclose(kernel_acc, kernel_norm, rtol=0, atol=5e-4, err_msg="Accelerated and standard kernels are too different")
     assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

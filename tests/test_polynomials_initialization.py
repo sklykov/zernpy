@@ -23,6 +23,7 @@ def test_polynomials_initialization():
     Returns
     -------
     None
+    
     """
     zp = ZernPol(m=-2, n=2)  # Initialization with orders
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
@@ -99,6 +100,7 @@ def test_explicit_initialization():
     Returns
     -------
     None
+    
     """
     # Testing the ordinary, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
