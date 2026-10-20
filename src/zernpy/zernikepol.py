@@ -4,7 +4,7 @@ Main script with the class definition for accessing Zernike polynomial initializ
 
 Also, provides a few functions useful for fitting set of Zernike polynomials to an image with phases.
 
-@author: Sergei Klykov, @year: 2026, @license: MIT \n
+@author: Sergei Klykov, @year: 2026, @license: MIT
 
 """
 # %% Global imports
@@ -19,7 +19,9 @@ import numpy as np
 # %% Local (package-scoped) imports
 from .calculations.calc_zernike_pol import (
     MAX_RADIAL_ORDER_COEFFS,
+    SLOW_CALC_RADIAL_ORDER,
     MAX_RADIAL_ORDER_COEFFS_dR,
+    SLOW_CALC_RADIAL_ORDER_dR,
     normalization_factor,
     radial_derivative,
     radial_derivative_eq,
@@ -56,27 +58,38 @@ class ZernPol:
 
         Parameters
         ----------
-        **kwargs : orders or index for Zernike polynomial initialization expected as key=value pairs \n
-            Acceptable variants for key=value pairs arguments: \n
-            1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m; \n
-            2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; \n
-            3) noll_index=int with alternative "noll"; \n
-            4) fringe_index=int with alternative "fringe" \n
+        **kwargs : orders or index for Zernike polynomial initialization expected as key=value pairs
+
+            Acceptable variants for key=value pairs arguments:
+
+            1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m;
+
+            2) osa_index=int with alternatives: "osa", "ansi_index", "ansi";
+
+            3) noll_index=int with alternative "noll";
+
+            4) fringe_index=int with alternative "fringe"
 
         Raises
         ------
         ValueError
-            Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like: \n
+            Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like:
+
             for specified orders:
-            1) n < 0; 2) m or n is not int; 3) n - abs(m) is odd; \n
-            4) n == 0 and m != 0; 5) n > 54, the supported radial-order limit. Negative m is allowed. \n
-            for indices - see the raised error message.
+            1) m or n is not int; 2) n < 0; 3) abs(m) > n; 4) n - abs(m) is odd;
+
+            5) n > 54, the supported radial-order limit. Negative m is allowed.
+
+            for indices: OSA index < 0 or > 1539, Noll index < 1 or > 1540, Fringe index < 1,
+            or an index corresponding to radial order n > 54.
 
         References
         ----------
-        [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials \n
-        [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
-        [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
+        [1] Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
+
+        [2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+
+        [3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
 
         """
         key = ""
@@ -105,15 +118,13 @@ class ZernPol:
                                 key = "angular_frequency"
                             if isinstance(kwargs.get(key), int):
                                 self.__m = int(kwargs[key])  # azimuthal order acknowledged
-                                # Checking that the provided orders are reasonable
-                                if not (self.__n - abs(self.__m)) % 2 == 0:  # see [1]
-                                    raise ValueError("Failed sanity check: n - |m| == even number")
-                                elif self.__n < 0:
-                                    raise ValueError("Failed sanity check: order n less than 0")
-                                elif self.__n == 0 and self.__m != 0:
-                                    raise ValueError("Failed sanity check: when n == 0, m should be also == 0")
-                                elif self.__n < 0:
-                                    raise ValueError("Failed sanity check: order n less than 0")
+                                # Checking that the provided orders are reasonable, see [1]
+                                if self.__n < 0:
+                                    raise ValueError(f"Radial order n should be non-negative, but n={self.__n}")
+                                elif abs(self.__m) > self.__n:
+                                    raise ValueError(f"Azimuthal order should satisfy |m| <= n, but m={self.__m}, n={self.__n}")
+                                elif (self.__n - abs(self.__m)) % 2 != 0:
+                                    raise ValueError(f"n - |m| should be even, but m={self.__m}, n={self.__n}")
                                 elif self.__n > 54:
                                     raise ValueError("\nInitialization of Zernike with radial order higher than 54"
                                                      + " is meaningless because of very slow calculation performance")
@@ -150,8 +161,8 @@ class ZernPol:
                         if osa_i < 0:
                             raise ValueError("OSA / ANSI index should be non-negative integer")
                         elif osa_i > 1539:
-                            ValueError("\nInitialization of Zernike with OSA index higher than 1539"
-                                       + " is meaningless because of very slow calculation performance")
+                            raise ValueError("\nInitialization of Zernike with OSA index higher than 1539"
+                                             + " is meaningless because of very slow calculation performance")
                         else:
                             self.__osa_index = osa_i; self.__initialized = True
                             self.__m, self.__n = ZernPol.index2orders(osa_index=self.__osa_index)
@@ -173,8 +184,8 @@ class ZernPol:
                         if noll_i < 1:
                             raise ValueError("Noll index should be not less than 1 integer")
                         elif noll_i > 1540:
-                            ValueError("\nInitialization of Zernike with Noll index higher than 1540"
-                                       + " is meaningless because of very slow calculation performance")
+                            raise ValueError("\nInitialization of Zernike with Noll index higher than 1540"
+                                             + " is meaningless because of very slow calculation performance")
                         else:
                             self.__noll_index = noll_i; self.__initialized = True
                             self.__m, self.__n = ZernPol.index2orders(noll_index=self.__noll_index)
@@ -214,11 +225,11 @@ class ZernPol:
         if self.__n > MAX_RADIAL_ORDER_COEFFS:
             self.__warn_mes_r = f"\nCall for radial order {self.__n} is higher than {MAX_RADIAL_ORDER_COEFFS}"
         else:
-            self.warn_mes_r = ""
+            self.__warn_mes_r = ""
         if self.__n > MAX_RADIAL_ORDER_COEFFS_dR:
             self.__warn_mes_dr = f"\nCall for derivative of radial order {self.__n} is > than {MAX_RADIAL_ORDER_COEFFS_dR}"
         else:
-            self.warn_mes_dr = ""
+            self.__warn_mes_dr = ""
 
     def get_indices(self) -> Tuple[Tuple[int, int], int, int, int]:
         """
@@ -227,7 +238,8 @@ class ZernPol:
         Returns
         -------
         tuple
-            with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) \n
+            with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index)
+
             All indices are integers.
 
         """
@@ -256,9 +268,11 @@ class ZernPol:
 
         References
         ----------
-        [1] Up to 4th order: Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials \n
-        [2] 5th order names: from the website https://www.telescope-optics.net/monochromatic_eye_aberrations.htm \n
-        6th order - 7th order: my guess about the naming \n
+        [1] Up to 4th order: Wiki article: https://en.wikipedia.org/wiki/Zernike_polynomials
+
+        [2] 5th order names: from the website https://www.telescope-optics.net/monochromatic_eye_aberrations.htm
+
+        6th order - 7th order: my guess about the naming
 
         Returns
         -------
@@ -349,19 +363,17 @@ class ZernPol:
         """
         Calculate Zernike polynomial value(-s) within the unit circle.
 
-        By default, radial orders up to 12 use a direct routine with explicit formulas through order 10
-        and recurrence relations for the remaining cases. Orders 13 through 40 use recursively calculated
-        coefficients for each power of the radius; higher orders use recurrence relations for the values.
-        Setting ``use_exact_eq=True`` selects the factorial formula through radial order 40.
-        Above that limit, this option emits a warning and returns zeros because factorial evaluation
-        becomes numerically unreliable.
+        The value is the product of the normalization factor, the radial function and the trigonometric angular factor.
+        The radial function is calculated as in the method radial(), see it for the used equations depending on the radial order.
 
         References
         ----------
-        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
-        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
+        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+
+        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
+
         [3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
-        circle polynomials and their derivatives in Cartesian coordinates" (2018) \n
+        circle polynomials and their derivatives in Cartesian coordinates" (2018)
 
         Parameters
         ----------
@@ -378,8 +390,13 @@ class ZernPol:
         ------
         ValueError
             Check the Error stack trace for reasons of raising, most probably input parameters aren't acceptable.
-        Warning
-            If the theta angles lie outside the range [0, 2*pi] (entire period).
+
+        Warns
+        -----
+        UserWarning
+            If the theta angles lie outside the range [0, 2*pi] (entire period), once per instance if the radial order
+            is above 50 (slow recursive calculations), or if use_exact_eq is True for a radial order above 40
+            (zeros are returned).
 
         Returns
         -------
@@ -399,8 +416,8 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return nTr*radial_polynomial(self, r)
             else:
-                # Raise warning about slow calculations for orders more than 50, only once
-                if self.__n > 50 and not self.__show_slow_calc_warn:
+                # Warn once about slow calculations for high radial orders
+                if self.__n > SLOW_CALC_RADIAL_ORDER and not self.__show_slow_calc_warn:
                     warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
                     warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
@@ -431,10 +448,12 @@ class ZernPol:
 
         References
         ----------
-        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) \n
-        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) \n
+        [1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)
+
+        [2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)
+
         [3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
-        circle polynomials and their derivatives in Cartesian coordinates" (2018) \n
+        circle polynomials and their derivatives in Cartesian coordinates" (2018)
 
         Parameters
         ----------
@@ -449,6 +468,12 @@ class ZernPol:
         ValueError
             The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.
 
+        Warns
+        -----
+        UserWarning
+            Once per instance if the radial order is above 50 (slow recursive calculations), or if use_exact_eq
+            is True for a radial order above 40 (zeros are returned).
+
         Returns
         -------
         float or numpy.ndarray
@@ -462,8 +487,8 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return radial_polynomial(self, r)
             else:
-                # Raise warning about slow calculations for orders more than 50, only once
-                if self.__n > 50 and not self.__show_slow_calc_warn:
+                # Warn once about slow calculations for high radial orders
+                if self.__n > SLOW_CALC_RADIAL_ORDER and not self.__show_slow_calc_warn:
                     warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
                     warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
@@ -494,9 +519,13 @@ class ZernPol:
         Raises
         ------
         ValueError
-            Most probably, raised if the conversion to float number is failed. \n
+            Most probably, raised if the conversion to float number is failed.
+
             It happens when input parameter is not float, numpy.ndarray, list or tuple.
-        Warning
+
+        Warns
+        -----
+        UserWarning
             If the theta angles lie outside the range [0, 2*pi] (entire period).
 
         Returns
@@ -536,6 +565,12 @@ class ZernPol:
         ValueError
             The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.
 
+        Warns
+        -----
+        UserWarning
+            Once per instance if the radial order is above 48 (slow recursive calculations), or if use_exact_eq
+            is True for a radial order above 38 (zeros are returned).
+
         Returns
         -------
         float or numpy.ndarray
@@ -548,8 +583,8 @@ class ZernPol:
             if self.__n <= 12:  # condition to switch from direct recurrence equation to finding of coeffs. algorithm
                 return radial_derivative(self, r)
             else:
-                # Warn once about slow derivative calculations for radial orders greater than 48
-                if self.__n > 48 and not self.__show_slow_calc_warn:
+                # Warn once about slow derivative calculations for high radial orders
+                if self.__n > SLOW_CALC_RADIAL_ORDER_dR and not self.__show_slow_calc_warn:
                     warn_mess = f"\nZernPol(m={self.__m}, n={self.__n})" + warn_mess_slow_calc
                     warnings.warn(warn_mess, stacklevel=2)
                     self.__show_slow_calc_warn = True
@@ -580,9 +615,13 @@ class ZernPol:
         Raises
         ------
         ValueError
-            Most probably, raised if the conversion to float number is failed. \n
+            Most probably, raised if the conversion to float number is failed.
+
             It happens when input parameter is not float, numpy.ndarray, list or tuple.
-        Warning
+
+        Warns
+        -----
+        UserWarning
             If the theta angles lie outside the range [0, 2*pi] (entire period).
 
         Returns
@@ -910,7 +949,8 @@ class ZernPol:
             Polar angle(-s) from a unit circle.
         get_surface : bool, optional
             If True and both coordinate inputs are arrays, evaluate all radius-angle combinations as a 2D surface.
-            The default is False. \n
+            The default is False.
+
             Note that if r and theta provided as the numpy ndarrays with different shapes and this flag is False, then
             the result of this method will raise ValueError (because r and theta shapes will be checked for equality).
 
@@ -919,7 +959,8 @@ class ZernPol:
         TypeError
             If the input parameters aren't iterable (doesn't support len() function), this error will be raised.
         ValueError
-            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials. \n
+            If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials.
+
             Also raised for an empty polynomial sequence, invalid polynomial objects, or incompatible coordinate shapes.
 
         Returns
@@ -979,7 +1020,7 @@ class ZernPol:
         Raises
         ------
         ValueError
-            If the r_step or theta_rad_step provided in the way, that vectors R and Theta cannot be generated.
+            If r_step is not in the range (0.0, 0.5] or theta_rad_step is not in the range (0.0, pi].
 
         Returns
         -------
@@ -988,10 +1029,10 @@ class ZernPol:
             Theta - angles in [0, 2*pi), excluding the endpoint 2*pi.
 
         """
-        if 0.0 >= r_step > 0.5:
-            raise ValueError("Provided step on radiuses less than 0.0 or more than 0.5")
-        if 0.0 >= theta_rad_step > np.pi:
-            raise ValueError("Provided step on theta angles less than 0.0 or more than pi")
+        if not 0.0 < r_step <= 0.5:
+            raise ValueError(f"Step on radii should lie in the range (0.0, 0.5], but it is {r_step}")
+        if not 0.0 < theta_rad_step <= np.pi:
+            raise ValueError(f"Step on theta angles should lie in the range (0.0, pi], but it is {theta_rad_step}")
         Rs = np.arange(0.0, 1.0+r_step, r_step); Thetas = np.arange(0.0, 2.0*np.pi, theta_rad_step)  # exclude 2*pi endpoint
         # Check that the last values on the generated ranges appeared not outside of ranges
         if Rs[Rs.shape[0]-1] > 1.0:
@@ -1037,9 +1078,9 @@ class ZernPol:
         polynomial : ZernPol
             Instance of ZernPol class.
         color_map : str, optional
-            Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-            Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-            Rainbow, jet, and turbo are not perceptually uniform.
+            Matplotlib color map name. The default "coolwarm" is a diverging map suited for signed phase values.
+            Perceptually uniform alternatives: "viridis", "plasma". Rainbow-like maps ("jet", "turbo", "rainbow")
+            are widespread, but not perceptually uniform and may suggest features absent in the data.
         show_title : bool, optional
             Show the polynomial name on a 2D plot. The default is True.
         use_defaults : bool, optional
@@ -1100,10 +1141,12 @@ class ZernPol:
         polynomials : Sequence[ZernPol]
             Initialized polynomials as class instances of ZernPol class specified in this module.
         r_step : float, optional
-            Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. \n
+            Step for generation the vector with radiuses for an entire unit circle. The default is 0.01.
+
             See also the documentation for the method gen_polar_coordinates().
         theta_rad_step : float, optional
-            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). \n
+            Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180).
+
             See also the documentation for the method gen_polar_coordinates().
         equal_n_coordinates : bool, optional
             Use the same number of points for the radial and angular coordinate vectors instead of individual steps.
@@ -1133,7 +1176,8 @@ class ZernPol:
         Parameters
         ----------
         phase_profile : zernikes_surface
-            Named tuple with attributes: ZernSurf, R, Theta. \n
+            Named tuple with attributes: ZernSurf, R, Theta.
+
             There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.
 
         Returns
@@ -1153,7 +1197,8 @@ class ZernPol:
         Parameters
         ----------
         phase_profile : zernikes_surface
-            Named tuple with attributes: ZernSurf, R, Theta. \n
+            Named tuple with attributes: ZernSurf, R, Theta.
+
             There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.
 
         Returns
@@ -1199,9 +1244,9 @@ class ZernPol:
         show_range : bool, optional
             Flag for showing range of provided values as the colorbar on the figure. The default is True.
         color_map : str, optional
-            Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-            Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-            Rainbow, jet, and turbo are not perceptually uniform.
+            Matplotlib color map name. The default "coolwarm" is a diverging map suited for signed phase values.
+            Perceptually uniform alternatives: "viridis", "plasma". Rainbow-like maps ("jet", "turbo", "rainbow")
+            are widespread, but not perceptually uniform and may suggest features absent in the data.
         projection : str, optional
             Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".
 
@@ -1307,7 +1352,7 @@ class ZernPol:
     @staticmethod
     def _check_angles(angles: Union[list, tuple, float, int, np.ndarray]) -> Union[float, np.ndarray]:
         """
-        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside [0, 2pi].
+        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside [0, 2*pi].
 
         Parameters
         ----------
@@ -1317,9 +1362,13 @@ class ZernPol:
         Raises
         ------
         ValueError
-            Most probably, raised if the conversion to float number is failed. \n
+            Most probably, raised if the conversion to float number is failed.
+
             It happens when input parameter is not float, numpy.ndarray, list or tuple.
-        Warning
+
+        Warns
+        -----
+        UserWarning
             If the theta angles lie outside the range [0, 2*pi] (entire period).
 
         Returns

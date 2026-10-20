@@ -2,7 +2,8 @@
 """
 Calculation accelerated by numba library compilation and plotting of associated with polynomials PSFs.
 
-@author: Sergei Klykov  \n
+@author: Sergei Klykov
+
 @licence: MIT, @year: 2024
 
 """
@@ -15,6 +16,9 @@ from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+# %% Local (package-scoped) imports
+from .calc_psfs import nyquist_warning_message
 
 # %% Checking and import the numba library for speeding up the calculation
 try:
@@ -148,10 +152,10 @@ def zernpol_value(orders: tuple, r: Union[float, np.ndarray], theta: Union[float
     elif (m == 0) and (n == 10):
         # 252r^10 - 630r^8 + 560r^6 - 210r^4 + 30r^2 - 1
         radial = 252.0*np.power(r, 10) - 630.0*np.power(r, 8) + 560.0*np.power(r, 6) - 210.0*np.power(r, 4) + 30.0*np.power(r, 2) - 1.0
-    elif n > 7 and abs(m) == n:  # equation for high order polynomials (equal orders)
-        return np.power(r, n)
-    elif n > 10 and abs(m) == n-2:  # equation for high order polynomials (orders with abs(m) == n-2)
-        return float(n)*np.power(r, n) - float(n-1)*np.power(r, n-2)
+    elif n > 7 and abs(m) == n:  # radial order above 7 with abs(m) == n (no explicit formula above): R = r^n
+        radial = np.power(r, n)
+    elif n > 10 and abs(m) == n-2:  # radial order above 10 with abs(m) == n-2: R = n*r^n - (n-1)*r^(n-2)
+        radial = float(n)*np.power(r, n) - float(n-1)*np.power(r, n-2)
     # Multiply the normalization factor, radial function, and trigonometric angular factor
     return norm*triangular*radial
 
@@ -246,7 +250,8 @@ def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
     n_int_phi_points : int
-        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
+        Even number of Simpson subintervals on the polar angle of the entrance pupil, range [0, 2*pi].
+        The rule evaluates n_int_phi_points + 1 nodes.
 
     Returns
     -------
@@ -254,9 +259,11 @@ def get_psf_point_r_comp(orders: tuple, r: float, theta: float, alpha: float, n_
         |U|**2 - the module and square of the amplitude, intensity as the PSF value.
 
     """
+    # Composite Simpson's rule on n_int_phi_points (even) subintervals of [0, 2*pi]:
+    # interior even nodes 2, 4, ..., n-2 get weight 2, odd nodes 1, 3, ..., n-1 get weight 4
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
-    even_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-2, 2)])
-    odd_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points-1, 2)])
+    even_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(2, n_int_phi_points-1, 2)])
+    odd_sums = np.asarray([radial_integral_comp(orders, r, theta, i*h_phi, alpha, n_int_r_points) for i in range(1, n_int_phi_points, 2)])
     even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral_comp(orders, r, theta, 0.0, alpha, n_int_r_points)
@@ -279,16 +286,18 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     len2pixels : float
         Pixel size in the same length unit as wavelength.
     alpha : float or numpy.ndarray
-        For a single polynomial, its coefficient in the same length unit as wavelength; converted to radians internally.
-        For multiple polynomials, an array of phase coefficients already in radians.
+        Phase coefficient(-s) in radians, 2*pi*a/wavelength, where a is the physical wavefront coefficient (RMS)
+        in the same length unit as wavelength. A float for a single polynomial, an array for several polynomials.
+        The conversion is performed by the caller.
     wavelength : float
-        Wavelength (\u03BB) in physical units (e.g., \u00B5m) of the light used for calculations (in imaging).
+        Wavelength (λ) in physical units (e.g., µm) of the light used for calculations (in imaging).
     NA : float
         Objective property.
     n_int_r_points : int, optional
         Number of points used for integration on the unit pupil radius from the range [0.0, 1.0]. The default is 320.
     n_int_phi_points : int, optional
-        Number of points used for integration on the unit pupil angle from the range [0.0, 2\u03C0]. The default is 300.
+        Number of Simpson subintervals on the pupil angle, range [0, 2*pi]. Odd values are increased by one,
+        because Simpson's rule requires an even number of subintervals. The default is 300.
     show_kernel : bool, optional
         Plot the calculated kernel interactively. The default is False.
     fig_title : str, optional
@@ -307,7 +316,8 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     Raises
     ------
     ValueError
-        If any polynomial has radial order greater than 10. Use the non-accelerated implementation for higher orders.
+        If any polynomial has radial order greater than 10 and abs(m) is neither n nor n-2, because no compiled
+        radial formula exists for it. Use the non-accelerated implementation for these orders.
 
     Returns
     -------
@@ -319,6 +329,8 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     # Make kernel with odd sizes for precisely centering the kernel (in the center of an image)
     if size % 2 == 0:
         size += 1
+    if n_int_phi_points % 2 == 1:
+        n_int_phi_points += 1  # Simpson's rule on the pupil angle requires an even number of subintervals
     # Provide performance tip if the provided kernel size is quite big for calculations
     if size > 85 and not suppress_warns:
         __warn_message = f"\nCalculation of provided kernel size ({size}x{size}) may take more than 20 seconds"
@@ -326,26 +338,24 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
     kernel = np.zeros(shape=(size, size)); i_center = size//2; j_center = size//2
     # Get the orders of polynomial and check if the equation for compilation was implemented
     single_polynomial_provided = False  # flag for using single polynomial functions
-    if not hasattr(zernike_pol, "__len__") and isinstance(alpha, float):
-        expansion_coeff = alpha; alpha *= (2.0*pi)/wavelength
+    phase_coeff: float = 0.0; phase_coeffs: np.ndarray = np.zeros(1)  # explicitly typed values for the compiled functions
+    if not hasattr(zernike_pol, "__len__"):
+        phase_coeff = float(alpha)  # single polynomial - single phase coefficient
         m, n = zernike_pol.get_mn_orders(); single_polynomial_provided = True
-        if n > 10 and (abs(m) != n or abs(m) != n-2):
-            raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
+        if n > 10 and abs(m) != n and abs(m) != n-2:
+            raise ValueError(f"Accelerated PSF calculation isn't implemented for orders {m, n}, use accelerated=False")
     else:
-        if not isinstance(alpha, np.ndarray):
-            alpha = np.asarray(alpha)
+        phase_coeffs = np.asarray(alpha, dtype=float)
         polynomials_orders_l = []  # for checking and providing for further compilation polynomials in a tuple
         for pol in zernike_pol:
             m, n = pol.get_mn_orders(); polynomials_orders_l.append((m, n))
-            if n > 10 and (abs(m) != n or abs(m) != n-2):
-                raise ValueError(f"The calculation PSF function isn't implemented for these orders: {m, n}")
+            if n > 10 and abs(m) != n and abs(m) != n-2:
+                raise ValueError(f"Accelerated PSF calculation isn't implemented for orders {m, n}, use accelerated=False")
         polynomials_orders = tuple(polynomials_orders_l)  # convert list to tuple
     # Check that the calibration coefficient is sufficient for calculation
-    pixel_size_nyquist = (0.5*0.5*wavelength)/NA
-    if len2pixels > pixel_size_nyquist and not suppress_warns:
-        __warn_message = f"\nProvided calibration coefficient {len2pixels} {um_char}/pixels isn't sufficient enough"
-        __warn_message += f" (defined by the relation between Nyquist freq. and the optical resolution: 0.61{lambda_char}/NA)"
-        warnings.warn(__warn_message, stacklevel=2); __warn_message = ""
+    __warn_message = nyquist_warning_message(len2pixels, wavelength, NA)
+    if len(__warn_message) > 0 and not suppress_warns:
+        warnings.warn(__warn_message, stacklevel=2)
     # Calculate the PSF kernel for usage in convolution operation
     if verbose:
         calculated_points = 0  # for explicit showing of performance
@@ -364,9 +374,9 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
             theta += np.pi  # shift angles to the range [0, 2pi]
             # The scaling below is not needed because the Zernike polynomial is scaled as the RMS values
             if single_polynomial_provided:
-                kernel[i, j] = get_psf_point_r_comp((m, n), distance, theta, alpha, n_int_r_points, n_int_phi_points)
+                kernel[i, j] = get_psf_point_r_comp((m, n), distance, theta, phase_coeff, n_int_r_points, n_int_phi_points)
             else:
-                kernel[i, j] = get_psf_point_r_pols_comp(polynomials_orders, alpha, distance, theta, n_int_r_points, n_int_phi_points)
+                kernel[i, j] = get_psf_point_r_pols_comp(polynomials_orders, phase_coeffs, distance, theta, n_int_r_points, n_int_phi_points)
             if verbose:
                 calculated_points += 1; passed_time_ms = int(round(1000*(time.perf_counter() - t1), 0))
                 if show_each_tenth_point and (calculated_points == 1 or calculated_points == checking_point):
@@ -394,7 +404,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
         else:
             if not hasattr(zernike_pol, "__len__"):
                 plt.figure(f"{zernike_pol.get_mn_orders()} {zernike_pol.get_polynomial_name(True)}: "
-                          + f"{np.round(expansion_coeff, 2)}*wavelength {fig_id}", figsize=(6, 6))
+                          + f"{round(phase_coeff/(2.0*pi), 2)}*wavelength {fig_id}", figsize=(6, 6))
             else:
                 plt.figure(f"Sum of provided #{len(zernike_pol)} of polynomials {fig_id}", figsize=(6, 6))
         plt.imshow(kernel, cmap=plt.colormaps["viridis"], origin='upper'); plt.tight_layout()
@@ -403,7 +413,7 @@ def get_psf_kernel_comp(zernike_pol, len2pixels: float, alpha: Union[float, np.n
 
 # %% PSF calc. for several polynomials
 @njit(cache=True)
-def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: float) -> float:
+def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: Union[float, np.ndarray], phi: float) -> Union[float, np.ndarray]:
     """
     Wrap calculation of polynomials values sum for compilation.
 
@@ -434,7 +444,7 @@ def pol_sums(polynomials_orders: tuple, amplitudes: np.ndarray, p: float, phi: f
 
 @njit(cache=True)
 def diffraction_integral_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray, phi: float,
-                                     p: float, theta: float, r: float) -> np.ndarray:
+                                     p: Union[float, np.ndarray], theta: float, r: float) -> Union[complex, np.ndarray]:
     """
     Diffraction integral function for the formed image point (see the references as the sources of the equation).
 
@@ -522,7 +532,8 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
     n_int_r_points : int
         Number of integration points used for integration on the radius of the entrance pupil (normalized to the range [0.0, 1.0]).
     n_int_phi_points : int
-        Number of integration points used for integration on the polar angle of the entrance pupil (from the range [0.0, 2pi]).
+        Even number of Simpson subintervals on the polar angle of the entrance pupil, range [0, 2*pi].
+        The rule evaluates n_int_phi_points + 1 nodes.
 
     Returns
     -------
@@ -530,11 +541,13 @@ def get_psf_point_r_pols_comp(polynomials_orders: tuple, amplitudes: np.ndarray,
         |U|**2 - the module and square of the amplitude, intensity as the PSF value.
 
     """
+    # Composite Simpson's rule on n_int_phi_points (even) subintervals of [0, 2*pi]:
+    # interior even nodes 2, 4, ..., n-2 get weight 2, odd nodes 1, 3, ..., n-1 get weight 4
     h_phi = 2.0*pi/n_int_phi_points; even_sum = 0.0j; odd_sum = 0.0j
     even_sums = np.asarray([radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
-                 for i in range(2, n_int_phi_points-2, 2)])
+                 for i in range(2, n_int_phi_points-1, 2)])
     odd_sums = np.asarray([radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, i*h_phi, n_int_r_points)
-                for i in range(1, n_int_phi_points-1, 2)])
+                for i in range(1, n_int_phi_points, 2)])
     even_sum = np.sum(even_sums); odd_sum = np.sum(odd_sums)
     # Simpson integration rule implementation
     yA = radial_integral_pols_comp(polynomials_orders, amplitudes, r, theta, 0.0, n_int_r_points)

@@ -44,7 +44,7 @@ def test_recursive_orders():
     Returns
     -------
     None
-    
+
     """
     compare_recursive_coeffs_radials()
     check_high_orders_recursion()
@@ -57,7 +57,7 @@ def test_tabular_derivatives():
     Returns
     -------
     None
-    
+
     """
     compare_radial_derivatives(max_order=17)
 
@@ -69,9 +69,28 @@ def test_recursive_derivatives():
     Returns
     -------
     None
-    
+
     """
     compare_recursive_coeffs_radials_dr()
+
+
+def test_polar_coordinates_steps():
+    """
+    Test validation of the steps used for generation of polar coordinates.
+
+    Returns
+    -------
+    None
+
+    """
+    r, theta = ZernPol.gen_polar_coordinates(r_step=0.5, theta_rad_step=np.pi)
+    assert r[-1] == 1.0 and theta[-1] < 2.0*np.pi, "Generated polar coordinates lie outside of the expected ranges"
+    for r_step, theta_step in ((0.0, 0.1), (-0.1, 0.1), (0.6, 0.1), (0.1, 0.0), (0.1, 4.0)):
+        try:
+            ZernPol.gen_polar_coordinates(r_step=r_step, theta_rad_step=theta_step); assert_flag = False
+        except ValueError:
+            assert_flag = True
+        assert assert_flag, f"Wrong steps passed: r_step={r_step}, theta_rad_step={theta_step}"
 
 
 def test_sum_zernikes():
@@ -81,7 +100,7 @@ def test_sum_zernikes():
     Returns
     -------
     None
-    
+
     """
     zp1 = ZernPol(osa_index=1); zp2 = ZernPol(noll_index=2); ampls = [-0.5, 0.5]; theta = math.pi/3; r = 1.0
     sum_pols = ZernPol.sum_zernikes(coefficients=ampls, polynomials=[zp1, zp2], r=r, theta=theta)
@@ -112,7 +131,7 @@ def test_pol_values_edge_cases():
     Returns
     -------
     None
-    
+
     """
     zp = ZernPol(osa=8)  # test polynomial, could be any
     # Combination list + float
@@ -174,7 +193,7 @@ def test_rms_pv():
     Returns
     -------
     None
-    
+
     """
     zp = ZernPol(m=1, n=1)
     phase_profile = zp.gen_zernikes_surface(coefficients=(-1.0, ), polynomials=(zp, ), theta_rad_step=round(np.pi/360, 7))

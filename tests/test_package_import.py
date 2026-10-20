@@ -5,6 +5,9 @@ Test the import of "zernpy" package for basic functionality.
 @author: Sergei Klykov, @year: 2025, @licence: MIT
 
 """
+import importlib.util
+
+
 def test_initialization():
     """
     Test basic imports, initialization and usage of implemented classes.
@@ -12,15 +15,12 @@ def test_initialization():
     Returns
     -------
     None
-    
+
     """
     from zernpy import ZernPol, ZernPSF, force_get_psf_compilation, generate_polynomials
-    try:
-        import numba
-        if numba is not None:
-            force_get_psf_compilation(True)
-    except (ModuleNotFoundError, ImportError):
-        pass
+    # clean way to check that numba is installed
+    if importlib.util.find_spec("numba") is not None:
+        force_get_psf_compilation(True)
     zp = ZernPol(m=-2, n=2)
     assert len(zp.get_polynomial_name()) > 0, "Failed simple function call for getting polynomial name"
     pols = generate_polynomials(4)

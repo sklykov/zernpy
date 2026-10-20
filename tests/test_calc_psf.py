@@ -12,9 +12,10 @@ For running collected here tests, it's enough to run the command "pytest" from t
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 # Import the installed package for pytest runs
-from zernpy.calculations.calc_psfs import get_psf_kernel
+from zernpy.calculations.calc_psfs import get_psf_kernel, get_psf_point_r, get_psf_point_r_vectorized
 from zernpy.zernikepol import ZernPol
 from zernpy.zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
 
@@ -30,14 +31,16 @@ def test_psf_kernel_calc():
 
     """
     NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.28  # Common physical properties
+    alpha = 2.0*np.pi*ampl/wavelength  # phase coefficient in radians, as expected by get_psf_kernel()
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
-    airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
-                            normalize_values=True, airy_pattern=True)
-    airy_int = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
-                              normalize_values=True, airy_pattern=False)
+    # Values aren't normalized, so the absolute scale of the numerical integration is also checked (peak value = 1.0)
+    airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=alpha, wavelength=wavelength, NA=NA,
+                            normalize_values=False, airy_pattern=True)
+    airy_int = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=alpha, wavelength=wavelength, NA=NA,
+                              normalize_values=False, airy_pattern=False)
     diff_airy = np.abs(airy_int - airy_p)
-    assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:"
+    assert np.max(diff_airy) < 1E-4, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1E-4: "
                                       + str(np.max(diff_airy)))
     # Compare Airy pattern and some polynomial with zero amplitude
     zpsf = ZernPSF(ZernPol(m=0, n=0))  # piston reference; the calculation backend is selected automatically
@@ -158,6 +161,25 @@ def test_save_load_zernpsf(tmp_path):
     np.testing.assert_array_equal(zpsf3.kernel, zpsf2.kernel)
 
 
+def test_simpson_angular_integration():
+    """
+    Test that the angular Simpson integration reproduces the unaberrated PSF peak exactly.
+
+    For zero aberration at the PSF center, the integrand is constant in the pupil angle, so the
+    normalized intensity must be 1.0 for any even number of subintervals.
+
+    Returns
+    -------
+    None
+
+    """
+    piston = ZernPol(m=0, n=0)
+    for n_phi in (36, 180, 300):
+        for point_func in (get_psf_point_r, get_psf_point_r_vectorized):
+            peak = point_func(piston, 0.0, 0.0, 0.0, 320, n_phi)
+            assert abs(peak - 1.0) < 1E-12, f"{point_func.__name__} peak {peak} != 1.0 for {n_phi} angular subintervals"
+
+
 def test_numba_compilation():
     """
     Test compilation by numba of the calculation functions.
@@ -167,6 +189,7 @@ def test_numba_compilation():
     None
 
     """
+    pytest.importorskip("numba")  # the accelerated calculation is optional
     force_get_psf_compilation()  # compile the Numba calculation functions
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12
@@ -175,5 +198,5 @@ def test_numba_compilation():
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
     kernel_norm = zpsf7.calculate_psf_kernel(normalized=True, accelerated=False)  # explicitly use the standard calculation
-    np.testing.assert_allclose(kernel_acc, kernel_norm, rtol=0, atol=5e-4, err_msg="Accelerated and standard kernels are too different")
+    np.testing.assert_allclose(kernel_acc, kernel_norm, rtol=0, atol=1E-10, err_msg="Accelerated and standard kernels are too different")
     assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

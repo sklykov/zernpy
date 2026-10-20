@@ -23,7 +23,7 @@ def test_polynomials_initialization():
     Returns
     -------
     None
-    
+
     """
     zp = ZernPol(m=-2, n=2)  # Initialization with orders
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
@@ -100,7 +100,7 @@ def test_explicit_initialization():
     Returns
     -------
     None
-    
+
     """
     # Testing the ordinary, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
@@ -188,6 +188,12 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(m=4, n=3)"
+    for m, n in ((4, 2), (-6, 2), (2, 0)):  # |m| > n, but n - |m| is even
+        try:
+            ZernPol(m=m, n=n); assert_flag = False
+        except ValueError:
+            assert_flag = True
+        assert assert_flag, f"Wrong initialization parameter passed: ZernPol(m={m}, n={n})"
     try:
         ZernPol(n=-2, l=2); assert_flag = False
     except ValueError:

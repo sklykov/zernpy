@@ -22,7 +22,7 @@ def crop_phases_img(phases_image: np.ndarray, crop_radius: float = 1.0, suppress
     Select a circular region from a phase image and return its samples and polar coordinates.
 
     This function also calculates polar coordinates, normalizing them to the range [0, 1.0] for radii
-    and to the range [0.0, 2.0*pi] for theta angles. The polar coordinates are returned by this function.
+    and to the range [0, 2*pi) for theta angles. The polar coordinates are returned by this function.
     Crop radius allows cropping out pixels from selected unit circle.
 
     Parameters

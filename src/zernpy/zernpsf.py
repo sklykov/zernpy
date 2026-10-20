@@ -2,7 +2,7 @@
 """
 PSF class definition based on Zernike polynomial for computation of its kernel for convolution / deconvolution.
 
-@author: Sergei Klykov, @year: 2026, @license: MIT \n
+@author: Sergei Klykov, @year: 2026, @license: MIT
 
 """
 # %% Global imports
@@ -52,17 +52,25 @@ class ZernPSF:
     Compute two-dimensional focal-plane point spread functions (PSFs) from Zernike wavefronts.
 
     A PSF describes the image of a point source. The pupil phase can contain one Zernike polynomial
-    or a sum of polynomials. \n
+    or a sum of polynomials.
+
+    Note that the model is scalar (scalar diffraction theory): polarization (vectorial) effects, which become significant
+    for high NA objectives (approximately NA > 0.7), aren't taken into account.
+
     Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
-    the references to the diffraction integral used for calculations. \n
+    the references to the diffraction integral used for calculations.
 
     References
     ----------
-    [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  \n
-    [2] https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations  \n
-    [3] https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf   \n
-    [4] https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations  \n
-    [5] https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]  \n
+    [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968
+
+    [2] https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations
+
+    [3] https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf
+
+    [4] https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations
+
+    [5] https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]
 
     """
 
@@ -151,19 +159,23 @@ class ZernPSF:
         NA : float
             Dimensionless numerical aperture of the objective, within (0, 1.7].
         wavelength : float
-            Wavelength of monochromatic light (\u03BB) used for imaging in physical units (e.g., as \u00B5m).
+            Wavelength of monochromatic light (λ) used for imaging in physical units (e.g., as µm).
         expansion_coeff : SupportsFloat or Sequence[SupportsFloat] or numpy.ndarray
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Use the same length unit as wavelength. Coefficients are converted to phase amplitudes in radians:
-            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in calculate_psf_kernel(). \n
-            The 2*pi factor was introduced in version 0.1.2. \n
+            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in calculate_psf_kernel().
+
+            The 2*pi factor was introduced in version 0.1.2.
+
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
             Sampling interval in the object plane, in the same length unit as wavelength.
-            It must be positive and no greater than wavelength/(4*NA), half the Abbe resolution limit.\n
-            Way of calculation = pixel physical size = pixel camera size (\u00B5m) / Total Magnification, where:\n
-            Total Magnification (M) = Objective Magn. * Tube Lens Magn. (Mismatch) * Camera Adapter Magn. \n
+            It must be positive and no greater than wavelength/(4*NA), half the Abbe resolution limit.
+
+            Way of calculation = pixel physical size = pixel camera size (µm) / Total Magnification, where:
+
+            Total Magnification (M) = Objective Magn. * Tube Lens Magn. (Mismatch) * Camera Adapter Magn.
 
         Raises
         ------
@@ -172,7 +184,8 @@ class ZernPSF:
 
         References
         ----------
-        [1] https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy \n
+        [1] https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy
+
         [2] https://www.edinst.com/de/blog/the-rayleigh-criterion-for-microscope-resolution/
 
         Returns
@@ -195,8 +208,8 @@ class ZernPSF:
         if pixel_physical_size <= 0.0:
             raise ValueError("Pixel physical size should be positive real number")
         if pixel_physical_size > self.pixel_size_nyquist:
-            raise ValueError(f"Pixel physical size should be less than Nyquist pixel size {self.pixel_size_nyquist_eStr}"
-                             + f" computed from the Abbe's resolution limit (0.5*{lambda_char}/NA)")
+            raise ValueError(f"Pixel physical size {pixel_physical_size} shouldn't exceed the Nyquist pixel size "
+                             + f"{self.pixel_size_nyquist_eStr} = 0.25*{lambda_char}/NA, half of the Abbe resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
         if isinstance(expansion_coeff, (Sequence, np.ndarray)):  # effectively, it should be some sequence / numpy array with numbers
@@ -205,7 +218,7 @@ class ZernPSF:
                 if coeffs_len == 1 and len(self.polynomials) == 0:  # polynomials maybe provided also as a sequence with 1 element
                     expansion_coeff = float(expansion_coeff[0])
                     # Sanity check for the expansion coefficient of the polynomial
-                    self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
+                    self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
                     if len(self.__warn_message) > 0:
                         warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
                     self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
@@ -216,7 +229,7 @@ class ZernPSF:
                 self.coefficients = np.asarray(expansion_coeff)  # conversion to efficient array format
                 # Sanity check for the maximum expansion coefficient of the polynomial
                 max_module_coeff = max(np.max(self.coefficients), abs(np.min(self.coefficients)))
-                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*max_module_coeff) / wavelength, max_coeff_check=True)
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(max_module_coeff) / wavelength, max_coeff_check=True)
                 if len(self.__warn_message) > 0:
                     warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
                 self.amplitudes = (2.0*pi*self.coefficients) / self.wavelength
@@ -230,7 +243,7 @@ class ZernPSF:
                 expansion_coeff = float(expansion_coeff)
             # Sanity check for the expansion coefficient of the polynomial
             if not self.airy:
-                self.__warn_message = _sanity_check_expansion_coefficient(abs(2.0*pi*expansion_coeff) / wavelength)
+                self.__warn_message = _sanity_check_expansion_coefficient(abs(expansion_coeff) / wavelength)
             if len(self.__warn_message) > 0:
                 warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
             self.expansion_coeff = expansion_coeff; self.alpha = (2.0*pi*self.expansion_coeff) / self.wavelength
@@ -239,20 +252,22 @@ class ZernPSF:
             self.kernel_size = get_kernel_size(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
                                                wavelength=self.wavelength, NA=self.NA)
         else:
-            max_kernel_size = 0; max_ampl = 0.0
+            max_kernel_size = 0; max_phase = 0.0
             for i, pol in enumerate(self.polynomials):
                 kernel_size = get_kernel_size(zernike_pol=pol, len2pixels=self.pixel_size, alpha=self.amplitudes[i],
                                               wavelength=self.wavelength, NA=self.NA)
                 if max_kernel_size < kernel_size:
                     max_kernel_size = kernel_size
-                if max_ampl < abs(self.amplitudes[i]):
-                    max_ampl = abs(self.amplitudes[i])
-            # increase depending on the # of provided pol-s and max provided amplitude the kernel size
-            if 0.25 <= max_ampl < 0.5:
+                if max_phase < abs(self.amplitudes[i]):
+                    max_phase = abs(self.amplitudes[i])
+            # Increase the kernel size depending on the # of polynomials and the max phase coefficient (in radians, as
+            # get_kernel_size() above). Thresholds are empirical: tests showed that the same thresholds in wavelengths
+            # (as before version 0.1.2) produce too small kernels, truncated PSFs with more than 5% of max on the border
+            if 0.25 <= max_phase < 0.5:
                 self.kernel_size = max_kernel_size + int(round(0.6*len(self.polynomials), 0))
-            elif 0.5 <= max_ampl < 0.75:
+            elif 0.5 <= max_phase < 0.75:
                 self.kernel_size = max_kernel_size + int(round(1.0*len(self.polynomials), 0))
-            elif max_ampl >= 0.75:
+            elif max_phase >= 0.75:
                 self.kernel_size = max_kernel_size + int(round(1.4*len(self.polynomials), 0))
             else:
                 self.kernel_size = max_kernel_size
@@ -275,8 +290,9 @@ class ZernPSF:
             Number of integration points used for calculation diffraction integral on the radius of the entrance pupil
             (normalized to the range [0.0, 1.0]). Should be integer not less than 20. The default is 320.
         n_integration_points_phi : int, optional
-            Number of integration points used for calculation diffraction integral on the polar angle phi of the entrance pupil
-            (from the range [0.0, 2pi]). Should be integer not less than 36. The default is 300.
+            Number of Simpson subintervals used for the diffraction integral on the polar angle phi of the entrance pupil
+            (from the range [0.0, 2pi]). Should be integer not less than 36; odd values are increased by one,
+            because Simpson's rule requires an even number of subintervals. The default is 300.
 
         Raises
         ------
@@ -308,6 +324,8 @@ class ZernPSF:
             raise ValueError("# of integration points for radius should be not less than 20")
         if n_integration_points_phi < 36:
             raise ValueError("# of integration points for angle phi should be not less than 36")
+        if n_integration_points_phi % 2 == 1:
+            n_integration_points_phi += 1  # Simpson's rule on the pupil angle requires an even number of subintervals
         self.n_int_r_points = n_integration_points_r; self.n_int_phi_points = n_integration_points_phi
         # Associated with slow calculations warnings
         if n_integration_points_r > 500 and n_integration_points_phi > 400:
@@ -322,22 +340,27 @@ class ZernPSF:
         """
         Calculate PSF kernel using the specified or default calculation parameters and physical values.
 
-        Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References. \n
+        Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References.
+
         The kernel samples the intensity response of the optical system with the supplied pupil aberrations.
         The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
-        an imaging system (micro-objective). \n
-        The order of integration and used equations in short: \n
+        an imaging system (micro-objective).
+
+        The order of integration and used equations in short:
+
         1st - integrate over the pupil radius p using the trapezoidal rule, with integrand
         p * exp(1j * (alpha * Z(p, phi) - r * p * cos(phi - theta))). Here Z is the normalized Zernike
         polynomial, alpha is its phase coefficient in radians, and r is the scaled image-plane radius
-        k * NA * pixel_size * pixel_distance, where k = 2*pi/wavelength. \n
+        k * NA * pixel_size * pixel_distance, where k = 2*pi/wavelength.
+
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
         output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
-        1.0/(pi\u2022pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. \n
+        1.0/(pi•pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value.
 
-        For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. \n
+        For details of implementation, explore methods in 'calculations' module, calc_psfs.py file.
+
         Note that the Nijboer's approximation for calculation of diffraction integral also has been tested, but the results is not in agreement
-        with the reference [3] due to the large expansion coefficients for Zernike polynomials.  \n
+        with the reference [3] due to the large expansion coefficients for Zernike polynomials.
 
         For Piston (m=0, n=0), the non-accelerated calculation uses the analytic Airy pattern;
         the accelerated calculation evaluates the diffraction integral numerically.
@@ -353,14 +376,18 @@ class ZernPSF:
         accelerated : bool or None, optional
             Flag to accelerate the calculations by using numba library for scripts compilation. Acceleration will be used automatically,
             if None is provided and 'numba' is installed. The default is None.
-            Set False for radial orders above 10, which are unsupported by the accelerated kernel routine.
+            For radial orders above 10, the accelerated routine supports only abs(m) == n or abs(m) == n-2;
+            set False for other high-order polynomials.
 
         References
         ----------
-        [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  \n
-        [2] https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf  \n
-        [3] PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg  \n
-        [4] https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062 (DOI: 10.1364/AO.52.002062)  \n
+        [1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968
+
+        [2] https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf
+
+        [3] PSF shapes: https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg
+
+        [4] https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062 (DOI: 10.1364/AO.52.002062)
 
         Returns
         -------
@@ -370,9 +397,12 @@ class ZernPSF:
         """
         if len(self.__warn_message) > 0 and not suppress_warnings:
             warnings.warn(self.__warn_message, stacklevel=2)
-        if not self.__physical_props_set and not suppress_warnings:
-            self.kernel_size = 19; self.__warn_message = "\nPhysical properties haven't been set before, the default ones will be used"
-            warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
+        if not self.__physical_props_set:
+            if self.kernel_size < 3:
+                self.kernel_size = 19  # default size, unless it was set explicitly by set_calculation_props()
+            if not suppress_warnings:
+                self.__warn_message = "\nPhysical properties haven't been set before, the default ones will be used"
+                warnings.warn(self.__warn_message, stacklevel=2); self.__warn_message = ""
         global numba_installed  # access the flag
         # Check provided flag
         if numba_installed and accelerated is None:
@@ -391,13 +421,13 @@ class ZernPSF:
         # Calculation using the vectorized form
         if self.zernpol is not None:
             if not accelerated or (accelerated and not numba_installed):
-                self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
+                self.kernel = get_psf_kernel(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
                                              wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, airy_pattern=self.airy,
                                              use_vectorized=True, verbose=verbose_info, kernel_size=self.kernel_size,
                                              n_int_r_points=self.n_int_r_points, n_int_phi_points=self.n_int_phi_points,
                                              suppress_warns=suppress_warnings)
             elif numba_installed:
-                self.kernel = get_psf_kernel_comp(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.expansion_coeff,
+                self.kernel = get_psf_kernel_comp(zernike_pol=self.zernpol, len2pixels=self.pixel_size, alpha=self.alpha,
                                                   wavelength=self.wavelength, NA=self.NA, normalize_values=normalized, verbose=verbose_info,
                                                   kernel_size=self.kernel_size, n_int_r_points=self.n_int_r_points,
                                                   suppress_warns=suppress_warnings, n_int_phi_points=self.n_int_phi_points)
@@ -677,12 +707,12 @@ class ZernPSF:
 # %% Utility functions
 def _sanity_check_expansion_coefficient(normalized_coefficient: float, max_coeff_check: bool = False) -> str:
     """
-    Check the magnitude of a Zernike phase coefficient in radians.
+    Check the magnitude of a Zernike expansion coefficient expressed in wavelengths.
 
     Parameters
     ----------
     normalized_coefficient : float
-        Phase magnitude, computed as 2*pi*abs(expansion_coeff)/wavelength.
+        Coefficient in wavelengths (waves), computed as abs(expansion_coeff)/wavelength. Values above 10 are reported.
     max_coeff_check : bool, optional
         Whether the value represents the largest absolute coefficient in a sequence. The default is False.
 

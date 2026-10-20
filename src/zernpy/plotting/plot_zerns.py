@@ -30,9 +30,7 @@ def plot_sum_fig(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarray, 
     title : str, optional
         Title for representing on the Figure, useful for the single Zernike polynomial plotting. The default is "".
     color_map : str, optional
-        Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-        Rainbow, jet, and turbo are not perceptually uniform.
+        Matplotlib color map name, see ZernPol.plot_profile() for recommendations. The default is "coolwarm".
 
     Returns
     -------
@@ -63,9 +61,7 @@ def plot_sum_fig_3d(polynomials_sum: np.ndarray, r: np.ndarray, theta: np.ndarra
     theta : numpy.ndarray
         Vector with theta angles as polar coordinates.
     color_map : str, optional
-        Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-        Rainbow, jet, and turbo are not perceptually uniform.
+        Matplotlib color map name, see ZernPol.plot_profile() for recommendations. The default is "coolwarm".
 
     Returns
     -------
@@ -97,9 +93,7 @@ def subplot_sum_on_fig(figure: plt.Figure, polynomials_sum: np.ndarray, r: np.nd
     show_range_colorbar : bool, optional
         Flag for showing range of provided values as the colorbar on the figure. The default is False.
     color_map : str, optional
-        Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-        Rainbow, jet, and turbo are not perceptually uniform.
+        Matplotlib color map name, see ZernPol.plot_profile() for recommendations. The default is "coolwarm".
 
     Returns
     -------
@@ -138,9 +132,7 @@ def subplot_sum_on_fig_3d(figure: plt.Figure, polynomials_sum: np.ndarray, r: np
     show_range_colorbar : bool, optional
         Flag for showing range of provided values as the colorbar on the figure. The default is False.
     color_map : str, optional
-        Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-        Perceptually uniform alternatives include viridis and plasma. The default is "coolwarm".
-        Rainbow, jet, and turbo are not perceptually uniform.
+        Matplotlib color map name, see ZernPol.plot_profile() for recommendations. The default is "coolwarm".
 
     Returns
     -------

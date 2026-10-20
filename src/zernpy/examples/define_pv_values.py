@@ -30,18 +30,16 @@ if __name__ == '__main__' and zernpy_installed:
                  0.7, 0.6, 0.5, 0.5, 0.5, 0.5, 0.6, 0.7]
     found_coeffs = []
     for j, polynomial in enumerate(polynomials_list):
-        if j == 0:
-            continue
-        else:
-            if j-1 < len(pv_values):
-                for i in range(150):
-                    ampl = 0.02*(i+1); zern_surface_tuple2 = polynomial.gen_zernikes_surface([ampl], [polynomial])
-                    surface2 = zern_surface_tuple2.ZernSurf
-                    pv_value2 = round(np.max(surface2) - np.min(surface2), 1)
-                    if pv_value2 > pv_values[j-1]:
-                        found_coeffs.append(round(ampl, 1))
-                        print(polynomial.get_mn_orders(), " \t Coefficient:", round(ampl, 1))
-                        break
+        if j == 0 or j-1 >= len(pv_values):
+            continue  # skip Piston and polynomials without a target P-V value
+        for i in range(150):
+            ampl = 0.02*(i+1); zern_surface_tuple2 = polynomial.gen_zernikes_surface([ampl], [polynomial])
+            surface2 = zern_surface_tuple2.ZernSurf
+            pv_value2 = round(np.max(surface2) - np.min(surface2), 1)
+            if pv_value2 > pv_values[j-1]:
+                found_coeffs.append(round(ampl, 1))
+                print(polynomial.get_mn_orders(), " \t Coefficient:", round(ampl, 1))
+                break
     # Example of peak-to-valley value calculation for including it into README
     print("************************************************************")
     for polynomial in polynomials_list:

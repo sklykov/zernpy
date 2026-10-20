@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).  
 
 
+### [Unreleased]
+
+#### Fixed
+- PSF calculation: Simpson's integration on the pupil angle skipped the last nodes (intensities ~1.3% too low);
+- Accelerated (numba) PSF: wrong values for |m| == n, n = 8...10; radial orders above 10 are supported for |m| == n or n-2;
+- `ZernPol.radial_dr()`: wrong derivatives for radial orders 40 and higher;
+- `ZernPol`: invalid orders (|m| > n) and too high OSA / Noll indices raise ValueError;
+- Smaller fixes: validation in `ZernPol.gen_polar_coordinates()`, warnings about too large coefficients and Nyquist sampling,
+`verbose` output and default kernel size in PSF calculations.
+
+#### Changed
+- Internal functions `get_psf_kernel()` and `get_psf_kernel_comp()` expect the phase coefficient in radians (see docstrings).
+
+
 ### [0.1.2] - 2026-06-26
 
 #### Added

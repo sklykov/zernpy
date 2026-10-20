@@ -17,11 +17,17 @@ from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
 
 # %% Module parameters
 __docformat__ = "numpydoc"
-# Empirical limits for evaluating power-series coefficients or factorial formulas in floating point
-# Integer coefficient generation remains exact; evaluating large, alternating terms can lose precision
-# Older NumPy versions can also promote very large integer/float-array products to object dtype
+# Empirically found maximum radial orders allowing stable calculation using recursively defined coefficients
+# or the exact equation with factorials. From approximately the 45th - 46th order, the exact equation starts to
+# violate the condition that max(|R(m, n)|) <= 1.0. From the 40th order, the difference between the recurrence
+# and the exact equations becomes too significant (in the order of 1E-3 and growing quickly).
+# The integer coefficients themselves remain exact, but the sum of large alternating terms loses precision
+# in floating point. Derivative coefficients are additionally multiplied by the powers of r, so the limit is lower.
 MAX_RADIAL_ORDER_COEFFS = 40
 MAX_RADIAL_ORDER_COEFFS_dR = 38
+# Radial orders above these values trigger a one-time warning about slow recursive calculations
+SLOW_CALC_RADIAL_ORDER = 50
+SLOW_CALC_RADIAL_ORDER_dR = 48
 
 
 # %% Calc. functions
@@ -548,8 +554,8 @@ def radial_polynomial_coeffs_dr(zernike_pol, r: Union[float, np.ndarray]) -> Uni
         # Evaluate values recursively above the coefficient-evaluation limit
         if abs(m) == n:  # simplified recurrence formula from [3]
             r_sum = float(n)*np.power(r, n-1)
-        elif m == 0:  # derivative from the simplified recurrence formula from [3]
-            r_sum = (2.0*(radial_polynomial_coeffs_dr((1, n-1), r) + r*radial_polynomial_coeffs_dr((1, n-1), r))
+        elif m == 0:  # derivative of R(0, n) = 2r*R(1, n-1) - R(0, n-2), the simplified recurrence formula from [3]
+            r_sum = (2.0*(radial_polynomial_coeffs((1, n-1), r) + r*radial_polynomial_coeffs_dr((1, n-1), r))
                      - radial_polynomial_coeffs_dr((0, n-2), r))
         elif abs(m) == n-2:  # derivative from my guess about overall equation
             r_sum = float(n)*float(n)*np.power(r, n-1) - float(n-1)*float(n-2)*np.power(r, n-3)
@@ -678,7 +684,8 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     """
     Test difference between exact radials and finding pols. coeffs. implementations of radial Zernike polynomials derivatives.
 
-    Compare radial orders 15 through MAX_RADIAL_ORDER_COEFFS_dR + 1 (currently 39).
+    Compare radial orders 15 through MAX_RADIAL_ORDER_COEFFS_dR (currently 38). Above this limit, the factorial
+    equation itself is not accurate enough to serve as a reference.
 
     Returns
     -------
@@ -690,7 +697,7 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     """
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = []
-    for order in range(15, MAX_RADIAL_ORDER_COEFFS_dR+2):
+    for order in range(15, MAX_RADIAL_ORDER_COEFFS_dR+1):
         m = -order; n = order
         orders_list.append((m, n))
         for _ in range(0, order):
