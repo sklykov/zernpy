@@ -76,7 +76,8 @@ class ZernPSF:
 
     # Class predefined values along with their types for providing reference how the default values computed
     kernel: np.ndarray = np.ones(shape=(1, 1)); kernel_size: int = 1  # by default, single point as the 2D matrix [[1.0]]
-    NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5  # wavelength and expansion_coeff share a length unit; NA is dimensionless
+    # wavelength and expansion_coeff share a length unit (e.g., um), NA is dimensionless
+    NA: float = 1.0; wavelength: float = 0.532; expansion_coeff: float = 0.5
     zernpol: Optional[ZernPol] = None; polynomials: tuple = ()  # several provided polynomials will be stored in the last var.
     __physical_props_set: bool = False  # flag for saving that physical properties have been provided
     __warn_message: str = ""; pixel_size_nyquist: float = 0.5*0.5*wavelength  # half the Abbe resolution limit for the default NA = 1
@@ -163,15 +164,15 @@ class ZernPSF:
         expansion_coeff : SupportsFloat or Sequence[SupportsFloat] or numpy.ndarray
             Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
             Use the same length unit as wavelength. Coefficients are converted to phase amplitudes in radians:
-            alpha = 2.0*pi*expansion_coeff/wavelength. See the equation in calculate_psf_kernel().
+            `alpha = 2.0*pi*expansion_coeff/wavelength`. See the equation in calculate_psf_kernel().
 
-            The 2*pi factor was introduced in version 0.1.2.
+            The `2*pi` factor was introduced in version 0.1.2.
 
             Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
             However, this amplitude will be ignored in general for calculation because of its properties.
         pixel_physical_size : float
             Sampling interval in the object plane, in the same length unit as wavelength.
-            It must be positive and no greater than wavelength/(4*NA), half the Abbe resolution limit.
+            It must be positive and no greater than `wavelength/(4*NA)`, half the Abbe resolution limit.
 
             Way of calculation = pixel physical size = pixel camera size (µm) / Total Magnification, where:
 
@@ -209,7 +210,8 @@ class ZernPSF:
             raise ValueError("Pixel physical size should be positive real number")
         if pixel_physical_size > self.pixel_size_nyquist:
             raise ValueError(f"Pixel physical size {pixel_physical_size} shouldn't exceed the Nyquist pixel size "
-                             + f"{self.pixel_size_nyquist_eStr} = 0.25*{lambda_char}/NA, half of the Abbe resolution limit (0.5*{lambda_char}/NA)")
+                             + f"{self.pixel_size_nyquist_eStr} = 0.25*{lambda_char}/NA, "
+                             + f"half of the Abbe resolution limit (0.5*{lambda_char}/NA)")
         self.pixel_size = pixel_physical_size
         # Check which type is provided as the expansion_coeff parameter
         if isinstance(expansion_coeff, (Sequence, np.ndarray)):  # effectively, it should be some sequence / numpy array with numbers
@@ -349,13 +351,14 @@ class ZernPSF:
         The order of integration and used equations in short:
 
         1st - integrate over the pupil radius p using the trapezoidal rule, with integrand
-        p * exp(1j * (alpha * Z(p, phi) - r * p * cos(phi - theta))). Here Z is the normalized Zernike
+        `p * exp(1j * (alpha * Z(p, phi) - r * p * cos(phi - theta)))`. Here Z is the normalized Zernike
         polynomial, alpha is its phase coefficient in radians, and r is the scaled image-plane radius
-        k * NA * pixel_size * pixel_distance, where k = 2*pi/wavelength.
+        `k * NA * pixel_size * pixel_distance`, where `k = 2*pi/wavelength`.
 
         2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
-        output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
-        1.0/(pi•pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value.
+        output, it provides as the `np.power(np.abs(integral_sum), 2)*integral_normalization`, there
+        `integral_normalization = 1.0/(pi*pi)` - the square of the module of the diffraction integral (complex value),
+        i.e. intensity as the PSF value.
 
         For details of implementation, explore methods in 'calculations' module, calc_psfs.py file.
 
@@ -533,7 +536,7 @@ class ZernPSF:
         Crop redundant points from kernel.
 
         Remove matching outer rows and columns while all four sides lie below the threshold
-        min_part_of_max * max(kernel). Stop as soon as any side reaches that threshold.
+        `min_part_of_max * max(kernel)`. Stop as soon as any side reaches that threshold.
         Update kernel and kernel_size in place. Kernels of size 3 or smaller are left unchanged.
 
         Parameters

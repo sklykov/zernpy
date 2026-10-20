@@ -380,7 +380,7 @@ class ZernPol:
         r : float or numpy.ndarray
             Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.
         theta : float or numpy.ndarray
-            Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+            Theta - angle in radians from the range `[0, 2*pi]`, float or array, for which the polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
         use_exact_eq : bool, optional
             Flag for using the exact equation with factorials. The default is False.
@@ -394,7 +394,7 @@ class ZernPol:
         Warns
         -----
         UserWarning
-            If the theta angles lie outside the range [0, 2*pi] (entire period), once per instance if the radial order
+            If the theta angles lie outside the range `[0, 2*pi]` (entire period), once per instance if the radial order
             is above 50 (slow recursive calculations), or if use_exact_eq is True for a radial order above 40
             (zeros are returned).
 
@@ -406,7 +406,7 @@ class ZernPol:
         """
         # Checking input parameters for avoiding errors and unexpectable values
         r = ZernPol._check_radii(r)  # Check radii type and that they are not lying outside range [0.0, 1.0] - unit circle
-        theta = ZernPol._check_angles(theta)  # Checking that angles lie in the range [0, 2*pi] and their type
+        theta = ZernPol._check_angles(theta)  # Checking that angles lie in the range `[0, 2*pi]` and their type
         # Checking coincidence of shapes if theta and r are arrays
         if isinstance(r, type(np.zeros(1))) and isinstance(theta, type(np.zeros(1))) and r.shape != theta.shape:
             raise ValueError("Shape of input arrays r and theta is not equal")
@@ -513,7 +513,7 @@ class ZernPol:
         Parameters
         ----------
         theta : float or numpy.ndarray
-            Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+            Theta - angle in radians from the range `[0, 2*pi]`, float or array, for which the polynomial is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -526,7 +526,7 @@ class ZernPol:
         Warns
         -----
         UserWarning
-            If the theta angles lie outside the range [0, 2*pi] (entire period).
+            If the theta angles lie outside the range `[0, 2*pi]` (entire period).
 
         Returns
         -------
@@ -609,7 +609,7 @@ class ZernPol:
         Parameters
         ----------
         theta : float or numpy.ndarray
-            Theta - angle in radians from the range [0, 2*pi], float or array, for which the function is calculated.
+            Theta - angle in radians from the range `[0, 2*pi]`, float or array, for which the function is calculated.
             Note that the theta counting is counterclockwise, as it is default for the matplotlib library.
 
         Raises
@@ -622,7 +622,7 @@ class ZernPol:
         Warns
         -----
         UserWarning
-            If the theta angles lie outside the range [0, 2*pi] (entire period).
+            If the theta angles lie outside the range `[0, 2*pi]` (entire period).
 
         Returns
         -------
@@ -1026,7 +1026,7 @@ class ZernPol:
         -------
         polar_vectors
             namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
-            Theta - angles in [0, 2*pi), excluding the endpoint 2*pi.
+            Theta - angles in `[0, 2*pi)`, excluding the endpoint `2*pi`.
 
         """
         if not 0.0 < r_step <= 0.5:
@@ -1057,7 +1057,7 @@ class ZernPol:
         Returns
         -------
         polar_vectors
-            Named tuple with R spanning [0, 1] and Theta spanning [0, 2*pi), excluding the angular endpoint.
+            Named tuple with R spanning `[0, 1]` and Theta spanning `[0, 2*pi)`, excluding the angular endpoint.
 
         """
         if n_points < 4:
@@ -1204,7 +1204,7 @@ class ZernPol:
         Returns
         -------
         float
-            Radially weighted RMS, sqrt(sum(ZernSurf**2 * r) / sum(r)). The surface mean is not subtracted.
+            Radially weighted RMS, `sqrt(sum(ZernSurf**2 * r) / sum(r))`. The surface mean is not subtracted.
         float
             Peak-to-valley value, max(ZernSurf) - min(ZernSurf).
 
@@ -1212,7 +1212,8 @@ class ZernPol:
         rho = phase_profile.R[:, None]  # shape conversion from vector to 2D array, like: (101, ) -> (101, 1)
         weights = np.ones_like(phase_profile.ZernSurf)*rho  # weights recalculated for the whole phase profile on polar coordinates
         # idea below - calculate double integral on polar coordinates on (Z**2*r dr_dphi) / (r dr_dphi)
-        rms = np.sqrt(np.sum((phase_profile.ZernSurf**2)*weights)/np.sum(weights))  # approximate the disk-averaged mean square with radial area weights
+        # approximate the disk-averaged mean square with radial area weights
+        rms = np.sqrt(np.sum((phase_profile.ZernSurf**2)*weights)/np.sum(weights))
         pv = np.max(phase_profile.ZernSurf) - np.min(phase_profile.ZernSurf)  # peak-to-valley is the full range of the sampled surface
         return rms, pv
 
@@ -1352,7 +1353,7 @@ class ZernPol:
     @staticmethod
     def _check_angles(angles: Union[list, tuple, float, int, np.ndarray]) -> Union[float, np.ndarray]:
         """
-        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside [0, 2*pi].
+        Perform check of type of input, attempt to convert to numpy.ndarray or float, check that angles is inside `[0, 2*pi]`.
 
         Parameters
         ----------
@@ -1369,7 +1370,7 @@ class ZernPol:
         Warns
         -----
         UserWarning
-            If the theta angles lie outside the range [0, 2*pi] (entire period).
+            If the theta angles lie outside the range `[0, 2*pi]` (entire period).
 
         Returns
         -------
@@ -1383,7 +1384,7 @@ class ZernPol:
                 angles = np.asarray(angles)  # convert list or tuple to np.array
             else:
                 angles = float(angles)  # attempt to convert to float number, will raise ValueError if it's impossible
-        # Checking that angles lie in the range [0, 2*pi]
+        # Checking that angles lie in the range `[0, 2*pi]`
         if isinstance(angles, np.ndarray):
             if np.max(angles) - np.min(angles) > 2.0*np.pi:
                 _warn_message_ = "\nTheta angles defined in range outside of interval [0.0, 2.0*pi]"
@@ -1626,7 +1627,7 @@ def fit_polynomials_vectors(polynomials: tuple, phases_vector: np.ndarray, radii
     polynomials : tuple
         Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.
     phases_vector : numpy.ndarray
-        Phase samples, one per coordinate pair or len(radii_vector)*len(thetas_vector) samples for a grid.
+        Phase samples, one per coordinate pair or `len(radii_vector)*len(thetas_vector)` samples for a grid.
     radii_vector : numpy.ndarray
         Related radii - 1st polar coordinates for the recorded phases.
     thetas_vector : numpy.ndarray

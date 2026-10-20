@@ -165,22 +165,26 @@ zernpy<wbr>.zernpsf    </h1>
     </div>
     <a class="headerlink" href="#ZernPSF"></a>
     
-            <div class="docstring"><p>The PSF (2D) class for focal plane of a microscopic system assuming that the phase profile is described by the Zernike polynomial.</p>
+            <div class="docstring"><p>Compute two-dimensional focal-plane point spread functions (PSFs) from Zernike wavefronts.</p>
 
-<p>In other words, the PSF describing the image of point source formed by the microscopic system. </p>
+<p>A PSF describes the image of a point source. The pupil phase can contain one Zernike polynomial
+or a sum of polynomials.</p>
+
+<p>Note that the model is scalar (scalar diffraction theory): polarization (vectorial) effects, which become significant
+for high NA objectives (approximately NA &gt; 0.7), aren't taken into account.</p>
 
 <p>Check the set_physical_props() method for the list of expected physical parameters for PSF calculation and calculate_psf_kernel() for
-the references to the diffraction integral used for calculations. </p>
+the references to the diffraction integral used for calculations.</p>
 
 <h6 id="references">References</h6>
 
-<p>[1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  </p>
+<p>[1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968</p>
 
-<p>[2] <a href="https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations">https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations</a>  </p>
+<p>[2] <a href="https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations">https://en.wikipedia.org/wiki/Optical_aberration#Zernike_model_of_aberrations</a></p>
 
-<p>[3] <a href="https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf">https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf</a>   </p>
+<p>[3] <a href="https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf">https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/ZP-Lecture-12.pdf</a></p>
 
-<p>[4] <a href="https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations">https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations</a>  </p>
+<p>[4] <a href="https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations">https://www.researchgate.net/publication/236097143_Imaging_characteristics_of_Zernike_and_annular_polynomial_aberrations</a></p>
 
 <p>[5] <a href="https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]">https://nijboerzernike.nl/_PDF/JOSA-A-19-849-2002.pdf#[0,{%22name%22:%22Fit%22}]</a></p>
 </div>
@@ -195,7 +199,7 @@ the references to the diffraction integral used for calculations. </p>
     </div>
     <a class="headerlink" href="#ZernPSF.__init__"></a>
     
-            <div class="docstring"><p>Initiate the PSF wrapping class.</p>
+            <div class="docstring"><p>Initialize a PSF calculation for one or more Zernike polynomials.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -207,19 +211,9 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: 1) If not instance(-s) of ZernPol class provided as the input parameter; </li>
-</ul>
-
-<p>2) If the provided sequence has zero length; </p>
-
-<p>3) If not all members of the provided sequence are instance of the "ZernPol" class; </p>
-
-<p>4) If the provided sequence contain repeated polynomials.</p>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>ZernPSF() class instance.</strong></li>
+<li><strong>ValueError</strong>: If the sequence is empty, contains invalid objects in the multiple-polynomial case, or contains repeated polynomials.</li>
+<li><strong>TypeError</strong>: If the input is neither a ZernPol instance nor a sequence.</li>
+<li><strong>AttributeError</strong>: If the only item in a sequence does not provide the ZernPol order interface.</li>
 </ul>
 </div>
 
@@ -445,34 +439,33 @@ Single instance of ZernPol() class or Sequence with ZernPol instances.</li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">set_physical_props</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">NA</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">wavelength</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">expansion_coeff</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SupportsFloat</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SupportsFloat</span><span class="p">]]</span>,</span><span class="param">	<span class="n">pixel_physical_size</span><span class="p">:</span> <span class="nb">float</span></span><span class="return-annotation">):</span></span>
+        <span class="name">set_physical_props</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">NA</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">wavelength</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">expansion_coeff</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SupportsFloat</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SupportsFloat</span><span class="p">],</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>,</span><span class="param">	<span class="n">pixel_physical_size</span><span class="p">:</span> <span class="nb">float</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
     <a class="headerlink" href="#ZernPSF.set_physical_props"></a>
     
-            <div class="docstring"><p>Set parameters in physical units.</p>
+            <div class="docstring"><p>Set parameters required for a PSF computation in physical units.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>NA</strong> (float):
-Numerical aperture of an objective, assumed usage of microscopic ones.</li>
+Dimensionless numerical aperture of the objective, within (0, 1.7].</li>
 <li><strong>wavelength</strong> (float):
 Wavelength of monochromatic light (λ) used for imaging in physical units (e.g., as µm).</li>
-<li><p><strong>expansion_coeff</strong> (SupportsFloat | Sequence[SupportsFloat]):
+<li><p><strong>expansion_coeff</strong> (SupportsFloat or Sequence[SupportsFloat] or numpy.ndarray):
 Amplitude(-s) or expansion coefficient(-s) of the Zernike polynomial in physical units.
-Note that according to the used equation for PSF calculation it will be adjusted to the units of wavelength:
-alpha = 2.0<em>pi</em>expansion_coeff/wavelength. See the equation in the method "calculate_psf_kernel". </p>
+Use the same length unit as wavelength. Coefficients are converted to phase amplitudes in radians:
+<code>alpha = 2.0*pi*expansion_coeff/wavelength</code>. See the equation in calculate_psf_kernel().</p>
 
-<p>!!!: alpha definition has been changed (multiplied by 2*pi) after version 0.1.0, now it is effectively enlarged. </p>
+<p>The <code>2*pi</code> factor was introduced in version 0.1.2.</p>
 
 <p>Note that if Airy pattern (PSF for Piston polynomial) is provided, it's required to provide amplitude for it.
 However, this amplitude will be ignored in general for calculation because of its properties.</p></li>
 <li><p><strong>pixel_physical_size</strong> (float):
-Pixel size of the formed image in physical units (do not mix up with the physical sensor (camera) pixel size!).
-The sanity check performed as the comparison with the Abbe resolution limit (see ref. [1] and [2]), provided pixel size
-should be less than this limit.</p>
+Sampling interval in the object plane, in the same length unit as wavelength.
+It must be positive and no greater than <code>wavelength/(4*NA)</code>, half the Abbe resolution limit.</p>
 
 <p>Way of calculation = pixel physical size = pixel camera size (µm) / Total Magnification, where:</p>
 
@@ -487,7 +480,7 @@ should be less than this limit.</p>
 
 <h6 id="references">References</h6>
 
-<p>[1] <a href="https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy">https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy</a> </p>
+<p>[1] <a href="https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy">https://www.microscopyu.com/techniques/super-resolution/the-diffraction-barrier-in-optical-microscopy</a></p>
 
 <p>[2] <a href="https://www.edinst.com/de/blog/the-rayleigh-criterion-for-microscope-resolution/">https://www.edinst.com/de/blog/the-rayleigh-criterion-for-microscope-resolution/</a></p>
 
@@ -510,7 +503,7 @@ should be less than this limit.</p>
     </div>
     <a class="headerlink" href="#ZernPSF.set_calculation_props"></a>
     
-            <div class="docstring"><p>Set calculation properties: kernel size, number of integration points on polar coordinates.</p>
+            <div class="docstring"><p>Set calculation-only properties: PSF kernel size, number of integration points on polar coordinates.</p>
 
 <p>Note that it's recommended to set the physical properties by set_physical_props() method for getting estimated
 required kernel size.</p>
@@ -519,13 +512,14 @@ required kernel size.</p>
 
 <ul>
 <li><strong>kernel_size</strong> (int):
-Size of PSF kernel (2D matrix used for convolution). Should be odd integer not less than 3.</li>
-<li><strong>n_integration_points_r</strong> (int, Optional):
+Kernel width and height in pixels, at least 3. Even sizes are increased by one to center the PSF.</li>
+<li><strong>n_integration_points_r</strong> (int, optional):
 Number of integration points used for calculation diffraction integral on the radius of the entrance pupil
 (normalized to the range [0.0, 1.0]). Should be integer not less than 20. The default is 320.</li>
-<li><strong>n_integration_points_phi</strong> (int, Optional):
-Number of integration points used for calculation diffraction integral on the polar angle phi of the entrance pupil
-(from the range [0.0, 2pi]). Should be integer not less than 36. The default is 300.</li>
+<li><strong>n_integration_points_phi</strong> (int, optional):
+Number of Simpson subintervals used for the diffraction integral on the polar angle phi of the entrance pupil
+(from the range [0.0, 2pi]). Should be integer not less than 36; odd values are increased by one,
+because Simpson's rule requires an even number of subintervals. The default is 300.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -555,51 +549,57 @@ Number of integration points used for calculation diffraction integral on the po
     
             <div class="docstring"><p>Calculate PSF kernel using the specified or default calculation parameters and physical values.</p>
 
-<p>Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References. </p>
+<p>Calculation based on the diffraction integral for the circular aperture. The final equation is derived based from the 2 References.</p>
 
-<p>Kernel is defined as the image formed on the sensor (camera) by the diffraction-limited, ideal microscopic system.
+<p>The kernel samples the intensity response of the optical system with the supplied pupil aberrations.
 The diffraction integral is calculated numerically on polar coordinates, assuming circular aperture of
-an imaging system (micro-objective). </p>
+an imaging system (micro-objective).</p>
 
-<p>The order of integration and used equations in short: </p>
+<p>The order of integration and used equations in short:</p>
 
-<p>1st - integration going on radius p, using trapezoidal rule: p•(alpha•zernike_pol.polynomial_value(p, phi) -
-                                                                     r•p•cos(phi - theta))•1j </p>
+<p>1st - integrate over the pupil radius p using the trapezoidal rule, with integrand
+<code>p * exp(1j * (alpha * Z(p, phi) - r * p * cos(phi - theta)))</code>. Here Z is the normalized Zernike
+polynomial, alpha is its phase coefficient in radians, and r is the scaled image-plane radius
+<code>k * NA * pixel_size * pixel_distance</code>, where <code>k = 2*pi/wavelength</code>.</p>
 
 <p>2nd - integration going on angle phi, using Simpson rule, calling the returned integrals by 1st call for each phi and as the final
-output, it provides as the np.power(np.abs(integral_sum), 2)*integral_normalization, there integral_normalization =
-1.0/(pi•pi) - the square of the module of the diffraction integral (complex value), i.e. intensity as the PSF value. </p>
+output, it provides as the <code>np.power(np.abs(integral_sum), 2)*integral_normalization</code>, there
+<code>integral_normalization = 1.0/(pi*pi)</code> - the square of the module of the diffraction integral (complex value),
+i.e. intensity as the PSF value.</p>
 
-<p>For details of implementation, explore methods in 'calculations' module, calc_psfs.py file. </p>
+<p>For details of implementation, explore methods in 'calculations' module, calc_psfs.py file.</p>
 
 <p>Note that the Nijboer's approximation for calculation of diffraction integral also has been tested, but the results is not in agreement
-with the reference [3] due to the large expansion coefficients for Zernike polynomials.  </p>
+with the reference [3] due to the large expansion coefficients for Zernike polynomials.</p>
 
-<p>Note that for Piston (m=0, n=0) the exact equation is used, that provides Airy pattern as the result.</p>
+<p>For Piston (m=0, n=0), the non-accelerated calculation uses the analytic Airy pattern;
+the accelerated calculation evaluates the diffraction integral numerically.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>suppress_warnings</strong> (bool, optional):
-Flag to suppress all possible warnings. The default is False.</li>
+Suppress warnings issued by this calculation and the selected kernel routine. The default is False.</li>
 <li><strong>normalized</strong> (bool, optional):
 Flag to return normalized PSF values to max=1.0. The default is True.</li>
 <li><strong>verbose_info</strong> (bool, optional):
 Flag to print out each step completion report and measured elapsed time in ms. The default is False.</li>
-<li><strong>accelerated</strong> (bool, optional):
+<li><strong>accelerated</strong> (bool or None, optional):
 Flag to accelerate the calculations by using numba library for scripts compilation. Acceleration will be used automatically,
-if None is provided and 'numba' library is installed. The default is None.</li>
+if None is provided and 'numba' is installed. The default is None.
+For radial orders above 10, the accelerated routine supports only abs(m) == n or abs(m) == n-2;
+set False for other high-order polynomials.</li>
 </ul>
 
 <h6 id="references">References</h6>
 
-<p>[1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968  </p>
+<p>[1] Principles of Optics, by M. Born and E. Wolf, 4 ed., 1968</p>
 
-<p>[2] <a href="https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf">https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf</a>  </p>
+<p>[2] <a href="https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf">https://nijboerzernike.nl/_downloads/Thesis_Nijboer.pdf</a></p>
 
-<p>[3] PSF shapes: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg">https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg</a>  </p>
+<p>[3] PSF shapes: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg">https://en.wikipedia.org/wiki/Zernike_polynomials#/media/File:ZernikeAiryImage.jpg</a></p>
 
-<p>[4] <a href="https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062">https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062</a> (DOI: 10.1364/AO.52.002062)  </p>
+<p>[4] <a href="https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062">https://opg.optica.org/ao/abstract.cfm?uri=ao-52-10-2062</a> (DOI: 10.1364/AO.52.002062)</p>
 
 <h6 id="returns">Returns</h6>
 
@@ -655,7 +655,7 @@ String with ID for making unique Figure. The default is "".</li>
 <ul>
 <li><strong>image</strong> (numpy.ndarray):
 Sample gray-scaled (2D array) image.</li>
-<li><strong>scale2original</strong> (bool):
+<li><strong>scale2original</strong> (bool, optional):
 Convolution resulting image will be rescaled to the max intensity of the provided image if True. The default is True.</li>
 </ul>
 
@@ -711,9 +711,9 @@ Maximum intensity of the even disk. The default is 255.</li>
     
             <div class="docstring"><p>Crop redundant points from kernel.</p>
 
-<p>By default, all rows and columns containing any single value that more than 1% of max kernel value, are not cropped. </p>
-
-<p>Cropped kernel saved in class variable 'kernel'.</p>
+<p>Remove matching outer rows and columns while all four sides lie below the threshold
+<code>min_part_of_max * max(kernel)</code>. Stop as soon as any side reaches that threshold.
+Update kernel and kernel_size in place. Kernels of size 3 or smaller are left unchanged.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -725,7 +725,7 @@ Part of kernel max that is used for checking rows / columns for cropping. The de
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: If parameter 'min_part_of_max' is not &gt; 0.0 and not &lt; 0.5.</li>
+<li><strong>ValueError</strong>: If the kernel size exceeds 3 and min_part_of_max is outside the open interval (0, 0.5).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -741,7 +741,7 @@ Part of kernel max that is used for checking rows / columns for cropping. The de
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">save_json</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">_local</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
+        <span class="name">save_json</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
@@ -753,8 +753,10 @@ Part of kernel max that is used for checking rows / columns for cropping. The de
 
 <ul>
 <li><strong>abs_path</strong> (str | Path, optional):
-Absolute path for the file. If None, the file will be saved in the folder "saved_psfs" in the root of the package.
-The default is None.</li>
+Path to an existing destination folder. If the folder does not exist, warn and use the default location.
+If None or an empty string, reuse the last saved file's folder; before the first save, use "saved_psfs" in the
+package folder. If saving to the default location fails, warn and fall back to "saved_psfs" in the current
+working directory. Only default folders are created, without their parents. The default is None.</li>
 <li><strong>overwrite</strong> (bool, optional):
 Flag for overwriting the existing file. The default is False.</li>
 </ul>
@@ -772,19 +774,20 @@ Flag for overwriting the existing file. The default is False.</li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">read_json</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">_local</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
+        <span class="name">read_json</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">abs_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
         
     </div>
     <a class="headerlink" href="#ZernPSF.read_json"></a>
     
-            <div class="docstring"><p>Read the JSON file with the saved attributes and setting it for the class.</p>
+            <div class="docstring"><p>Restore the saved PSF kernel and physical and calculation properties from a JSON file.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>abs_path</strong> (str | Path, optional):
-Absolute path to the file. If None is provided, then the stored in the attribute path will be checked. The default is None.</li>
+Absolute or relative path to the file. If None, use json_file_path, which initially holds the package directory
+and is replaced by the saved filename after save_json(). The default is None.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -807,15 +810,19 @@ Absolute path to the file. If None is provided, then the stored in the attribute
     </div>
     <a class="headerlink" href="#force_get_psf_compilation"></a>
     
-            <div class="docstring"><p>Force compilation of computing functions for round and ellipse 'precise' shaped objects.</p>
+            <div class="docstring"><p>Compile the Numba calculation functions for single-polynomial and multiple-polynomial PSFs.</p>
 
-<p>verbose_report : bool, optional
-    Flag for printing out the elapsed for compilation time. The default is False.</p>
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>verbose_report</strong> (bool, optional):
+Print the elapsed compilation time. The default is False.</li>
+</ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>None or tuple with 2 used ZernPSF instances depending on 'numba_installed' flag.</strong></li>
+<li><strong>tuple of ZernPSF or None</strong>: The two PSF instances used for compilation, or None if Numba is unavailable.</li>
 </ul>
 </div>
 
@@ -836,7 +843,8 @@ Absolute path to the file. If None is provided, then the stored in the attribute
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>bool</strong>: Flag if local cache is assumed (at least 6 cached files successfully removed) to be cleaned.</li>
+<li><strong>bool</strong>: True if Numba is available and at least six local .nbc or .nbi files are removed without an error.
+This does not clear the in-memory coefficient caches managed by lru_cache.</li>
 </ul>
 </div>
 

@@ -96,8 +96,8 @@ Cropped input profile used for fitting:
 ![Cropped Input Profile](./src/zernpy/readme_images/Fitted_Phase_Profile.png "Cropped input phase profile, 'jet' matplotlib colormap")
 
 #### 2D PSF kernel calculation
-The 2D PSF kernel is calculated from the diffraction integral over the round pupil plane and described as Zernike polynomial phase 
-distribution for the focal point (no Z-axis dependency).  
+The 2D PSF kernel is calculated using scalar diffraction theory by integrating over a circular pupil with a phase
+distribution described by Zernike polynomials. The calculation is restricted to the focal plane (no Z-axis dependency).
 
 Initialization and usage of the class instance (basic usage with default calculation parameters, such as the kernel size):    
 ```python
@@ -138,8 +138,8 @@ zpsf.calculate_psf_kernel(accelerated=True)
 ```
 
 #### Cropping kernel
-By default, the kernel size is automatically estimated and may be overestimated to guarantee that all significant 
-points of kernel will be calculated. Also, kernel size is growing with the polynomial orders and its amplitude. 
+By default, the kernel size is estimated empirically and may need to be increased if the PSF extends beyond its boundaries.
+The estimated size generally increases with the polynomial orders and the magnitudes of their coefficients.
 To reduce the size of kernel, it's possible to call the method ***crop_kernel***, e.g.: 
 ```python
 from zernpy import ZernPSF, ZernPol

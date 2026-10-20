@@ -444,7 +444,8 @@ def triangular_derivative(zernike_pol, theta: Union[float, np.ndarray]) -> Union
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or numpy.ndarray with calculated values of the derivative of the trigonometric angular factor.
+        Depending on the type of theta, return float or numpy.ndarray with calculated values of the derivative
+        of the trigonometric angular factor.
 
     """
     m_order, n = define_orders(zernike_pol)  # get orders
