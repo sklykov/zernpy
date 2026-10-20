@@ -183,19 +183,19 @@ zernpy<wbr>.zernikepol    </h1>
     </div>
     <a class="headerlink" href="#ZernPol.__init__"></a>
     
-            <div class="docstring"><p>Initialize of the class for Zernike polynomial definition as the object.</p>
+            <div class="docstring"><p>Initialize a Zernike polynomial from its orders or index.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
-<li><p><strong>**kwargs</strong> (orders or index for Zernike polynomial initialization expected as key=value pairs):
-Acceptable variants for key=value pairs arguments: </p>
+<li><p>**<strong>kwargs</strong> (orders or index for Zernike polynomial initialization expected as key=value pairs):
+Acceptable variants for key=value pairs arguments:</p>
 
-<p>1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m; </p>
+<p>1) n=int, m=int with alternatives: "radial_order" for n; "l", "azimuthal_order", "angular_frequency" for m;</p>
 
-<p>2) osa_index=int with alternatives: "osa", "ansi_index", "ansi"; </p>
+<p>2) osa_index=int with alternatives: "osa", "ansi_index", "ansi";</p>
 
-<p>3) noll_index=int with alternative "noll"; </p>
+<p>3) noll_index=int with alternative "noll";</p>
 
 <p>4) fringe_index=int with alternative "fringe"</p></li>
 </ul>
@@ -203,29 +203,24 @@ Acceptable variants for key=value pairs arguments: </p>
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like: </li>
+<li><strong>ValueError</strong>: Raised if the specified orders (m, n) or index (OSA, Noll...) have inconsistencies like:</li>
 </ul>
 
 <p>for specified orders:
-1) m &lt; 0 or n &lt; 0; 2) m or n is not int; 3) (self.__n - abs(self.__m)) % 2 == 0; </p>
+1) m or n is not int; 2) n &lt; 0; 3) abs(m) &gt; n; 4) n - abs(m) is odd;</p>
 
-<p>4) if n &gt; 54 - because the polynomials with higher orders are meaningless due to very slow calculations; </p>
+<p>5) n &gt; 54, the supported radial-order limit. Negative m is allowed.</p>
 
-<p>for indices - see the raised error message.</p>
+<p>for indices: OSA index &lt; 0 or &gt; 1539, Noll index &lt; 1 or &gt; 1540, Fringe index &lt; 1,
+or an index corresponding to radial order n &gt; 54.</p>
 
 <h6 id="references">References</h6>
 
-<p>[1] Wiki article: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials">https://en.wikipedia.org/wiki/Zernike_polynomials</a> </p>
+<p>[1] Wiki article: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials">https://en.wikipedia.org/wiki/Zernike_polynomials</a></p>
 
-<p>[2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) </p>
+<p>[2] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)</p>
 
-<p>[3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) </p>
-
-<h6 id="returns">Returns</h6>
-
-<ul>
-<li><strong>ZernPol class instance.</strong></li>
-</ul>
+<p>[3] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)</p>
 </div>
 
 
@@ -245,7 +240,7 @@ Acceptable variants for key=value pairs arguments: </p>
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>tuple</strong>: with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index) </li>
+<li><strong>tuple</strong>: with elements: (tuple (azimuthal (m), radial (n)) orders, OSA index, Noll index, Fringe index)</li>
 </ul>
 
 <p>All indices are integers.</p>
@@ -295,16 +290,16 @@ If True, this method returns shortened name. The default is False.</li>
 
 <h6 id="references">References</h6>
 
-<p>[1] Up to 4th order: Wiki article: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials">https://en.wikipedia.org/wiki/Zernike_polynomials</a> </p>
+<p>[1] Up to 4th order: Wiki article: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials">https://en.wikipedia.org/wiki/Zernike_polynomials</a></p>
 
-<p>[2] 5th order names: from the website <a href="https://www.telescope-optics.net/monochromatic_eye_aberrations.htm">https://www.telescope-optics.net/monochromatic_eye_aberrations.htm</a> </p>
+<p>[2] 5th order names: from the website <a href="https://www.telescope-optics.net/monochromatic_eye_aberrations.htm">https://www.telescope-optics.net/monochromatic_eye_aberrations.htm</a></p>
 
-<p>6th order - 7th order: my guess about the naming </p>
+<p>6th order - 7th order: my guess about the naming</p>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>str</strong>: Name of the initialized polynomial.</li>
+<li><strong>str</strong>: Name of the initialized polynomial, or an empty string if no name is defined.</li>
 </ul>
 </div>
 
@@ -322,27 +317,17 @@ If True, this method returns shortened name. The default is False.</li>
     
             <div class="docstring"><p>Calculate Zernike polynomial value(-s) within the unit circle.</p>
 
-<p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
-coefficients for each power of radius (coefficient*R^n) </p>
-
-<p>Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-any need to use the recurrence equations. It can be used by providing the flag as the input parameter. </p>
-
-<p>However, after ~ the 46th radial order due to the high integer values involved in the exact equation
-(factorials) producing ambiguous results (failed simple check that radial polynomial &lt;= 1.0),
-only iterative equations (which along with increasing order become time-consuming and slow)
-could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
-found increasing after this order discrepancy between results of recursive and factorial formulas.</p>
+<p>The value is the product of the normalization factor, the radial function and the trigonometric angular factor.
+The radial function is calculated as in the method radial(), see it for the used equations depending on the radial order.</p>
 
 <h6 id="references">References</h6>
 
-<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) </p>
+<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)</p>
 
-<p>[2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) </p>
+<p>[2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)</p>
 
 <p>[3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
-circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
+circle polynomials and their derivatives in Cartesian coordinates" (2018)</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -350,7 +335,7 @@ circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
 <li><strong>r</strong> (float or numpy.ndarray):
 Radius (radii) from unit circle or the range [0.0, 1.0], float / array, for which the polynomial is calculated.</li>
 <li><strong>theta</strong> (float or numpy.ndarray):
-Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+Theta - angle in radians from the range <code>[0, 2*pi]</code>, float or array, for which the polynomial is calculated.
 Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
 <li><strong>use_exact_eq</strong> (bool, optional):
 Flag for using the exact equation with factorials. The default is False.
@@ -361,7 +346,14 @@ Note about the limit for usage of the exact equation - up to 40th radial order (
 
 <ul>
 <li><strong>ValueError</strong>: Check the Error stack trace for reasons of raising, most probably input parameters aren't acceptable.</li>
-<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
+</ul>
+
+<h6 id="warns">Warns</h6>
+
+<ul>
+<li><strong>UserWarning</strong>: If the theta angles lie outside the range <code>[0, 2*pi]</code> (entire period), once per instance if the radial order
+is above 50 (slow recursive calculations), or if use_exact_eq is True for a radial order above 40
+(zeros are returned).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -385,27 +377,21 @@ Note about the limit for usage of the exact equation - up to 40th radial order (
     
             <div class="docstring"><p>Calculate R(m, n) - radial Zernike function value(-s) within the unit circle.</p>
 
-<p>Calculation up to 10th order of Zernike function performed by exact equations from Ref.[2],
-after - using the recurrence equations taken from the Ref.[1], using shortcut of storing
-coefficients for each power of radius (coefficient*R^n) </p>
-
-<p>Surprisingly, the exact equation for polynomials are just pretty fast to use them directly, without
-any need to use the recurrence equations. It can be used by providing the flag as the input parameter. </p>
-
-<p>However, after ~ the 46th radial order due to the high integer values involved in the exact equation
-(factorials) producing ambiguous results (failed simple check that radial polynomial &lt;= 1.0),
-only iterative equations (which along with increasing order become time-consuming and slow)
-could be used. The 40th radial order as the limit for usage of the exact equation is selected due to
-found increasing after this order discrepancy between results of recursive and factorial formulas.</p>
+<p>By default, radial orders up to 12 use a direct routine with explicit formulas through order 10
+and recurrence relations for the remaining cases. Orders 13 through 40 use recursively calculated
+coefficients for each power of the radius; higher orders use recurrence relations for the values.
+Setting <code>use_exact_eq=True</code> selects the factorial formula through radial order 40.
+Above that limit, this option emits a warning and returns zeros because factorial evaluation
+becomes numerically unreliable.</p>
 
 <h6 id="references">References</h6>
 
-<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013) </p>
+<p>[1] Shakibaei B.H., Paramesran R. "Recursive formula to compute Zernike radial polynomials" (2013)</p>
 
-<p>[2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011) </p>
+<p>[2] Lakshminarayanan V., Fleck A. "Zernike polynomials: a guide" (2011)</p>
 
 <p>[3] Andersen T. B. "Efficient and robust recurrence relations for the Zernike
-circle polynomials and their derivatives in Cartesian coordinates" (2018) </p>
+circle polynomials and their derivatives in Cartesian coordinates" (2018)</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -421,6 +407,13 @@ Note about the limit for usage of the exact equation - up to 40th radial order (
 
 <ul>
 <li><strong>ValueError</strong>: The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.</li>
+</ul>
+
+<h6 id="warns">Warns</h6>
+
+<ul>
+<li><strong>UserWarning</strong>: Once per instance if the radial order is above 50 (slow recursive calculations), or if use_exact_eq
+is True for a radial order above 40 (zeros are returned).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -442,32 +435,34 @@ Note about the limit for usage of the exact equation - up to 40th radial order (
     </div>
     <a class="headerlink" href="#ZernPol.triangular"></a>
     
-            <div class="docstring"><p>Calculate triangular Zernike function value(-s) within the unit circle.</p>
+            <div class="docstring"><p>Calculate the trigonometric angular factor of a Zernike polynomial.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>theta</strong> (float or numpy.ndarray):
-Theta - angle in radians from the range [0, 2*pi], float or array, for which the polynomial is calculated.
+Theta - angle in radians from the range <code>[0, 2*pi]</code>, float or array, for which the polynomial is calculated.
 Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed. </li>
+<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed.</li>
 </ul>
 
 <p>It happens when input parameter is not float, numpy.ndarray, list or tuple.</p>
 
+<h6 id="warns">Warns</h6>
+
 <ul>
-<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
+<li><strong>UserWarning</strong>: If the theta angles lie outside the range <code>[0, 2*pi]</code> (entire period).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>float or numpy.ndarray</strong>: Calculated value(-s) of Zernike triangular function on provided angle.</li>
+<li><strong>float or numpy.ndarray</strong>: Values of the trigonometric angular factor at the provided angles.</li>
 </ul>
 </div>
 
@@ -485,18 +480,12 @@ Note that the theta counting is counterclockwise, as it is default for the matpl
     
             <div class="docstring"><p>Calculate derivative of radial Zernike polynomial value(-s) within the unit circle.</p>
 
-<p>Calculation up to 10th order of Zernike polynomials performed by exact equations,
-after - using the recurrence equations, using shortcut of storing
-coefficients for each power of radius (coefficient*R^n) </p>
-
-<p>The input flag use_exact_eq allows using the exact equation with factorials.
-Setting <code>use_exact_eq=True</code> forces the exact formulation. However, exact
-equations are restricted to radial orders ≤ 38, as factorial growth causes
-increasing numerical discrepancies relative to the recursive formulation.
-Beyond approximately the 44th order, derivative and factorial terms become
-too large for reliable evaluation. Higher orders are therefore computed only
-via recurrence relations, which are numerically stable but progressively
-slower with increasing order.</p>
+<p>By default, radial orders up to 12 use a direct routine with explicit derivative formulas
+through order 10 and recurrence relations for the remaining cases. Orders 13 through 38
+use recursively calculated derivative coefficients; higher orders use recurrence relations
+for the values. Setting <code>use_exact_eq=True</code> selects the factorial derivative formula through
+radial order 38. Above that limit, this option emits a warning and returns zeros because
+factorial evaluation becomes numerically unreliable.</p>
 
 <h6 id="references">References</h6>
 
@@ -518,6 +507,13 @@ Note about the limit for usage of the exact equation - up to 38th radial order (
 <li><strong>ValueError</strong>: The probable reasons: radius (radii) doesn't belong to a unit circle, input type isn't acceptable.</li>
 </ul>
 
+<h6 id="warns">Warns</h6>
+
+<ul>
+<li><strong>UserWarning</strong>: Once per instance if the radial order is above 48 (slow recursive calculations), or if use_exact_eq
+is True for a radial order above 38 (zeros are returned).</li>
+</ul>
+
 <h6 id="returns">Returns</h6>
 
 <ul>
@@ -537,32 +533,34 @@ Note about the limit for usage of the exact equation - up to 38th radial order (
     </div>
     <a class="headerlink" href="#ZernPol.triangular_dtheta"></a>
     
-            <div class="docstring"><p>Calculate derivative from triangular function on angle theta.</p>
+            <div class="docstring"><p>Differentiate the trigonometric angular factor with respect to theta.</p>
 
 <h6 id="parameters">Parameters</h6>
 
 <ul>
 <li><strong>theta</strong> (float or numpy.ndarray):
-Theta - angle in radians from the range [0, 2*pi], float or array, for which the function is calculated.
+Theta - angle in radians from the range <code>[0, 2*pi]</code>, float or array, for which the function is calculated.
 Note that the theta counting is counterclockwise, as it is default for the matplotlib library.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed. </li>
+<li><strong>ValueError</strong>: Most probably, raised if the conversion to float number is failed.</li>
 </ul>
 
 <p>It happens when input parameter is not float, numpy.ndarray, list or tuple.</p>
 
+<h6 id="warns">Warns</h6>
+
 <ul>
-<li><strong>Warning</strong>: If the theta angles lie outside the range [0, 2*pi] (entire period).</li>
+<li><strong>UserWarning</strong>: If the theta angles lie outside the range <code>[0, 2*pi]</code> (entire period).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>float or numpy.ndarray</strong>: Calculated derivative value(-s) of Zernike triangular function on provided angle.</li>
+<li><strong>float or numpy.ndarray</strong>: Derivative of the trigonometric angular factor at the provided angles.</li>
 </ul>
 </div>
 
@@ -578,7 +576,7 @@ Note that the theta counting is counterclockwise, as it is default for the matpl
     </div>
     <a class="headerlink" href="#ZernPol.normf"></a>
     
-            <div class="docstring"><p>Calculate normalization factor (such that Var(Z) = 1) for the associated Zernike polynomial (according to the References below).</p>
+            <div class="docstring"><p>Calculate the OSA normalization factor for unit mean square over the unit disk.</p>
 
 <h6 id="references">References</h6>
 
@@ -715,7 +713,7 @@ Radial order.</li>
 <h6 id="parameters">Parameters</h6>
 
 <ul>
-<li><strong>**kwargs</strong> (dict):
+<li>**<strong>kwargs</strong> (dict):
 Recognizable values: osa_index, noll_index, fringe_index.</li>
 </ul>
 
@@ -850,7 +848,7 @@ OSA / ANSI index with int type, it must be not less than 0.</li>
 
 <ul>
 <li><strong>fringe_index</strong> (int):
-The noll index with int type, it must be not less than 1.</li>
+Fringe index as an integer greater than or equal to 1.</li>
 </ul>
 
 <h6 id="raises">Raises</h6>
@@ -893,8 +891,8 @@ Radius(Radii) from a unit circle.</li>
 <li><strong>theta</strong> (float or numpy.ndarray):
 Polar angle(-s) from a unit circle.</li>
 <li><p><strong>get_surface</strong> (bool, optional):
-If True, it forces to calculate 2D sum of polynomials based on r and theta (as a mesh of polar coordinates).
-The default is False. </p>
+If True and both coordinate inputs are arrays, evaluate all radius-angle combinations as a 2D surface.
+The default is False.</p>
 
 <p>Note that if r and theta provided as the numpy ndarrays with different shapes and this flag is False, then
 the result of this method will raise ValueError (because r and theta shapes will be checked for equality).</p></li>
@@ -904,16 +902,15 @@ the result of this method will raise ValueError (because r and theta shapes will
 
 <ul>
 <li><strong>TypeError</strong>: If the input parameters aren't iterable (doesn't support len() function), this error will be raised.</li>
-<li><strong>ValueError</strong>: If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials. </li>
+<li><strong>ValueError</strong>: If the lengths of lists (tuples, numpy.ndarrays) aren't equal for coefficients and polynomials.</li>
 </ul>
 
-<p>Or if the list (tuple, numpy.ndarray vector, ...) with Zernike polynomials instances (ZernPol()).</p>
+<p>Also raised for an empty polynomial sequence, invalid polynomial objects, or incompatible coordinate shapes.</p>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>Sum of Zernike polynomials</strong> (float or numpy.ndarray):
-Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.</li>
+<li><strong>float or numpy.ndarray</strong>: Depending on the input values and parameter get_surface - can be: float, 1D or 2D numpy.ndarrays.</li>
 </ul>
 </div>
 
@@ -930,7 +927,7 @@ Depending on the input values and parameter get_surface - can be: float, 1D or 2
     </div>
     <a class="headerlink" href="#ZernPol.gen_polar_coordinates"></a>
     
-            <div class="docstring"><p>Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate radial and angular coordinate vectors for the unit disk.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 defined by the specification of r_step and theta_rad_step parameters.</p>
@@ -947,14 +944,14 @@ Step for generation the vector with theta angles for an entire unit circle. The 
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: If the r_step or theta_rad_step provided in the way, that vectors R and Theta cannot be generated.</li>
+<li><strong>ValueError</strong>: If r_step is not in the range (0.0, 0.5] or theta_rad_step is not in the range (0.0, pi].</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
 <li><strong>polar_vectors</strong>: namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
-Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
+Theta - angles in <code>[0, 2*pi)</code>, excluding the endpoint <code>2*pi</code>.</li>
 </ul>
 </div>
 
@@ -971,7 +968,7 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
     </div>
     <a class="headerlink" href="#ZernPol.gen_equal_polar_mesh"></a>
     
-            <div class="docstring"><p>Generate the named tuple "polar_vectors" with R and Theta - vectors with polar coordinates for an entire unit circle.</p>
+            <div class="docstring"><p>Generate radial and angular coordinate vectors with the same number of samples.</p>
 
 <p>Note that R and Theta are generated as the numpy.ndarrays vectors (shape like (n elements, )). Their shapes are
 equal and defined by the parameter n_points.</p>
@@ -980,14 +977,13 @@ equal and defined by the parameter n_points.</p>
 
 <ul>
 <li><strong>n_points</strong> (int, optional):
-Number of points between 0.0 ... 1.0 for radii and 0.0 ... 2pi for thetas. The default is 250.</li>
+Number of samples in each vector, increased to 4 if smaller. The default is 250.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>polar_vectors</strong>: namedtuple("polar_vectors", "R Theta"), where R - vector with radiuses values [0.0, r_step, ... 1.0],
-Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
+<li><strong>polar_vectors</strong>: Named tuple with R spanning <code>[0, 1]</code> and Theta spanning <code>[0, 2*pi)</code>, excluding the angular endpoint.</li>
 </ul>
 </div>
 
@@ -1014,11 +1010,11 @@ Theta - vector with theta angles values [0.0, theta_rad_step, ... 2*pi].</li>
 <li><strong>polynomial</strong> (ZernPol):
 Instance of ZernPol class.</li>
 <li><strong>color_map</strong> (str, optional):
-Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-Note that rainbow, jet, turbo - not perceptually equal color maps.</li>
+Matplotlib color map name. The default "coolwarm" is a diverging map suited for signed phase values.
+Perceptually uniform alternatives: "viridis", "plasma". Rainbow-like maps ("jet", "turbo", "rainbow")
+are widespread, but not perceptually uniform and may suggest features absent in the data.</li>
 <li><strong>show_title</strong> (bool, optional):
-Toggle for showing the name of polynomial on the plot or not (only works for 2D case).</li>
+Show the polynomial name on a 2D plot. The default is True.</li>
 <li><strong>use_defaults</strong> (bool, optional):
 Use default parameters for polar coordinates generation. The default is True.</li>
 <li><strong>projection</strong> (str, optional):
@@ -1054,7 +1050,7 @@ The default is None.</li>
     </div>
     <a class="headerlink" href="#ZernPol.gen_zernikes_surface"></a>
     
-            <div class="docstring"><p>Generate surface of provided Zernike polynomials on the generated polar coordinates used steps.</p>
+            <div class="docstring"><p>Generate a Zernike sum on a polar grid defined by step sizes or sample counts.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1064,18 +1060,18 @@ Coefficients of Zernike polynomials for calculation of their sum.</li>
 <li><strong>polynomials</strong> (Sequence[ZernPol]):
 Initialized polynomials as class instances of ZernPol class specified in this module.</li>
 <li><p><strong>r_step</strong> (float, optional):
-Step for generation the vector with radiuses for an entire unit circle. The default is 0.01. </p>
+Step for generation the vector with radiuses for an entire unit circle. The default is 0.01.</p>
 
 <p>See also the documentation for the method gen_polar_coordinates().</p></li>
 <li><p><strong>theta_rad_step</strong> (float, optional):
-Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180). </p>
+Step for generation the vector with theta angles for an entire unit circle. The default is (np.pi/180).</p>
 
 <p>See also the documentation for the method gen_polar_coordinates().</p></li>
 <li><strong>equal_n_coordinates</strong> (bool, optional):
-Switch between generation polar coordinates based on individual steps or on equal number of points.
+Use the same number of points for the radial and angular coordinate vectors instead of individual steps.
 The default is False.</li>
 <li><strong>n_points</strong> (int, optional):
-Number of points used for generation of equal sized polar coordinates r, theta.</li>
+Number of points in each coordinate vector when equal_n_coordinates is True. The default is 250.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1105,7 +1101,7 @@ ZernSurf variable is 2D matrix with the sum of the input polynomials on generate
 
 <ul>
 <li><p><strong>phase_profile</strong> (zernikes_surface):
-Named tuple with attributes: ZernSurf, R, Theta. </p>
+Named tuple with attributes: ZernSurf, R, Theta.</p>
 
 <p>There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.</p></li>
 </ul>
@@ -1130,7 +1126,7 @@ Named tuple with attributes: ZernSurf, R, Theta. </p>
     </div>
     <a class="headerlink" href="#ZernPol.get_rms_pv_surface"></a>
     
-            <div class="docstring"><p>Calculate RMS and P-V value for provided phase profile using definition of OSA normalization.</p>
+            <div class="docstring"><p>Calculate the root mean square (RMS) and peak-to-valley (P-V) values of a polar surface.</p>
 
 <p>Link: <a href="https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials">https://en.wikipedia.org/wiki/Zernike_polynomials#Zernike_polynomials</a>.</p>
 
@@ -1138,7 +1134,7 @@ Named tuple with attributes: ZernSurf, R, Theta. </p>
 
 <ul>
 <li><p><strong>phase_profile</strong> (zernikes_surface):
-Named tuple with attributes: ZernSurf, R, Theta. </p>
+Named tuple with attributes: ZernSurf, R, Theta.</p>
 
 <p>There ZernSurf - phase profile calculated on a mesh of polar coordinates (1D arrays or vectors) R and Theta.</p></li>
 </ul>
@@ -1146,8 +1142,8 @@ Named tuple with attributes: ZernSurf, R, Theta. </p>
 <h6 id="returns">Returns</h6>
 
 <ul>
-<li><strong>float</strong>: RMS over Z**2 * r profile, as defined for OSA normalization.</li>
-<li><strong>float</strong>: Peak-to-Valley value as max(Surface) - mim(Surface).</li>
+<li><strong>float</strong>: Radially weighted RMS, <code>sqrt(sum(ZernSurf**2 * r) / sum(r))</code>. The surface mean is not subtracted.</li>
+<li><strong>float</strong>: Peak-to-valley value, max(ZernSurf) - min(ZernSurf).</li>
 </ul>
 </div>
 
@@ -1188,9 +1184,9 @@ Check the method signature for details. The default is None.</li>
 <li><strong>show_range</strong> (bool, optional):
 Flag for showing range of provided values as the colorbar on the figure. The default is True.</li>
 <li><strong>color_map</strong> (str, optional):
-Color map of the polar plot, common values for representation: coolwarm, jet, turbo, rainbow.
-As alternative - perceptually equal color maps: viridis, plasma. The default is "coolwarm".
-Note that rainbow, jet, turbo - not perceptually equal color maps.</li>
+Matplotlib color map name. The default "coolwarm" is a diverging map suited for signed phase values.
+Perceptually uniform alternatives: "viridis", "plasma". Rainbow-like maps ("jet", "turbo", "rainbow")
+are widespread, but not perceptually uniform and may suggest features absent in the data.</li>
 <li><strong>projection</strong> (str, optional):
 Either "2d" ("2D") - for 2D profile plot, or "3d" ("3D") - for 3D surface plot. The default is "2d".</li>
 </ul>
@@ -1224,8 +1220,9 @@ Matplotlib.pyplot Figure class there the Zernike polynomials sum plotted.</li>
     
             <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the provided 1D vectors.</p>
 
-<p>1D vectors should contain: phases recorded in the related radii and thetas (polar coordinates). For the example
-of phases and coordinates composing, see the module test_fitting in 'tests' sub-folder of the repository.</p>
+<p>Provide either one radius and angle per phase sample, or separate radial and angular grid vectors.
+For a grid, flatten the phase values with all angles for the first radius, then all angles for each
+subsequent radius. See tests/test_fitting.py for an example.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1233,7 +1230,7 @@ of phases and coordinates composing, see the module test_fitting in 'tests' sub-
 <li><strong>polynomials</strong> (tuple):
 Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials for fitting.</li>
 <li><strong>phases_vector</strong> (numpy.ndarray):
-Recorded phases.</li>
+Phase samples, one per coordinate pair or <code>len(radii_vector)*len(thetas_vector)</code> samples for a grid.</li>
 <li><strong>radii_vector</strong> (numpy.ndarray):
 Related radii - 1st polar coordinates for the recorded phases.</li>
 <li><strong>thetas_vector</strong> (numpy.ndarray):
@@ -1245,7 +1242,7 @@ Round digits for returned polynomials amplitudes (numpy.round(...) function call
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>AttributeError</strong>: Any of provided vectors (phases_vector, etc.) isn't proper 1D numpy.ndarray (len(array.shape &gt; 1)).</li>
+<li><strong>TypeError</strong>: If any input array has more than one dimension.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -1270,9 +1267,9 @@ Round digits for returned polynomials amplitudes (numpy.round(...) function call
     
             <div class="docstring"><p>Fit provided Zernike polynomials (instances of ZernPol class) as the input tuple to the 2D phase image.</p>
 
-<p>2D phase image implies that phases recorded depending on cartesian coordinates and circle aperture is cropped
-out from this image for fitting procedure. One can check the result of cropping by plotting return_cropped_image as
-True and plotting the second item from the returned tuple.</p>
+<p>The input image contains phase values on a Cartesian grid. A circular subset is used for fitting.
+Set return_cropped_image=True to inspect the input image with pixels outside that subset set to zero.
+This returned image contains the measured phases, not a reconstruction from the fitted coefficients.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1284,7 +1281,8 @@ Note that image is assumed as the recorded phases on the cartesian coordinates. 
 <li><strong>polynomials</strong> (tuple):
 Initialized tuple with instances of the ZernPol class that effectively represents target set of Zernike polynomials.</li>
 <li><strong>crop_radius</strong> (float, optional):
-Allow cropping pixel from range [0.5, 1.0], where 1.0 corresponds to radius of the cropped circle = min image size.
+Fraction of the reference pupil radius to retain, within [0.5, 1.0]. The reference radius is approximately
+half the smaller image dimension, adjusted for pixel centering.
 The default is 1.0.</li>
 <li><strong>suppress_warnings</strong> (bool, optional):
 Flag for suppress warnings about the provided 2D image sizes. The default is False.</li>
@@ -1356,7 +1354,7 @@ Height of generated image. The default is 513.</li>
     </div>
     <a class="headerlink" href="#generate_random_phases"></a>
     
-            <div class="docstring"><p>Generate phases image (profile) for random set of polynomials with randomly selected amplitudes.</p>
+            <div class="docstring"><p>Generate a phase image using a complete polynomial set with randomly selected amplitudes.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -1377,7 +1375,7 @@ Round digits for polynomials amplitudes generation (numpy.round(...) function ca
 <li><strong>tuple</strong>: Consisting of:
 2D phase profile image with provided width and height;
 1D numpy.ndarray containing randomly selected polynomials amplitudes;
-tuple with generated Zernike polynomials.</li>
+Tuple containing all polynomials through max_order, including those with zero amplitudes.</li>
 </ul>
 </div>
 
@@ -1405,7 +1403,7 @@ Maximum overall radial order (n) for generated Zernike list (pyramid). The defau
 <h6 id="raises">Raises</h6>
 
 <ul>
-<li><strong>ValueError</strong>: Raised if max_order &lt; 1, because it should be not less than 0.</li>
+<li><strong>ValueError</strong>: If max_order is negative or generates a polynomial above the supported radial-order limit of 54.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>

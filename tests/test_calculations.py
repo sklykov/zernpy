@@ -13,20 +13,20 @@ import math
 
 import numpy as np
 
-from ..calculations.calc_zernike_pol import (
+from zernpy.calculations.calc_zernike_pol import (
     check_high_orders_recursion,
     compare_radial_calculations,
     compare_radial_derivatives,
     compare_recursive_coeffs_radials,
     compare_recursive_coeffs_radials_dr,
 )
-from ..zernikepol import ZernPol
+from zernpy.zernikepol import ZernPol
 
 
 # %% Func-s to be run by pytest
 def test_tabular_orders():
     """
-    # Test implemented equations for tabular R(m, n) from the References by comparing with the exact ones (with factorials usage).
+    Test tabular and recursive radial formulas against factorial evaluation.
 
     Returns
     -------
@@ -44,6 +44,7 @@ def test_recursive_orders():
     Returns
     -------
     None
+
     """
     compare_recursive_coeffs_radials()
     check_high_orders_recursion()
@@ -56,6 +57,7 @@ def test_tabular_derivatives():
     Returns
     -------
     None
+
     """
     compare_radial_derivatives(max_order=17)
 
@@ -67,17 +69,38 @@ def test_recursive_derivatives():
     Returns
     -------
     None
+
     """
     compare_recursive_coeffs_radials_dr()
 
 
-def test_sum_zernikes():
+def test_polar_coordinates_steps():
     """
-    Test summing of several Zernike polynomials, generation of phase profile and plotting method.
+    Test validation of the steps used for generation of polar coordinates.
 
     Returns
     -------
     None
+
+    """
+    r, theta = ZernPol.gen_polar_coordinates(r_step=0.5, theta_rad_step=np.pi)
+    assert r[-1] == 1.0 and theta[-1] < 2.0*np.pi, "Generated polar coordinates lie outside of the expected ranges"
+    for r_step, theta_step in ((0.0, 0.1), (-0.1, 0.1), (0.6, 0.1), (0.1, 0.0), (0.1, 4.0)):
+        try:
+            ZernPol.gen_polar_coordinates(r_step=r_step, theta_rad_step=theta_step); assert_flag = False
+        except ValueError:
+            assert_flag = True
+        assert assert_flag, f"Wrong steps passed: r_step={r_step}, theta_rad_step={theta_step}"
+
+
+def test_sum_zernikes():
+    """
+    Test polynomial summation, phase-surface generation, and agreement with meshgrid evaluation.
+
+    Returns
+    -------
+    None
+
     """
     zp1 = ZernPol(osa_index=1); zp2 = ZernPol(noll_index=2); ampls = [-0.5, 0.5]; theta = math.pi/3; r = 1.0
     sum_pols = ZernPol.sum_zernikes(coefficients=ampls, polynomials=[zp1, zp2], r=r, theta=theta)
@@ -108,6 +131,7 @@ def test_pol_values_edge_cases():
     Returns
     -------
     None
+
     """
     zp = ZernPol(osa=8)  # test polynomial, could be any
     # Combination list + float
@@ -164,11 +188,12 @@ def test_pol_values_edge_cases():
 
 def test_rms_pv():
     """
-    Test RMS and PV calculations on known theoritically values.
+    Test RMS and peak-to-valley calculations against known theoretical values.
 
     Returns
     -------
     None
+
     """
     zp = ZernPol(m=1, n=1)
     phase_profile = zp.gen_zernikes_surface(coefficients=(-1.0, ), polynomials=(zp, ), theta_rad_step=round(np.pi/360, 7))
@@ -180,4 +205,3 @@ def test_rms_pv():
     rms, pv = zp.get_rms_pv_surface(phase_profile)
     assert math.isclose(rms, 0.5, abs_tol=0.015), f"Calculated RMS: {rms} not close to the theoretical RMS=0.5 for (0, 4) polynomial"
     assert math.isclose(pv, 1.677, abs_tol=0.014), f"Calculated P-V: {pv} not close to the theoretical P-V=1.677 for (0, 4) polynomial"
-

@@ -17,12 +17,17 @@ from .find_pols_coeffs import find_coeffs_orders, find_coeffs_orders_dr
 
 # %% Module parameters
 __docformat__ = "numpydoc"
-# Below - empirically found max radial order allowing stable calculation using recursive coefficients defining
-# or using exact equation involving factorials calculation. Approximately, from 46th order the exact equation start
-# to violate condition that max of radial polynomial <= 1.0. From 40th order the difference between recurrence eq.
-# the exact one start to be too significant
+# Empirically found maximum radial orders allowing stable calculation using recursively defined coefficients
+# or the exact equation with factorials. From approximately the 45th - 46th order, the exact equation starts to
+# violate the condition that max(|R(m, n)|) <= 1.0. From the 40th order, the difference between the recurrence
+# and the exact equations becomes too significant (in the order of 1E-3 and growing quickly).
+# The integer coefficients themselves remain exact, but the sum of large alternating terms loses precision
+# in floating point. Derivative coefficients are additionally multiplied by the powers of r, so the limit is lower.
 MAX_RADIAL_ORDER_COEFFS = 40
 MAX_RADIAL_ORDER_COEFFS_dR = 38
+# Radial orders above these values trigger a one-time warning about slow recursive calculations
+SLOW_CALC_RADIAL_ORDER = 50
+SLOW_CALC_RADIAL_ORDER_dR = 48
 
 
 # %% Calc. functions
@@ -97,7 +102,7 @@ def radial_polynomial(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, 
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial.
+        Depending on the type of r, return float or np.ndarray with calculated values of radial polynomial.
 
     """
     m, n = define_orders(zernike_pol)  # get orders
@@ -219,7 +224,7 @@ def radial_derivative(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, 
 
     """
     m, n = define_orders(zernike_pol)  # get orders
-    # Derivatives of radial polynomials defined as analytical equations for up to 8th order (check function above)
+    # Explicit radial derivative formulas through order 10, followed by recurrence relations
     # 0th order
     if (m == 0) and (n == 0):
         if isinstance(r, float):
@@ -341,7 +346,7 @@ def radial_polynomial_eq(zernike_pol, r: Union[float, np.ndarray]) -> Union[floa
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or numpy.ndarray with calculated values of radial polynomial.
+        Depending on the type of r, return float or numpy.ndarray with calculated values of radial polynomial.
 
     """
     value: Union[float, np.ndarray]  # fix for mypy checks
@@ -373,7 +378,7 @@ def radial_derivative_eq(zernike_pol, r: Union[float, np.ndarray]) -> Union[floa
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or numpy.ndarray with calculated values of radial polynomial derivative.
+        Depending on the type of r, return float or numpy.ndarray with calculated values of radial polynomial derivative.
 
     """
     value: Union[float, np.ndarray]  # fix for mypy checks
@@ -395,7 +400,7 @@ def radial_derivative_eq(zernike_pol, r: Union[float, np.ndarray]) -> Union[floa
 
 def triangular_function(zernike_pol, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
-    Return triangular component of the Zernike polynomial.
+    Return the trigonometric angular factor of a Zernike polynomial.
 
     Parameters
     ----------
@@ -413,7 +418,7 @@ def triangular_function(zernike_pol, theta: Union[float, np.ndarray]) -> Union[f
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or numpy.ndarray with calculated values of triangular function.
+        Depending on the type of theta, return float or numpy.ndarray with calculated values of the trigonometric angular factor.
 
     """
     m, n = define_orders(zernike_pol)  # get orders
@@ -426,7 +431,7 @@ def triangular_function(zernike_pol, theta: Union[float, np.ndarray]) -> Union[f
 
 def triangular_derivative(zernike_pol, theta: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
-    Return derivative of triangular function of the Zernike polynomial.
+    Differentiate the trigonometric angular factor with respect to theta.
 
     Parameters
     ----------
@@ -439,7 +444,8 @@ def triangular_derivative(zernike_pol, theta: Union[float, np.ndarray]) -> Union
     Returns
     -------
     float or numpy.ndarray
-        Depending on the type of theta, return float or numpy.ndarray with calculated values of derivative of triangular function.
+        Depending on the type of theta, return float or numpy.ndarray with calculated values of the derivative
+        of the trigonometric angular factor.
 
     """
     m_order, n = define_orders(zernike_pol)  # get orders
@@ -455,8 +461,8 @@ def radial_polynomial_coeffs(zernike_pol, r: Union[float, np.ndarray]) -> Union[
     """
     Calculate radial polynomial using recursive finding algorithm of each coefficient for radial component (e.g. R^6).
 
-    After 40 order, this function again uses the recursive equation, because the finding the coefficients becomes
-    unstable.
+    Above radial order 40, evaluate the values using recurrence relations. The integer coefficients
+    remain exact, but summing large, alternating power-series terms in floating point loses precision.
 
     Parameters
     ----------
@@ -472,7 +478,7 @@ def radial_polynomial_coeffs(zernike_pol, r: Union[float, np.ndarray]) -> Union[
     Returns
     -------
     r_sum : float or numpy.ndarray
-        Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial.
+        Depending on the type of r, return float or np.ndarray with calculated values of radial polynomial.
 
     """
     m, n = define_orders(zernike_pol)
@@ -492,8 +498,8 @@ def radial_polynomial_coeffs(zernike_pol, r: Union[float, np.ndarray]) -> Union[
     # Special case - for really high orders
     else:
         # Recurrence equations - stable way to refer previously stably calculated values
-        # Simple check that values stably calculated - radial polynomial values shouldn't exceed 1.0
-        if abs(m) == n:  # derivative from the simplified recurrence formula from [3]
+        # Evaluate values recursively above the coefficient-evaluation limit
+        if abs(m) == n:  # simplified recurrence formula for the radial value from [3]
             r_sum = np.power(r, n)
         elif m == 0:  # simplified recurrence formula from [3]
             r_sum = 2.0*r*radial_polynomial_coeffs((1, n-1), r) - radial_polynomial_coeffs((0, n-2), r)
@@ -507,7 +513,10 @@ def radial_polynomial_coeffs(zernike_pol, r: Union[float, np.ndarray]) -> Union[
 
 def radial_polynomial_coeffs_dr(zernike_pol, r: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """
-    Calculate radial polynomial derivative using recursive finding algorithm of each coefficient for radial component.
+    Calculate a radial polynomial derivative from recursively generated coefficients.
+
+    Above radial order 38, evaluate the derivative using recurrence relations to avoid loss of precision
+    when summing large, alternating power-series terms.
 
     Parameters
     ----------
@@ -523,7 +532,7 @@ def radial_polynomial_coeffs_dr(zernike_pol, r: Union[float, np.ndarray]) -> Uni
     Returns
     -------
     r_sum : float or numpy.ndarray
-        Depending on the type of theta, return float or np.ndarray with calculated values of radial polynomial derivative.
+        Depending on the type of r, return float or np.ndarray with calculated values of radial polynomial derivative.
 
     """
     m, n = define_orders(zernike_pol)
@@ -543,11 +552,11 @@ def radial_polynomial_coeffs_dr(zernike_pol, r: Union[float, np.ndarray]) -> Uni
     # Special case - for really high orders
     else:
         # Recurrence equations - stable way to refer previously stably calculated values
-        # Simple check that values stably calculated - radial polynomial values shouldn't exceed 1.0
+        # Evaluate values recursively above the coefficient-evaluation limit
         if abs(m) == n:  # simplified recurrence formula from [3]
             r_sum = float(n)*np.power(r, n-1)
-        elif m == 0:  # derivative from the simplified recurrence formula from [3]
-            r_sum = (2.0*(radial_polynomial_coeffs_dr((1, n-1), r) + r*radial_polynomial_coeffs_dr((1, n-1), r))
+        elif m == 0:  # derivative of R(0, n) = 2r*R(1, n-1) - R(0, n-2), the simplified recurrence formula from [3]
+            r_sum = (2.0*(radial_polynomial_coeffs((1, n-1), r) + r*radial_polynomial_coeffs_dr((1, n-1), r))
                      - radial_polynomial_coeffs_dr((0, n-2), r))
         elif abs(m) == n-2:  # derivative from my guess about overall equation
             r_sum = float(n)*float(n)*np.power(r, n-1) - float(n-1)*float(n-2)*np.power(r, n-3)
@@ -566,13 +575,13 @@ def compare_radial_calculations(max_order: int) -> np.ndarray:
 
     Parameters
     ----------
-    max_order : int, optional
-        Maximum order of tested Zernike polynomials (not less than 2).
+    max_order : int
+        Exclusive upper radial-order bound. Non-integer values or values below 2 are replaced with 2.
 
     Returns
     -------
     diff : numpy.ndarray
-        Size (N_Zernikes, 20) corresponds to number of tested orders (m, n) calculated for the input
+        Shape (N_Zernikes, 21) corresponds to number of tested orders (m, n) calculated for the input
         maximum order and 21 radiuses between [0, 1].
         Note that the checked precision difference is 1E-9 and thus the returned matrix also rounded to 9 numbers after
         floating point.
@@ -606,13 +615,13 @@ def compare_radial_derivatives(max_order: int) -> np.ndarray:
 
     Parameters
     ----------
-    max_order : int, optional
-        Maximum order of tested Zernike polynomials (not less than 2).
+    max_order : int
+        Exclusive upper radial-order bound. Non-integer values or values below 2 are replaced with 2.
 
     Returns
     -------
     diff : numpy.ndarray
-        Size (N_Zernikes, 20) corresponds to number of tested orders (m, n) calculated for the input
+        Shape (N_Zernikes, 21) corresponds to number of tested orders (m, n) calculated for the input
         maximum order and 21 radiuses between [0, 1].
         Note that the checked precision difference is 1E-9 and thus the returned matrix also rounded to 9 numbers after
         floating point.
@@ -676,19 +685,20 @@ def compare_recursive_coeffs_radials_dr() -> np.ndarray:
     """
     Test difference between exact radials and finding pols. coeffs. implementations of radial Zernike polynomials derivatives.
 
-    Comparison performed between orders 15 and 41 (more than MAX_RADIAL_ORDER_COEFFS).
+    Compare radial orders 15 through MAX_RADIAL_ORDER_COEFFS_dR (currently 38). Above this limit, the factorial
+    equation itself is not accurate enough to serve as a reference.
 
     Returns
     -------
     diff : numpy.ndarray
-        Size corresponds to number of tested orders (m, n) calculated for the input and 21 radiuses between [0, 1].
+        Size corresponds to number of tested orders (m, n) calculated for the input and 101 radii between [0, 1].
         Note that the checked precision difference is 5E-2 and thus the returned matrix also rounded to 9 numbers after
         floating point.
 
     """
     # Generating Zernike orders in OSA/ANSI indexing scheme
     orders_list = []
-    for order in range(15, MAX_RADIAL_ORDER_COEFFS_dR+2):
+    for order in range(15, MAX_RADIAL_ORDER_COEFFS_dR+1):
         m = -order; n = order
         orders_list.append((m, n))
         for _ in range(0, order):
@@ -710,7 +720,7 @@ def check_high_orders_recursion() -> np.ndarray:
 
     Returns
     -------
-    diff : numpy.ndarray.
+    diff : numpy.ndarray
         Composed radial polynomials values for 51 radii.
 
     """
@@ -722,7 +732,7 @@ def check_high_orders_recursion() -> np.ndarray:
         for _ in range(0, order):
             m += 2; orders_list.append((m, n))
     n_points = 51; test_r = np.linspace(start=0.0, stop=1.0, num=n_points)  # radii points for testing
-    # Testing that exact calculation and implementation of tabular / recursive are the same
+    # Check the magnitude of recurrence values on the sampled unit-disk radii
     diff = np.ones(shape=(len(orders_list), n_points))
     for i, orders in enumerate(orders_list):
         diff[i, :] = radial_polynomial_coeffs(orders, test_r)

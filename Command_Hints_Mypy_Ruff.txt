@@ -1,3 +1,3 @@
-mypy src/zernpy  - command for checking files for comforming to typing rules
-ruff check src tests  - command for checking files for comforming to formatting rules
-ruff check --fix  - command for checking + fixing found formatting issues
+mypy src/zernpy  - command for checking files for conforming to typing rules
+ruff check src tests  - command for checking files for conforming to linting rules
+ruff check --fix src tests  - command for checking + fixing found linting issues

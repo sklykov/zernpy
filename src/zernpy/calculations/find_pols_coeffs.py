@@ -7,7 +7,7 @@ Calculation of Zernike radial polynomials coefficients using recurrence equation
 
 """
 import time
-from functools import lru_cache  # allows usage of the special cache if the recursive iterations are calculated
+from functools import lru_cache  # reuse coefficients during recursive calculations
 
 
 # %% Gen orders dict.
@@ -15,7 +15,7 @@ def make_orders_coeffs(defined_coeff: dict, max_order: int, minus: bool = False)
     """
     Generate dictionary with radial orders of polynomials: coefficients as key: value pairs.
 
-    Note that non-zero coefficients will be parsed from defined_coeff input.
+    Missing powers from 0 through max_order receive zero coefficients.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def make_orders_coeffs(defined_coeff: dict, max_order: int, minus: bool = False)
     max_order : int
         Maximum radial order n of polynomials.
     minus : bool, optional
-        Used for getting inverse coefficients. The default is False.
+        Negate the supplied coefficients. The default is False.
 
     Raises
     ------
@@ -34,7 +34,7 @@ def make_orders_coeffs(defined_coeff: dict, max_order: int, minus: bool = False)
     Returns
     -------
     dict
-        Keys - radial orders of polynomials (n), values -integers with polynomials coefficients.
+        Keys are powers of the radius from 0 through max_order; values are integer coefficients.
 
     """
     # Initialize dictionary with zero coefficients
@@ -160,7 +160,6 @@ def sum_orders_coeffs(max_order: int, *args) -> dict:
     for i in range(max_order+1):
         coefficients[i] = 0
     # Sum on the provided dictionaries
-    # print("Call for dict sum: ", *args)
     for input_coeffs in args:
         for key, value in input_coeffs.items():
             coefficients[key] += value
@@ -182,7 +181,7 @@ def check_special_orders(orders: tuple) -> dict:
     Returns
     -------
     dict
-        Polynomials coefficients with radial order: value pairs.
+        Coefficients keyed by powers of the radius, or an empty dictionary for other order combinations.
 
     """
     special_coefficients = {}
@@ -206,7 +205,7 @@ def check_special_orders_dr(orders: tuple) -> dict:
     Returns
     -------
     dict
-        Derivatives of polynomials coefficients with radial order: value pairs.
+        Derivative coefficients keyed by powers of the radius, or an empty dictionary for other order combinations.
 
     """
     special_coefficients = {}
@@ -218,7 +217,8 @@ def check_special_orders_dr(orders: tuple) -> dict:
     return special_coefficients
 
 
-@lru_cache(maxsize=128)  # allows using of the least recently used cashe for storing previously calculated values for coefficients
+# A signed high-order sweep exceeds 128 entries; 2048 retains the measured working set with a finite limit
+@lru_cache(maxsize=2048)
 def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
     """
     Find coefficients of radial polynomials for each radial order and return it as dictionary.
@@ -239,20 +239,25 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
     Returns
     -------
     dict
-        There keys are radial orders from 0 to n (input), values - polynomials coefficients.
+        Keys are powers of the radius from 0 through n; values are integer polynomial coefficients.
+
+    Notes
+    -----
+    Returned dictionaries are shared with the LRU cache and module-level coefficient tables; treat them as read-only.
+    The LRU cache retains up to 2048 call results. Clearing it does not reset the coefficient tables.
+    Cached results persist across calls and ordinary imports within the same Python process; they are not saved to disk.
+    Reloading this module creates new cached functions.
 
     """
     m, n = orders
-    # print("Orders called with:", m, n)
     if use_test_dict:
         initial_coefficients = initial_coefficients_test
     else:
         initial_coefficients = precalculated_initial_coeffs
     if orders in initial_coefficients:
-        # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients[orders]  # return stored in the dictionary value
     elif check_special_orders(orders):
-        # Cashing already calculated coefficients in global dictionary specified above
+        # Retain computed coefficients in the module-level tables as well as the LRU cache
         if not use_test_dict:
             if orders not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[orders] = check_special_orders(orders)
@@ -267,7 +272,7 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
                                             increase_order_coeffs(polmP1n1),
                                             make_orders_coeffs(find_coeffs_orders((m, n-2), use_test_dict),
                                                                max_order=n-2, minus=True))
-        # Cashing already calculated coefficients in global dictionary specified above
+        # Retain computed coefficients in the module-level tables as well as the LRU cache
         if not use_test_dict:
             if (abs(m-1), n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(abs(m-1), n-1)] = polm1n1
@@ -281,7 +286,7 @@ def find_coeffs_orders(orders: tuple, use_test_dict: bool = False) -> dict:
         return sum_dict_coeffs
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=2048)  # retain derivative coefficients with the same bounded capacity
 def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
     """
     Find coefficients of derivatives of radial polynomials for each radial order and return it as dictionary.
@@ -302,20 +307,25 @@ def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
     Returns
     -------
     dict
-        There keys are radial orders from 0 to n (input), values - polynomials coefficients.
+        Keys are powers of the radius in the derivative, up to n - 1; values are integer coefficients.
+
+    Notes
+    -----
+    Returned dictionaries are shared with the LRU cache and module-level coefficient tables; treat them as read-only.
+    The LRU cache retains up to 2048 call results. Clearing it does not reset the coefficient tables.
+    Cached results persist across calls and ordinary imports within the same Python process; they are not saved to disk.
+    Reloading this module creates new cached functions.
 
     """
     m, n = orders
-    # print("Orders called with:", m, n)
     if use_test_dict:
         initial_coefficients_dr = initial_coefficients_test_dr
     else:
         initial_coefficients_dr = precalculated_initial_coeffs_dr
     if orders in initial_coefficients_dr:
-        # print("Found in initial dict.: ", initial_coefficients[orders])
         return initial_coefficients_dr[orders]  # return stored in the dictionary value
     elif check_special_orders_dr(orders):
-        # Cashing already calculated coefficients in global dictionary specified above
+        # Retain computed coefficients in the module-level tables as well as the LRU cache
         if not use_test_dict:
             if orders not in precalculated_initial_coeffs_dr:
                 precalculated_initial_coeffs_dr[orders] = check_special_orders_dr(orders)
@@ -333,7 +343,7 @@ def find_coeffs_orders_dr(orders: tuple, use_test_dict: bool = False) -> dict:
                                             increase_order_coeffs(polmP1n1_dr),
                                             make_orders_coeffs(find_coeffs_orders_dr((m, n-2), use_test_dict),
                                                                max_order=n-2, minus=True))
-        # Cashing already calculated coefficients in global dictionary specified above
+        # Retain computed coefficients in the module-level tables as well as the LRU cache
         if not use_test_dict:
             if (abs(m-1), n-1) not in precalculated_initial_coeffs:
                 precalculated_initial_coeffs[(abs(m-1), n-1)] = polm1n1
@@ -369,7 +379,7 @@ def check_equal_coeffs(coeffs1: dict, coeffs2: dict) -> bool:
     Returns
     -------
     bool
-        Whatever or not dictionary are identical.
+        Whether both dictionaries have the same length and matching values at each key.
 
     """
     result = True
@@ -463,7 +473,7 @@ def measure_time_high_orders(orders: tuple, measure_dr: bool = False) -> dict:
     Returns
     -------
     pols_coeffs : dict
-        Calculated dictionary with orders (m, n): coefficients as key: value pairs.
+        Calculated coefficients keyed by powers of the radius.
 
     """
     t1 = time.perf_counter()

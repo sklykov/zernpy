@@ -9,15 +9,15 @@ For running collected here tests, it's enough to run the command "pytest" from t
 @licence: MIT
 
 """
-import os
 from pathlib import Path
 
 import numpy as np
+import pytest
 
-# Relative import from the modules - designed to be used only by pytest runs
-from ..calculations.calc_psfs import get_psf_kernel
-from ..zernikepol import ZernPol
-from ..zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
+# Import the installed package for pytest runs
+from zernpy.calculations.calc_psfs import get_psf_kernel, get_psf_point_r, get_psf_point_r_vectorized
+from zernpy.zernikepol import ZernPol
+from zernpy.zernpsf import ZernPSF, clean_zernpy_cache, force_get_psf_compilation
 
 
 # Testing functions
@@ -31,17 +31,19 @@ def test_psf_kernel_calc():
 
     """
     NA = 0.35; wavelength = 0.55; pixel_size = wavelength / 3.05; ampl = -0.28  # Common physical properties
+    alpha = 2.0*np.pi*ampl/wavelength  # phase coefficient in radians, as expected by get_psf_kernel()
     # Basic test - calculating kernel by numerical integration and by Airy pattern exact equation and compare them
     piston = ZernPol(m=0, n=0)
-    airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
-                            normalize_values=True, airy_pattern=True)
-    airy_int = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=ampl, wavelength=wavelength, NA=NA,
-                              normalize_values=True, airy_pattern=False)
+    # Values aren't normalized, so the absolute scale of the numerical integration is also checked (peak value = 1.0)
+    airy_p = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=alpha, wavelength=wavelength, NA=NA,
+                            normalize_values=False, airy_pattern=True)
+    airy_int = get_psf_kernel(zernike_pol=piston, len2pixels=pixel_size, alpha=alpha, wavelength=wavelength, NA=NA,
+                              normalize_values=False, airy_pattern=False)
     diff_airy = np.abs(airy_int - airy_p)
-    assert np.max(diff_airy) < 0.01, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1%:"
+    assert np.max(diff_airy) < 1E-4, ("Difference between exact Airy pattern and calculated by the numerical integral is bigger than 1E-4: "
                                       + str(np.max(diff_airy)))
     # Compare Airy pattern and some polynomial with zero amplitude
-    zpsf = ZernPSF(ZernPol(m=0, n=0))  # Airy - baseline, should be calculated using exact equation
+    zpsf = ZernPSF(ZernPol(m=0, n=0))  # piston reference; the calculation backend is selected automatically
     NA = 0.4; wavelength = 0.55; pixel_physical_size = 0.24*wavelength; expansion_coeff = -1.0  # example of physical properties
     zpsf.set_physical_props(NA, wavelength, expansion_coeff, pixel_physical_size)  # provide physical properties of the system
     zpsf.set_calculation_props(kernel_size=21, n_integration_points_r=200, n_integration_points_phi=360)
@@ -127,9 +129,14 @@ def test_zernpsf_usage():
     zpsf = ZernPSF(pols); zpsf.set_physical_props(NA=std_na, wavelength=std_wl, expansion_coeff=ampls, pixel_physical_size=std_pixel_size)
 
 
-def test_save_load_zernpsf():
+def test_save_load_zernpsf(tmp_path):
     """
-    Test saving and loading of PSF kernel stored in a json file.
+    Test saving and loading a PSF kernel in a temporary JSON file.
+
+    Parameters
+    ----------
+    tmp_path : pathlib.Path
+        Existing temporary directory supplied by pytest for this test.
 
     Returns
     -------
@@ -137,19 +144,40 @@ def test_save_load_zernpsf():
 
     """
     zp2 = ZernPol(m=1, n=3); zpsf2 = ZernPSF(zp2)  # horizontal coma
-    zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional classes for testing reading and reassigning values
+    zp3 = ZernPol(osa=21); zpsf3 = ZernPSF(zp3)  # additional class for testing reading and reassigning values
     NA = 0.4; wavelength = 0.4; pixel_size = wavelength / 3.0; ampl = 0.05  # Common physical properties
     zpsf2.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     zpsf2.set_calculation_props(kernel_size=zpsf2.kernel_size, n_integration_points_r=200, n_integration_points_phi=180)
     zpsf3.set_physical_props(NA=1.0, wavelength=0.6, expansion_coeff=-0.06, pixel_physical_size=0.06)
     zpsf2.calculate_psf_kernel(normalized=True)  # normal calculation of a kernel
-    zpsf2.save_json(overwrite=True)  # save in the standard location (package folder)
-    assert Path(zpsf2.json_file_path).is_file(), "File hasn't been saved in the standard location"
-    if Path(zpsf2.json_file_path).is_file():
-        zpsf3.read_json(zpsf2.json_file_path)  # test reading of the stored in json file information
-        assert (zpsf2.NA == zpsf3.NA and zpsf2.zernpol == zpsf3.zernpol and zpsf2.n_int_phi_points == zpsf3.n_int_phi_points
-                and zpsf2.expansion_coeff == zpsf3.expansion_coeff), "Saved and Read PSFs have differences, check I/O operations"
-        os.remove(path=str(Path(zpsf2.json_file_path).absolute()))  # remove saved file for not cluttering folder
+    # Pytest manages this temporary directory, so manual deletion is unnecessary even if an assertion fails
+    zpsf2.save_json(abs_path=tmp_path)
+    saved_path = Path(zpsf2.json_file_path)
+    assert saved_path.is_file() and saved_path.parent == tmp_path, "JSON file wasn't saved in the temporary directory"
+    zpsf3.read_json(saved_path)
+    assert (zpsf2.NA == zpsf3.NA and zpsf2.zernpol == zpsf3.zernpol and zpsf2.n_int_phi_points == zpsf3.n_int_phi_points
+            and zpsf2.expansion_coeff == zpsf3.expansion_coeff), "Saved and loaded PSFs have different properties"
+    # Saving and loading should preserve matrix values exactly; this assertion raises directly on a mismatch
+    np.testing.assert_array_equal(zpsf3.kernel, zpsf2.kernel)
+
+
+def test_simpson_angular_integration():
+    """
+    Test that the angular Simpson integration reproduces the unaberrated PSF peak exactly.
+
+    For zero aberration at the PSF center, the integrand is constant in the pupil angle, so the
+    normalized intensity must be 1.0 for any even number of subintervals.
+
+    Returns
+    -------
+    None
+
+    """
+    piston = ZernPol(m=0, n=0)
+    for n_phi in (36, 180, 300):
+        for point_func in (get_psf_point_r, get_psf_point_r_vectorized):
+            peak = point_func(piston, 0.0, 0.0, 0.0, 320, n_phi)
+            assert abs(peak - 1.0) < 1E-12, f"{point_func.__name__} peak {peak} != 1.0 for {n_phi} angular subintervals"
 
 
 def test_numba_compilation():
@@ -161,13 +189,14 @@ def test_numba_compilation():
     None
 
     """
-    force_get_psf_compilation()  # force compilational of computation methods
+    pytest.importorskip("numba")  # the accelerated calculation is optional
+    force_get_psf_compilation()  # compile the Numba calculation functions
     # Test the difference between accelerated and not accelerated calculation methods
     NA = 0.95; wavelength = 0.55; pixel_size = wavelength / 4.25; ampl = -0.12
     zp6 = ZernPol(m=0, n=2); zpsf6 = ZernPSF(zp6); zpsf7 = ZernPSF(zp6)  # defocus
     zpsf6.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     zpsf7.set_physical_props(NA=NA, wavelength=wavelength, expansion_coeff=ampl, pixel_physical_size=pixel_size)
     kernel_acc = zpsf6.calculate_psf_kernel(normalized=True, accelerated=True)  # accelerated by numba compilation
-    kernel_norm = zpsf7.calculate_psf_kernel(normalized=True)  # normal calculation
-    assert np.max(np.abs(kernel_acc - kernel_norm) < 1E-6), "Accelerated and not computational of a kernel methods have significant differences"
+    kernel_norm = zpsf7.calculate_psf_kernel(normalized=True, accelerated=False)  # explicitly use the standard calculation
+    np.testing.assert_allclose(kernel_acc, kernel_norm, rtol=0, atol=1E-10, err_msg="Accelerated and standard kernels are too different")
     assert clean_zernpy_cache(), "Local cache with compiled files not cleaned"

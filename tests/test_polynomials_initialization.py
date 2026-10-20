@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test the implemented calculation functions for module calc_zernike_pol and ZernPol static methods by using pytest library.
+Test ZernPol initialization, index conversions, and basic polynomial evaluation using pytest.
 
 The pytest library available on: https://docs.pytest.org/en/latest/contents.html
 For running collected here tests, it's enough to run the command "pytest" from the repository location in the command line.
@@ -13,16 +13,17 @@ import math
 
 import numpy as np
 
-from ..zernikepol import ZernPol
+from zernpy.zernikepol import ZernPol
 
 
 def test_polynomials_initialization():
     """
-    Test various initialization ways of Zernike polynomials, for details, see the imported function.
+    Test initialization by orders and indices, input validation, and basic polynomial calculations.
 
     Returns
     -------
     None
+
     """
     zp = ZernPol(m=-2, n=2)  # Initialization with orders
     (m1, n1), osa_i, noll_i, fringe_i = zp.get_indices()
@@ -99,6 +100,7 @@ def test_explicit_initialization():
     Returns
     -------
     None
+
     """
     # Testing the ordinary, normal initialization of polynomials
     m = 0; n = 2; zp = ZernPol(l=m, n=n)
@@ -186,6 +188,12 @@ def test_explicit_initialization():
     except ValueError:
         assert_flag = True
     assert assert_flag, "Wrong initialization parameter passed: ZernPol(m=4, n=3)"
+    for m, n in ((4, 2), (-6, 2), (2, 0)):  # |m| > n, but n - |m| is even
+        try:
+            ZernPol(m=m, n=n); assert_flag = False
+        except ValueError:
+            assert_flag = True
+        assert assert_flag, f"Wrong initialization parameter passed: ZernPol(m={m}, n={n})"
     try:
         ZernPol(n=-2, l=2); assert_flag = False
     except ValueError:

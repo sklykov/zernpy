@@ -1,15 +1,16 @@
 name: Run Python tests
 
 on:
-  push:
-    branches: [ main ]  # - add for limiting it to be triggered only by pushes to the main branch
-    paths:  # triggers testing action if only any Python / listed files have been changed
+  workflow_call:
+  pull_request:  # automatic runs only for PRs to main that change the files listed below
+    # Direct pushes to main are not tested; fine if 'main' is updated only via PRs
+    branches: [ main ]
+    paths:
       - '**.py'
       - 'requirements.txt'
       - 'pyproject.toml'
       - '.github/workflows/test.yaml'
-  pull_request:
-     branches: [ main ]
+  workflow_dispatch:  # adds "Run workflow" button in the Actions tab (once this file is on main)
 
 jobs:
   test:
@@ -17,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.11", "3.12", "3.13"]
+        python-version: ["3.8", "3.11", "3.13"]
 
     steps:
       - name: Checkout code  # loads code from a repo

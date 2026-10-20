@@ -24,12 +24,12 @@ import matplotlib.pyplot as plt
 # Import of developed version of package, install in the editable mode: pip install -e .
 import zernpy.zernikepol
 
-importlib.reload(zernpy.zernikepol)  # trick to guarantee local changes to be always used for run
+importlib.reload(zernpy.zernikepol)  # reload this module; local edits require installing this checkout in editable mode
 from zernpy.zernikepol import ZernPol, fit_polynomials, generate_phases_image, generate_random_phases, zernikes_surface
 
 
 # %% Test functions for the external call
-def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]:
+def compare_performances(min_order: int, max_order: int) -> Tuple[float, float, str, str]:
     """
     Compare performances of radial polynomials calculation by using recursive and exact equations.
 
@@ -46,7 +46,7 @@ def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]
     Returns
     -------
     tuple
-        Composed by time for recursive calculation and time for exact calculation.
+        Elapsed milliseconds for recursive and factorial calculations, followed by polynomial-count and radial-sample descriptions.
 
     """
     # Generation of orders in OSA/ANSI indexing scheme for initializing Zernike polynomials
@@ -74,7 +74,7 @@ def compare_performances(min_order: int, max_order: int) -> Tuple[int, int, str]
         polynomial.radial(test_r, use_exact_eq=True)  # calculate radial polynomials over vector of radii
     t2 = time.perf_counter()
     t_exact_ms = round(1000*(t2-t1), 3)
-    return t_recursive_ms, t_exact_ms, f"Used polynomials: {i}", f"Radii: {n_points}"
+    return t_recursive_ms, t_exact_ms, f"Used polynomials: {len(zernpols)}", f"Radii: {n_points}"
 
 
 def _estimate_high_order_calc_times():
@@ -92,7 +92,7 @@ def _estimate_high_order_calc_times():
     times = []
     # Single polynomials values
     for pol in high_order_pols:
-        # calculate radial polynomials over vector of radii
+        # calculate a radial value at the scalar radius
         t1 = time.perf_counter(); pol.radial(r); t2 = time.perf_counter()
         times.append(f"{pol.get_mn_orders()}: {int(round(1000*(t2-t1), 0))} ms")
     # Delete polynomials with too high orders for derivatives calculates
@@ -101,7 +101,7 @@ def _estimate_high_order_calc_times():
     print(times); times = []
     # Single derivative polynomials values
     for pol in high_order_pols:
-        # calculate derivatives of radial polynomials over vector of radii
+        # calculate a radial derivative at the scalar radius
         t1 = time.perf_counter(); pol.radial_dr(r); t2 = time.perf_counter()
         times.append(f"Deriv. {pol.get_mn_orders()}: {int(round(1000*(t2-t1), 0))} ms")
     print(times)
@@ -111,7 +111,7 @@ def _estimate_high_order_calc_times():
 if __name__ == "__main__":
     _test_plots = False  # regulates testing of plotting various plots
     _test_calculations = False  # regulates tests below concerning calculations
-    _test_ver012 = True  # new tests for repeatability of README code snippets for versions after 0.1.2
+    _test_ver012 = True  # exercise the fitting example from README
     plt.close("all")  # close all previously opened plots
 
     # Testing plotting, the plots will be opened in the additional pop-up windows
@@ -203,5 +203,5 @@ if __name__ == "__main__":
         plt.figure("Initial Phase Profile"); plt.imshow(phases_image, cmap="jet")
         plt.axis("off"); plt.tight_layout()
         polynomials_amplitudes, cropped_img = fit_polynomials(phases_image, polynomials, return_cropped_image=True)
-        plt.figure("Fitted Phase Profile"); plt.imshow(cropped_img, cmap="jet")
+        plt.figure("Cropped Input Phase Profile"); plt.imshow(cropped_img, cmap="jet")
         plt.axis("off"); plt.tight_layout()
